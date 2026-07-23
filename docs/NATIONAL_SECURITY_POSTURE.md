@@ -24,6 +24,17 @@ Public procurement and policy signals show a concrete Canadian demand environmen
 
 These are market and policy signals, not evidence that ContinuityOS is selected, connected, or endorsed by any of these organizations.
 
+Additional verified procurement signals are catalogued in [`CANADIAN_PROCUREMENT_RESEARCH_2026.md`](CANADIAN_PROCUREMENT_RESEARCH_2026.md):
+
+- Transport Canada purchased a web-based GIS SaaS replacement for the Enhanced Maritime Situational Awareness Initiative, awarded to Fujitsu Canada for CAD $3.686M in 2025.
+- DND purchased satellite AIS data services from exactEarth in 2025.
+- CCG procured PolarMax aerial-surveillance radar, and DND procured ice trials/platform-monitoring R&D, both requiring lifecycle, sensor, integration, and evidence discipline.
+- Shared Services Canada awarded a 2026 SIEM contract; ContinuityOS must complement—not pretend to replace—SIEM.
+- Public Safety Canada issued a 2025 disaster-system and journey-map research tender, which is a conceptual fit but not evidence of a ContinuityOS contract.
+- The 2026 Canadian Program for Cyber Security Certification creates a concrete defence-supply-chain readiness gate; ContinuityOS is not CPCSC-certified.
+
+The product opportunity is therefore the seam between existing GIS, AIS, radar, SIEM, infrastructure, and emergency-management systems: dependencies, accountable tasking, exercises, recovery evidence, authority, and cross-organization continuity.
+
 ## Product wedge
 
 The credible wedge is not "Palantir for Canada" and not a claim to replace government systems. The wedge is:

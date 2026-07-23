@@ -122,7 +122,7 @@ Production requires a secret of at least 32 characters and Ed25519 evidence keys
 
 ### National-security posture
 
-The project is positioned as a Canadian-oriented, unclassified continuity evidence and decision-support layer for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. It does not claim NORAD/NATO/Five Eyes endorsement, classified readiness, government procurement, or authority over operational systems. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md) and [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md).
+The project is positioned as a Canadian-oriented, unclassified continuity evidence and decision-support layer for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. It does not claim NORAD/NATO/Five Eyes endorsement, classified readiness, government procurement, or authority over operational systems. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md), [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md), [`docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md`](docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md), and [`docs/PLATFORM_POSITIONING_RESEARCH_2026.md`](docs/PLATFORM_POSITIONING_RESEARCH_2026.md).
 ### Operational endpoints
 
 - `GET /livez` is a cheap process liveness check for a supervisor.
