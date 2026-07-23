@@ -38,6 +38,7 @@
 - Backup/checksum and disposable restore drill passed.
 - Gitleaks scan passed with a narrow type-annotation false-positive allowlist.
 - Public unauthenticated evidence access returned HTTP 401; authenticated live smoke passed.
+- Runtime dependency versions verified after restart: FastAPI 0.139.2, Starlette 1.3.1, cryptography 49.0.0.
 - Official NSIDC daily snapshot parser validation passed against data through 2026-07-22.
 - Expanded 15-node Arctic maritime logistics graph validated and analyzed.
 
@@ -52,6 +53,7 @@
 - Multi-tenant identity/RBAC, customer data isolation, and transactional indexed evidence are not implemented by this reference service.
 - HSM/KMS signing, off-host encrypted backups, external accreditation, legal review, and customer outcome calibration remain external gates.
 - A production restore was not run destructively; only a disposable restore drill was executed.
+- GitHub Dependabot still displays stale open alerts created before the final lock refresh; the current lock and runtime are on the patched versions, and the alert refresh remains explicitly monitored rather than dismissed.
 
 ## Security limitations
 
