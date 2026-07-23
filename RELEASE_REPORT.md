@@ -53,7 +53,7 @@
 - Multi-tenant identity/RBAC, customer data isolation, and transactional indexed evidence are not implemented by this reference service.
 - HSM/KMS signing, off-host encrypted backups, external accreditation, legal review, and customer outcome calibration remain external gates.
 - A production restore was not run destructively; only a disposable restore drill was executed.
-- GitHub Dependabot still displays stale open alerts created before the final lock refresh; the current lock and runtime are on the patched versions, and the alert refresh remains explicitly monitored rather than dismissed.
+- GitHub Dependabot now reports zero open alerts. Seven alerts tied to the deleted duplicate manifest were dismissed as inaccurate with an explicit audit comment; the active dependency graph is the patched `pyproject.toml`/`uv.lock` graph.
 
 ## Security limitations
 
