@@ -118,9 +118,13 @@ Production requires a secret of at least 32 characters and Ed25519 evidence keys
 
 ### Operational endpoints
 
-- `GET /healthz` is a lightweight public liveness/integrity check.
+- `GET /livez` is a cheap process liveness check for a supervisor.
+- `GET /readyz` checks runtime evidence storage, production key files, and ledger integrity.
+- `GET /healthz` preserves the public compatibility response and includes readiness/integrity details.
 - `GET /metrics` exposes minimal Prometheus-compatible counters; place it behind the existing private ingress or firewall in a customer deployment.
 - `GET /v1/evidence/verify` and `GET /v1/evidence?offset=0&limit=100` require the API key and are bounded/paginated.
+- Mutating routes accept `Idempotency-Key`; a same-key same-payload retry returns the original response, while a changed payload returns HTTP 409.
+- Operator telemetry requires timestamped HMAC and monotonically increasing tenant/asset sequence numbers; replay returns HTTP 409.
 - Every response includes `X-Request-ID`; clients may provide one for correlation.
 - Requests larger than `CONTINUITYOS_MAX_REQUEST_BYTES` are rejected before parsing. Protected routes use a process-local rate limit suitable for the single-worker reference service.
 

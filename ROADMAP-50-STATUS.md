@@ -2,9 +2,9 @@
 
 Generated during the holistic repo hardening pass.
 
-- DONE: 24
+- DONE: 29
 - VERIFIED-SECURE: 11
-- PARTIAL: 7
+- PARTIAL: 2
 - HUMAN: 4
 - DEFERRED: 4
 - Total: 50

@@ -50,6 +50,10 @@ def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
     health = client.get("/healthz")
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
+    assert client.get("/livez").json() == {"status": "ok"}
+    ready = client.get("/readyz")
+    assert ready.status_code == 200
+    assert ready.json()["status"] == "ready"
 
     sources = client.get("/v1/sources")
     assert sources.status_code == 200
@@ -123,6 +127,7 @@ def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
     ]
     response = client.post(
         "/v1/assess",
+        headers={"Idempotency-Key": "assessment-request-1"},
         json={
             "corridor_id": "api-corridor",
             "observations": [item.model_dump(mode="json") for item in observations],
@@ -130,6 +135,25 @@ def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
     )
     assert response.status_code == 200
     assessment = response.json()
+    replay = client.post(
+        "/v1/assess",
+        headers={"Idempotency-Key": "assessment-request-1"},
+        json={
+            "corridor_id": "api-corridor",
+            "observations": [item.model_dump(mode="json") for item in observations],
+        },
+    )
+    assert replay.status_code == 200
+    assert replay.json() == assessment
+    conflict = client.post(
+        "/v1/assess",
+        headers={"Idempotency-Key": "assessment-request-1"},
+        json={
+            "corridor_id": "different",
+            "observations": [observations[0].model_dump(mode="json")],
+        },
+    )
+    assert conflict.status_code == 409
 
     graph_response = client.post(
         "/v1/graph/analyze?failed_nodes=idp",

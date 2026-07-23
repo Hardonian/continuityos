@@ -36,13 +36,15 @@ The included container runs a single stateless API process with a local append-o
 
 ## Production gaps intentionally exposed
 
-- no durable anti-replay sequence store;
+- local durable anti-replay/idempotency state is single-deployment only; a distributed store is required for multiple workers;
 - no multi-tenant database or row-level security;
-- no distributed ledger locking;
+- no distributed ledger locking across independent database nodes;
 - no HSM integration;
 - no classified-data handling controls;
 - no live operational data licences or customer connectors;
 - no validated local-route navigation model;
-- no insurer, charter, or carrier market feeds.
+- no insurer, charter, or carrier market feeds;
+- no customer-selected data residency, retention, or deletion policy;
+- no independent strategic, legal, export-control, safety, or accreditation decision.
 
 These gaps are not hidden behind placeholders; they are the next implementation boundary.

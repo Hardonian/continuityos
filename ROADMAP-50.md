@@ -28,13 +28,13 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 14 | Integrity | Open-data cache must be content-addressed and tamper checked | VERIFIED-SECURE | cache tests including tamper failure |
 | 15 | Privacy | Outbound HTTP must be opt-in | VERIFIED-SECURE | default false; live health reports false |
 | 16 | Reliability | Health endpoint must detect broken evidence chain | DONE | `/healthz` reports `evidence_ledger_valid`; public probe 200/ok |
-| 17 | Reliability | Liveness and readiness semantics need separation | PARTIAL | `/healthz` is safe liveness/integrity; a customer deployment still needs dependency readiness checks |
+| 17 | Reliability | Liveness and readiness semantics need separation | DONE | `/livez` is cheap process liveness; `/readyz` checks evidence storage, keys in production, and ledger integrity; `/healthz` remains compatibility/readiness summary |
 | 18 | Reliability | Service must bind loopback only | DONE | systemd `127.0.0.1:8082`; `ss` verification |
 | 19 | Reliability | Reverse-proxy route must self-repair | DONE | `ensure_caddy_route.py` plus active timer |
 | 20 | Reliability | Service startup must be repeatable | DONE | `deploy/continuityos.service`; active after restart |
 | 21 | Observability | Requests need minimal metrics | DONE | `/metrics`; counters and duration total |
 | 22 | Observability | Edge/application request IDs need propagation | DONE | middleware and live response header |
-| 23 | Observability | Logs need stable JSON fields and redaction policy | PARTIAL | uvicorn logs exist; structured shipping/redaction remains for a customer deployment |
+| 23 | Observability | Logs need stable JSON fields and redaction policy | DONE | application access logs emit stable JSON fields without query strings, credentials, or payloads; external shipping remains deployment-specific |
 | 24 | Observability | Alerts need operator-owned escalation | DEFERRED | reuse lab alerting rather than adding a second notification stack |
 | 25 | Data | Runtime data needs an automated backup | DONE | backup service/timer; backup artifact and checksum created |
 | 26 | Data | Restore must be explicit and reversible | DONE | `restore_data.sh --confirm` renames current data first |
@@ -53,13 +53,13 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 39 | API | API surface needs explicit versioning and bounded models | VERIFIED-SECURE | `/v1` routes and Pydantic domain models |
 | 40 | API | API needs customer authentication/authorization and audit roles | PARTIAL | single operator API key is live; RBAC is not claimed |
 | 41 | API | Multi-tenant isolation must be enforced | DEFERRED | requires customer identity, tenant model, RLS, and transactional storage |
-| 42 | API | Idempotency keys for repeated mutation requests | PARTIAL | evidence IDs are unique; request-level idempotency is still needed before billing/customer use |
+| 42 | API | Idempotency keys for repeated mutation requests | DONE | `Idempotency-Key` plus durable locked state store; replay returns the original response and payload mismatch returns 409; distributed customer deployment still needs transactional storage |
 | 43 | API | CORS/browser policy needs customer-specific configuration | VERIFIED-SECURE | no permissive CORS added; browser console is not a supported client |
 | 44 | Safety | Human approval boundary must remain explicit | VERIFIED-SECURE | compiler emits approval requirement; service does not execute actions |
 | 45 | Safety | Domain claims need calibration against real outcomes | HUMAN | requires customer-labeled data and validation protocol |
-| 46 | Security | Key rotation and revocation need an operator runbook | PARTIAL | external env/key paths are established; rotation automation is not added |
+| 46 | Security | Key rotation and revocation need an operator runbook | DONE | `docs/KEY_ROTATION.md` documents backup, replacement, live verification, rollback, and enterprise boundary |
 | 47 | Security | HSM/KMS-backed signing needs an enterprise boundary | DEFERRED | hardware/cloud trust decision required; local Ed25519 is correct for reference scope |
-| 48 | Product | Customer onboarding/demo needs a safe seeded workflow | PARTIAL | examples/demo exist; customer-specific onboarding and access issuance remain |
+| 48 | Product | Customer onboarding/demo needs a safe seeded workflow | DONE | `docs/OPERATOR_ONBOARDING.md`, `scripts/demo_check.sh`, and fictional Arctic-maritime fixtures pass a contract check |
 | 49 | Product | Commercial offer needs buyer proof, pricing, and procurement pack | HUMAN | cannot be truthfully generated without target customer validation and legal review |
 | 50 | Governance | Security accreditation, privacy, licensing, export, and liability review | HUMAN | external legal/procurement/security decision; never represented as complete by code |
 
