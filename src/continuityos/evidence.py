@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import base64
+import fcntl
 import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -41,6 +44,8 @@ class EvidenceLedger:
     ) -> None:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.lock_path = self.path.with_suffix(f"{self.path.suffix}.lock")
+        self.lock_path.touch(exist_ok=True)
         self.private_key = private_key
         self.public_key = public_key or (private_key.public_key() if private_key else None)
 
@@ -66,34 +71,37 @@ class EvidenceLedger:
         return cls(path, private_key, public_key)
 
     def append(self, record_type: str, subject_id: str, payload: dict[str, Any]) -> EvidenceRecord:
-        previous_hash = self._last_hash()
-        unsigned: dict[str, Any] = {
-            "record_id": str(uuid4()),
-            "created_at": datetime.now(UTC).isoformat(),
-            "record_type": record_type,
-            "subject_id": subject_id,
-            "payload": payload,
-            "previous_hash": previous_hash,
-        }
-        canonical = self._canonical(unsigned)
-        record_hash = hashlib.sha256(canonical).hexdigest()
-        signature = None
-        key_id = None
-        if self.private_key is not None:
-            signature = base64.b64encode(self.private_key.sign(bytes.fromhex(record_hash))).decode()
-            public_bytes = self.private_key.public_key().public_bytes(
-                encoding=serialization.Encoding.Raw,
-                format=serialization.PublicFormat.Raw,
+        with self._exclusive_lock():
+            previous_hash = self._last_hash()
+            unsigned: dict[str, Any] = {
+                "record_id": str(uuid4()),
+                "created_at": datetime.now(UTC).isoformat(),
+                "record_type": record_type,
+                "subject_id": subject_id,
+                "payload": payload,
+                "previous_hash": previous_hash,
+            }
+            canonical = self._canonical(unsigned)
+            record_hash = hashlib.sha256(canonical).hexdigest()
+            signature = None
+            key_id = None
+            if self.private_key is not None:
+                signature = base64.b64encode(
+                    self.private_key.sign(bytes.fromhex(record_hash))
+                ).decode()
+                public_bytes = self.private_key.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+                key_id = hashlib.sha256(public_bytes).hexdigest()[:16]
+            record = EvidenceRecord(
+                **unsigned,
+                record_hash=record_hash,
+                signature=signature,
+                signing_key_id=key_id,
             )
-            key_id = hashlib.sha256(public_bytes).hexdigest()[:16]
-        record = EvidenceRecord(
-            **unsigned,
-            record_hash=record_hash,
-            signature=signature,
-            signing_key_id=key_id,
-        )
-        self._append_atomic(record.model_dump_json().encode() + b"\n")
-        return record
+            self._append_atomic(record.model_dump_json().encode() + b"\n")
+            return record
 
     def verify(self) -> list[str]:
         errors: list[str] = []
@@ -157,3 +165,12 @@ class EvidenceLedger:
         finally:
             if os.path.exists(temporary_name):
                 os.unlink(temporary_name)
+
+    @contextmanager
+    def _exclusive_lock(self) -> Iterator[None]:
+        with self.lock_path.open("a+") as lock_handle:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)

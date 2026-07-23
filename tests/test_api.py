@@ -45,7 +45,7 @@ def _observation(
 
 
 def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
-    app = create_app(Settings(environment="test", data_dir=tmp_path))
+    app = create_app(Settings(environment="test", data_dir=tmp_path, api_key=None))
     client = TestClient(app)
     health = client.get("/healthz")
     assert health.status_code == 200
@@ -194,7 +194,7 @@ def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
 
 
 def test_assess_validation_errors_do_not_hard_500(tmp_path) -> None:
-    client = TestClient(create_app(Settings(environment="test", data_dir=tmp_path)))
+    client = TestClient(create_app(Settings(environment="test", data_dir=tmp_path, api_key=None)))
     response = client.post(
         "/v1/assess",
         json={"corridor_id": "empty", "observations": []},

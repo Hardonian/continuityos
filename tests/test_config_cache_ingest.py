@@ -11,7 +11,13 @@ from continuityos.sources.cache import SnapshotCache
 
 def test_production_config_fails_closed_without_keys() -> None:
     with pytest.raises(ValueError, match="production configuration missing"):
-        Settings(environment="production")
+        Settings(
+            environment="production",
+            evidence_private_key_path=None,
+            evidence_public_key_path=None,
+            operator_webhook_secret=None,
+            api_key=None,
+        )
 
 
 def test_snapshot_cache_is_content_addressed_and_detects_tamper(tmp_path: Path) -> None:

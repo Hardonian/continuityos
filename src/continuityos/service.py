@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Any
+from time import perf_counter
+from typing import Annotated, Any, cast
+from uuid import uuid4
 
 import orjson
-from fastapi import Body, FastAPI, Header, HTTPException, Query, status
-from fastapi.responses import ORJSONResponse
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi.responses import ORJSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from continuityos.compiler import ContinuityCompiler
@@ -16,6 +18,13 @@ from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
+from continuityos.metrics import Metrics
+from continuityos.security import (
+    FixedWindowLimiter,
+    RateLimitExceeded,
+    enforce_rate_limit,
+    require_api_key,
+)
 from continuityos.sources.policy import SourcePolicyError, validate_observation_source
 from continuityos.sources.registry import SOURCES
 from continuityos.telemetry import (
@@ -58,10 +67,50 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         default_response_class=ORJSONResponse,
         docs_url="/docs" if configured.environment != "production" else None,
+        openapi_url="/openapi.json" if configured.environment != "production" else None,
         redoc_url=None,
     )
     app.state.settings = configured
     app.state.ledger = ledger
+    app.state.metrics = Metrics()
+    app.state.rate_limiter = FixedWindowLimiter()
+
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> ORJSONResponse:
+        return ORJSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": "rate limit exceeded", "retry_after": exc.retry_after},
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
+    @app.middleware("http")
+    async def request_guard(request: Request, call_next: Any) -> Any:
+        request_id = request.headers.get("x-request-id") or str(uuid4())
+        content_length = request.headers.get("content-length")
+        try:
+            oversized = (
+                content_length is not None and int(content_length) > configured.max_request_bytes
+            )
+        except ValueError:
+            oversized = True
+        if oversized:
+            response = ORJSONResponse(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                content={"detail": "request body too large", "request_id": request_id},
+            )
+            response.headers["X-Request-ID"] = request_id
+            return response
+        started = perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            app.state.metrics.observe(perf_counter() - started, 500)
+            raise
+        app.state.metrics.observe(perf_counter() - started, response.status_code)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
@@ -88,7 +137,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for item in sorted(SOURCES.values(), key=lambda source: source.source_id)
         ]
 
-    @app.post("/v1/assess", response_model=CorridorAssessment)
+    @app.get("/metrics", response_class=PlainTextResponse)
+    async def metrics() -> str:
+        return cast(Metrics, app.state.metrics).prometheus()
+
+    @app.post(
+        "/v1/assess",
+        response_model=CorridorAssessment,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
     async def assess(request: AssessmentRequest) -> CorridorAssessment:
         try:
             assessment = fusion.assess(
@@ -105,7 +162,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return assessment
 
-    @app.post("/v1/graph/analyze", response_model=GraphAssessment)
+    @app.post(
+        "/v1/graph/analyze",
+        response_model=GraphAssessment,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
     async def analyze_graph(
         graph: DependencyGraph,
         failed_nodes: Annotated[list[str], Query(min_length=1)],
@@ -119,7 +180,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("dependency_graph_assessment", graph.graph_id, result.model_dump(mode="json"))
         return result
 
-    @app.post("/v1/compile", response_model=CompiledPlan)
+    @app.post(
+        "/v1/compile",
+        response_model=CompiledPlan,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
     async def compile_plan(request: CompileRequest) -> CompiledPlan:
         try:
             plan = compiler.compile(request)
@@ -130,7 +195,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("compiled_plan", str(plan.plan_id), plan.model_dump(mode="json"))
         return plan
 
-    @app.post("/v1/operator-observations", response_model=TelemetryResponse)
+    @app.post(
+        "/v1/operator-observations",
+        response_model=TelemetryResponse,
+        dependencies=[Depends(enforce_rate_limit)],
+    )
     async def ingest_operator_observation(
         x_continuity_timestamp: Annotated[str, Header()],
         x_continuity_signature: Annotated[str, Header()],
@@ -160,17 +229,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return TelemetryResponse(accepted=True, observation=observation)
 
-    @app.get("/v1/evidence/verify")
+    @app.get(
+        "/v1/evidence/verify",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
     async def verify_evidence() -> dict[str, Any]:
         errors = ledger.verify()
         return {"valid": not errors, "errors": errors}
 
-    @app.get("/v1/evidence", response_model=list[EvidenceRecord])
-    async def read_evidence() -> list[EvidenceRecord]:
+    @app.get(
+        "/v1/evidence",
+        response_model=list[EvidenceRecord],
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def read_evidence(
+        offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=1_000)] = 100,
+    ) -> list[EvidenceRecord]:
         path: Path = ledger.path
         if not path.exists():
             return []
-        return [EvidenceRecord.model_validate_json(line) for line in path.read_text().splitlines()]
+        lines = path.read_text().splitlines()[offset : offset + limit]
+        return [EvidenceRecord.model_validate_json(line) for line in lines]
 
     return app
 

@@ -18,35 +18,40 @@
 7. Human-approval flags for consequential actions
 8. HMAC-authenticated operator telemetry
 9. Hash-chained and optionally Ed25519-signed evidence records
-10. FastAPI and CLI interfaces
+10. API-key protected operator routes, request limits, request IDs, metrics, and paginated evidence
+11. FastAPI and CLI interfaces
 
 ## Verification completed in the build environment
 
-- Package installed from source with no dependency resolution.
+- Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **29 passed**.
-- Statement coverage: **86.44%**.
+- Test suite: **33 passed**.
+- Statement coverage: **87.02%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
 - Signed evidence creation and verification completed.
 - Wheel package built successfully and installed into an isolated target.
 - Installed-wheel FastAPI `/healthz` smoke test passed.
+- Local `make verify` passed (Ruff, format, mypy, coverage, build, demo, evidence smoke).
+- Docker image build passed; Docker Compose health and protected-route smoke passed with non-root runtime and initialized key volume.
+- Backup/checksum and disposable restore drill passed.
+- Gitleaks scan passed with a narrow type-annotation false-positive allowlist.
+- Public unauthenticated evidence access returned HTTP 401; authenticated live smoke passed.
 - Official NSIDC daily snapshot parser validation passed against data through 2026-07-22.
 - Expanded 15-node Arctic maritime logistics graph validated and analyzed.
 
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `e9f859ddfd7967e15d773f6ad17ee328aa0e14e1a61b777bd7fad6cf6925fcf0`
+- Wheel SHA-256: `79bd36cd3151bf7ef18dc3759804c5ffe17ed617058bb0ec2ab11ad8f030df9b`
+- Source distribution SHA-256: `86401d14b3d7114e9f409b01ce1d0c9c03ef81596fb3b6befa53bf38bace83ad`
 
-## Verification not completed locally
+## Verification intentionally not represented as complete
 
-- Docker/Podman was not present, so the container image was not built or smoke-tested locally.
-- Ruff and mypy were not available in the environment.
-- The configured package registry returned HTTP 503 while resolving transitive packages, so a complete `uv.lock` could not be generated.
-
-These items are exposed rather than represented as passed. CI and `scripts/verify_release.sh` contain the intended lint, strict type-check, test, build, demo, and ledger-verification path for a connected trusted registry.
+- Multi-tenant identity/RBAC, customer data isolation, and transactional indexed evidence are not implemented by this reference service.
+- HSM/KMS signing, off-host encrypted backups, external accreditation, legal review, and customer outcome calibration remain external gates.
+- A production restore was not run destructively; only a disposable restore drill was executed.
 
 ## Security limitations
 

@@ -59,7 +59,7 @@ uvicorn continuityos.service:app --host 127.0.0.1 --port 8080
 ### Docker
 
 ```bash
-cp .env.example .env
+bash scripts/docker_bootstrap.sh
 docker compose build
 docker compose up
 curl http://127.0.0.1:8080/healthz
@@ -70,13 +70,13 @@ The container has no outbound data access unless `CONTINUITYOS_OUTBOUND_HTTP_ENA
 ## Live reference deployment
 
 The current EPYC-hosted reference surface is available at `https://aiautomatedsystems.ca/continuityos/`.
-It is intentionally an evaluation/reference API, not a tenant-isolated customer control plane. Run `bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos` to verify health, source registry, and evidence integrity. Deployment files and rollback notes are in [`deploy/README.md`](deploy/README.md).
+It is intentionally an evaluation/reference API, not a tenant-isolated customer control plane. Health and source metadata are public; assessment, compilation, and evidence routes require `X-Continuity-API-Key`. Run `CONTINUITYOS_API_KEY=... bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos` to verify authenticated integrity, or omit the key to verify that protected evidence is rejected. Deployment files and rollback notes are in [`deploy/README.md`](deploy/README.md).
 
 ## API
 
 ### Assess a corridor
 
-`POST /v1/assess`
+`POST /v1/assess` (requires `X-Continuity-API-Key`)
 
 ```json
 {
@@ -89,13 +89,13 @@ Observations must pass the registry rules in `src/continuityos/sources/registry.
 
 ### Analyze cyber-physical blast radius
 
-`POST /v1/graph/analyze?failed_nodes=shared-idp&failed_nodes=satcom-a`
+`POST /v1/graph/analyze?failed_nodes=shared-idp&failed_nodes=satcom-a` (requires `X-Continuity-API-Key`)
 
 Body: a `DependencyGraph` such as `examples/arctic_dependency_graph.yaml` converted to JSON.
 
 ### Compile a continuity plan
 
-`POST /v1/compile`
+`POST /v1/compile` (requires `X-Continuity-API-Key`)
 
 The compiler is exact for up to 24 actions by default. It rejects larger unbounded plans rather than silently using a heuristic. A production OR-Tools adapter can implement the same evidence contract for larger action sets.
 
@@ -115,6 +115,14 @@ X-Continuity-Signature: sha256=<hex digest>
 ```
 
 Production requires a secret of at least 32 characters and Ed25519 evidence keys.
+
+### Operational endpoints
+
+- `GET /healthz` is a lightweight public liveness/integrity check.
+- `GET /metrics` exposes minimal Prometheus-compatible counters; place it behind the existing private ingress or firewall in a customer deployment.
+- `GET /v1/evidence/verify` and `GET /v1/evidence?offset=0&limit=100` require the API key and are bounded/paginated.
+- Every response includes `X-Request-ID`; clients may provide one for correlation.
+- Requests larger than `CONTINUITYOS_MAX_REQUEST_BYTES` are rejected before parsing. Protected routes use a process-local rate limit suitable for the single-worker reference service.
 
 ## Open-source and public data plane
 
@@ -162,6 +170,8 @@ Runs:
 - package build
 - demo execution
 - evidence-ledger verification path
+
+For a repeatable operator setup, run `bash scripts/install.sh`. For day-two operations use `bash scripts/status.sh`, `bash scripts/backup_data.sh`, and the restore command documented in [`deploy/README.md`](deploy/README.md).
 
 ## Repository map
 

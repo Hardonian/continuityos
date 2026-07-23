@@ -1,0 +1,6 @@
+[Unit]
+Description=ContinuityOS data backup
+
+[Service]
+Type=oneshot
+ExecStart=/home/scott/ai-workspace/repos/continuityos/scripts/backup_data.sh

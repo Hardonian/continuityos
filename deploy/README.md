@@ -5,6 +5,8 @@ This reference deployment runs on the EPYC host behind the existing Caddy/Cloudf
 - Local bind: `127.0.0.1:8082`
 - Public path: `https://aiautomatedsystems.ca/continuityos/`
 - Service: `continuityos.service` (systemd user service)
+- Route repair: `continuityos-caddy-route.timer` (systemd user timer)
+- Backup: `continuityos-backup.timer` (daily, 14-day local retention)
 - Data: `/home/scott/.local/share/continuityos`
 - Secrets: `/home/scott/.config/continuityos.env` and `/home/scott/.local/share/continuityos/secrets/`
 - Outbound HTTP: disabled
@@ -12,6 +14,14 @@ This reference deployment runs on the EPYC host behind the existing Caddy/Cloudf
 The public route is an evaluation/reference surface. It is not a multi-tenant production control plane. Do not place customer or classified data in it.
 
 ## Install/update
+
+The idempotent path is:
+
+```bash
+bash scripts/install.sh
+```
+
+The expanded manual path remains below for operators who need to review each step.
 
 ```bash
 python3.12 -m venv .venv
@@ -38,6 +48,7 @@ p.write_text('\n'.join([
     'CONTINUITYOS_DATA_DIR=/home/scott/.local/share/continuityos',
     'CONTINUITYOS_EVIDENCE_PRIVATE_KEY_PATH=/home/scott/.local/share/continuityos/secrets/evidence-private.pem',
     'CONTINUITYOS_EVIDENCE_PUBLIC_KEY_PATH=/home/scott/.local/share/continuityos/secrets/evidence-public.pem',
+    f'CONTINUITYOS_API_KEY={secrets.token_urlsafe(32)}',
     f'CONTINUITYOS_OPERATOR_WEBHOOK_SECRET={secrets.token_urlsafe(32)}',
     'CONTINUITYOS_OUTBOUND_HTTP_ENABLED=false',
     'CONTINUITYOS_MAX_SNAPSHOT_AGE_HOURS=72',
@@ -51,8 +62,16 @@ PY
 
 ```bash
 systemctl --user status continuityos.service --no-pager
+systemctl --user status continuityos-caddy-route.timer continuityos-backup.timer --no-pager
 curl -fsS http://127.0.0.1:8082/healthz
 curl -fsS https://aiautomatedsystems.ca/continuityos/healthz
+bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos
 ```
 
-Rollback is a service stop/disable plus removal of the Caddy route. Keep the previous Caddyfile backup and use the repo commit history to reinstall an earlier application version.
+Create a backup before upgrades with `bash scripts/backup_data.sh`. Restore only with an explicit confirmation:
+
+```bash
+bash scripts/restore_data.sh --confirm /path/to/continuityos-YYYYmmddTHHMMSSZ.tar.gz
+```
+
+Rollback is a service stop/disable plus removal of the Caddy route. Keep the previous Caddyfile backup and use the repo commit history to reinstall an earlier application version. The restore script renames the current data directory before extraction so the rollback remains reversible.

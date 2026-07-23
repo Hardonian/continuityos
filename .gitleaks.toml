@@ -1,0 +1,5 @@
+title = "ContinuityOS gitleaks policy"
+
+[allowlist]
+description = "Type annotations are not credentials"
+regexes = ['private_key:\s*(Ed25519PrivateKey|None)']

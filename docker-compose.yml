@@ -1,23 +1,43 @@
 services:
+  continuityos-init:
+    image: alpine:3.22
+    restart: "no"
+    volumes:
+      - ./secrets:/input:ro
+      - continuityos-data:/var/lib/continuityos
+      - continuityos-secrets:/run/secrets
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        set -eu;
+        test -r /input/evidence-private.pem;
+        test -r /input/evidence-public.pem;
+        cp /input/evidence-private.pem /run/secrets/evidence-private.pem;
+        cp /input/evidence-public.pem /run/secrets/evidence-public.pem;
+        chmod 600 /run/secrets/evidence-private.pem /run/secrets/evidence-public.pem;
+        chown -R 10001:10001 /run/secrets /var/lib/continuityos
   continuityos:
     build:
       context: .
       dockerfile: Dockerfile
     image: continuityos-reference:0.1.0
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${CONTINUITYOS_HOST_PORT:-8080}:8080"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       CONTINUITYOS_ENVIRONMENT: production
       CONTINUITYOS_DATA_DIR: /var/lib/continuityos
       CONTINUITYOS_EVIDENCE_PRIVATE_KEY_PATH: /run/secrets/evidence-private.pem
       CONTINUITYOS_EVIDENCE_PUBLIC_KEY_PATH: /run/secrets/evidence-public.pem
       CONTINUITYOS_OUTBOUND_HTTP_ENABLED: "false"
+    depends_on:
+      continuityos-init:
+        condition: service_completed_successfully
     volumes:
       - continuityos-data:/var/lib/continuityos
-      - ./secrets/evidence-private.pem:/run/secrets/evidence-private.pem:ro
-      - ./secrets/evidence-public.pem:/run/secrets/evidence-public.pem:ro
+      - continuityos-secrets:/run/secrets:ro
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777
@@ -36,3 +56,4 @@ services:
 
 volumes:
   continuityos-data:
+  continuityos-secrets:
