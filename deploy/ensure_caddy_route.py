@@ -65,11 +65,7 @@ def main() -> int:
         print("continuityos route already present")
         return 0
     catchall = next(
-        (
-            route
-            for route in outer
-            if isinstance(route, dict) and not route.get("match")
-        ),
+        (route for route in outer if isinstance(route, dict) and not route.get("match")),
         None,
     )
     if not isinstance(catchall, dict):
