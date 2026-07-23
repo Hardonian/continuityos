@@ -1,0 +1,15 @@
+[Unit]
+Description=ContinuityOS reference API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/scott/ai-workspace/repos/continuityos
+EnvironmentFile=/home/scott/.config/continuityos.env
+ExecStart=/home/scott/ai-workspace/repos/continuityos/.venv/bin/uvicorn continuityos.service:app --host 127.0.0.1 --port 8082 --workers 1 --proxy-headers
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

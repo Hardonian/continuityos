@@ -1,0 +1,10 @@
+[Unit]
+Description=ContinuityOS Caddy route repair timer
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=2min
+Unit=continuityos-caddy-route.service
+
+[Install]
+WantedBy=timers.target

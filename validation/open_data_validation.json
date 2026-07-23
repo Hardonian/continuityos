@@ -1,0 +1,17 @@
+{
+  "interpretation_boundary": "Arctic-wide climate context only; not local navigation or route-access evidence.",
+  "latest_observation": {
+    "absolute_extent_million_km2": 7.111,
+    "baseline_median_million_km2": 8.949,
+    "baseline_period": "1981-2010",
+    "date": "2026-07-22",
+    "extent_anomaly_million_km2": -1.838,
+    "operability_role": "context_only"
+  },
+  "parsed_observations": 15786,
+  "snapshot_bytes": 1881297,
+  "snapshot_sha256": "8549f3616e1f431690e88dfdfb43506b117c48deaa8cdfc58cf327652e82ab62",
+  "source_id": "nsidc-sea-ice-index",
+  "source_uri": "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v4.0.csv",
+  "validated_at": "2026-07-23T20:00:50.605669+00:00"
+}

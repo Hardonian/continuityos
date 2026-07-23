@@ -1,0 +1,66 @@
+graph_id: northwest-passage-critical-supply
+nodes:
+  - node_id: identity-provider-a
+    name: Shared maritime identity provider
+    node_type: identity_provider
+    criticality: 0.8
+    provider_id: provider-a
+  - node_id: terminal-api
+    name: Terminal cargo API
+    node_type: cloud_service
+    criticality: 0.85
+    provider_id: provider-a
+  - node_id: port-ot-boundary
+    name: Port OT boundary
+    node_type: port_ot
+    criticality: 0.95
+  - node_id: northern-port
+    name: Northern logistics port
+    node_type: port
+    criticality: 1.0
+    location:
+      latitude: 69.1169
+      longitude: -105.0597
+  - node_id: satcom-a
+    name: Commercial LEO service A
+    node_type: satcom
+    criticality: 0.8
+    provider_id: leo-a
+  - node_id: satcom-b
+    name: Independent satellite service B
+    node_type: satcom
+    criticality: 0.7
+    provider_id: sat-b
+  - node_id: community-inventory
+    name: Community critical inventory
+    node_type: inventory
+    criticality: 1.0
+edges:
+  - source: identity-provider-a
+    target: terminal-api
+    kind: authenticates
+    dependency_strength: 0.95
+  - source: terminal-api
+    target: port-ot-boundary
+    kind: connects
+    dependency_strength: 0.75
+  - source: port-ot-boundary
+    target: northern-port
+    kind: requires
+    dependency_strength: 0.95
+  - source: northern-port
+    target: community-inventory
+    kind: supplies
+    dependency_strength: 0.8
+  - source: satcom-a
+    target: northern-port
+    kind: connects
+    dependency_strength: 0.8
+    substitutable: true
+    substitute_group: port-comms
+  - source: satcom-b
+    target: northern-port
+    kind: connects
+    dependency_strength: 0.7
+    substitutable: true
+    substitute_group: port-comms

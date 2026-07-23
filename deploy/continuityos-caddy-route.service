@@ -1,0 +1,7 @@
+[Unit]
+Description=Ensure ContinuityOS Caddy route is present
+After=continuityos.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/scott/ai-workspace/repos/continuityos/.venv/bin/python /home/scott/ai-workspace/repos/continuityos/deploy/ensure_caddy_route.py

@@ -1,0 +1,171 @@
+graph_id: arctic-maritime-logistics-reference
+nodes:
+  - node_id: northern-corridor
+    name: Northern maritime supply corridor
+    node_type: corridor
+    criticality: 1.0
+    attributes:
+      role: critical_supply_route
+      authority_boundary: decision_support_only
+
+  - node_id: ice-service-feed
+    name: Authorized local ice-service feed
+    node_type: data_feed
+    criticality: 0.9
+    provider_id: national-ice-service
+
+  - node_id: weather-feed
+    name: Authorized marine weather feed
+    node_type: data_feed
+    criticality: 0.8
+    provider_id: national-weather-service
+
+  - node_id: primary-satcom
+    name: Primary commercial LEO communications service
+    node_type: satcom
+    criticality: 0.85
+    provider_id: leo-provider-a
+
+  - node_id: backup-satcom
+    name: Independent backup satellite communications service
+    node_type: satcom
+    criticality: 0.75
+    provider_id: sat-provider-b
+
+  - node_id: escort-scheduler
+    name: Allied icebreaker scheduling service
+    node_type: cloud_service
+    criticality: 0.8
+    provider_id: escort-authority
+
+  - node_id: available-icebreaker
+    name: Allocated icebreaker or ice-capable escort
+    node_type: icebreaker
+    criticality: 0.95
+    attributes:
+      status_source_required: authenticated_operator
+
+  - node_id: carrier
+    name: Contracted ice-capable carrier
+    node_type: carrier
+    criticality: 0.9
+    attributes:
+      status_source_required: authenticated_operator
+
+  - node_id: fuel-depot
+    name: Forward fuel and marine-support depot
+    node_type: fuel
+    criticality: 0.9
+    location:
+      latitude: 69.1169
+      longitude: -105.0597
+
+  - node_id: port-identity
+    name: Port identity and access provider
+    node_type: identity_provider
+    criticality: 0.8
+    provider_id: shared-digital-provider
+
+  - node_id: cargo-manifest
+    name: Cargo and customs manifest service
+    node_type: cloud_service
+    criticality: 0.85
+    provider_id: shared-digital-provider
+
+  - node_id: port-ot
+    name: Port operational-technology trust boundary
+    node_type: port_ot
+    criticality: 0.95
+
+  - node_id: northern-port
+    name: Northern port and transshipment node
+    node_type: port
+    criticality: 1.0
+    location:
+      latitude: 69.1169
+      longitude: -105.0597
+
+  - node_id: critical-inventory
+    name: Fuel, food, medicine, and repair inventory
+    node_type: inventory
+    criticality: 1.0
+
+  - node_id: remote-community
+    name: Dependent northern community or facility
+    node_type: community
+    criticality: 1.0
+
+edges:
+  - source: ice-service-feed
+    target: northern-corridor
+    kind: validates
+    dependency_strength: 0.85
+
+  - source: weather-feed
+    target: northern-corridor
+    kind: validates
+    dependency_strength: 0.7
+
+  - source: primary-satcom
+    target: carrier
+    kind: connects
+    dependency_strength: 0.8
+    substitutable: true
+    substitute_group: carrier-comms
+
+  - source: backup-satcom
+    target: carrier
+    kind: connects
+    dependency_strength: 0.65
+    substitutable: true
+    substitute_group: carrier-comms
+
+  - source: escort-scheduler
+    target: available-icebreaker
+    kind: requires
+    dependency_strength: 0.75
+
+  - source: available-icebreaker
+    target: northern-corridor
+    kind: connects
+    dependency_strength: 0.9
+
+  - source: carrier
+    target: northern-corridor
+    kind: transports
+    dependency_strength: 0.95
+
+  - source: fuel-depot
+    target: carrier
+    kind: supplies
+    dependency_strength: 0.85
+
+  - source: port-identity
+    target: cargo-manifest
+    kind: authenticates
+    dependency_strength: 0.95
+
+  - source: cargo-manifest
+    target: port-ot
+    kind: connects
+    dependency_strength: 0.7
+
+  - source: port-ot
+    target: northern-port
+    kind: requires
+    dependency_strength: 0.95
+
+  - source: northern-corridor
+    target: northern-port
+    kind: transports
+    dependency_strength: 0.85
+
+  - source: northern-port
+    target: critical-inventory
+    kind: supplies
+    dependency_strength: 0.9
+
+  - source: critical-inventory
+    target: remote-community
+    kind: supplies
+    dependency_strength: 1.0

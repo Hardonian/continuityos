@@ -1,0 +1,38 @@
+services:
+  continuityos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: continuityos-reference:0.1.0
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    environment:
+      CONTINUITYOS_ENVIRONMENT: production
+      CONTINUITYOS_DATA_DIR: /var/lib/continuityos
+      CONTINUITYOS_EVIDENCE_PRIVATE_KEY_PATH: /run/secrets/evidence-private.pem
+      CONTINUITYOS_EVIDENCE_PUBLIC_KEY_PATH: /run/secrets/evidence-public.pem
+      CONTINUITYOS_OUTBOUND_HTTP_ENABLED: "false"
+    volumes:
+      - continuityos-data:/var/lib/continuityos
+      - ./secrets/evidence-private.pem:/run/secrets/evidence-private.pem:ro
+      - ./secrets/evidence-public.pem:/run/secrets/evidence-public.pem:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /run/continuityos:size=16m,mode=0700,uid=10001,gid=10001
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  continuityos-data:
