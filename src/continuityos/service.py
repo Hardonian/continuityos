@@ -23,12 +23,14 @@ from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
 from continuityos.metrics import Metrics
+from continuityos.public_data import PUBLIC_SOURCE_SPECS, PublicDataPlane, PublicSnapshot
 from continuityos.security import (
     FixedWindowLimiter,
     RateLimitExceeded,
     enforce_rate_limit,
     require_api_key,
 )
+from continuityos.sources.cache import SnapshotCache
 from continuityos.sources.policy import SourcePolicyError, validate_observation_source
 from continuityos.sources.registry import SOURCES
 from continuityos.state import IdempotencyConflict, PersistentState
@@ -50,6 +52,37 @@ class AssessmentRequest(BaseModel):
 class TelemetryResponse(BaseModel):
     accepted: bool
     observation: Observation
+
+
+class PublicSnapshotRequest(BaseModel):
+    source_id: str
+    force: bool = False
+
+
+class PublicSnapshotResponse(BaseModel):
+    source_id: str
+    snapshot_id: str
+    content_sha256: str
+    retrieved_at: datetime
+    status_code: int
+    parser: str
+    record_count: int
+    freshness_hours: float
+    quality_flags: list[str]
+
+    @classmethod
+    def from_snapshot(cls, snapshot: PublicSnapshot) -> PublicSnapshotResponse:
+        return cls(
+            source_id=snapshot.source_id,
+            snapshot_id=snapshot.snapshot_id,
+            content_sha256=snapshot.content_sha256,
+            retrieved_at=snapshot.retrieved_at,
+            status_code=snapshot.status_code,
+            parser=snapshot.parser,
+            record_count=snapshot.record_count,
+            freshness_hours=snapshot.freshness_hours,
+            quality_flags=list(snapshot.quality_flags),
+        )
 
 
 @lru_cache
@@ -82,6 +115,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.metrics = Metrics()
     app.state.rate_limiter = FixedWindowLimiter()
     app.state.persistent_state = PersistentState(configured.data_dir / "state.json")
+    app.state.public_data = PublicDataPlane(
+        SnapshotCache(configured.data_dir / "public-snapshots"),
+        outbound_enabled=configured.outbound_http_enabled,
+        timeout_seconds=configured.outbound_timeout_seconds,
+    )
 
     async def idempotency_context(
         request: Request, namespace: str
@@ -218,6 +256,57 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             }
             for item in sorted(SOURCES.values(), key=lambda source: source.source_id)
         ]
+
+    @app.get(
+        "/v1/public-data/sources",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def list_public_data_sources() -> list[dict[str, Any]]:
+        return [
+            {
+                "source_id": spec.source_id,
+                "name": spec.name,
+                "url": spec.url,
+                "method": spec.method,
+                "key_env": spec.key_env,
+                "key_required": spec.key_env is not None,
+                "freshness_hours": spec.freshness_hours,
+                "licence": spec.licence,
+                "parser": spec.parser,
+            }
+            for spec in sorted(PUBLIC_SOURCE_SPECS.values(), key=lambda item: item.source_id)
+        ]
+
+    @app.post(
+        "/v1/public-data/snapshots",
+        response_model=PublicSnapshotResponse,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def fetch_public_snapshot(
+        request: Request, snapshot_request: PublicSnapshotRequest
+    ) -> PublicSnapshotResponse:
+        key, fingerprint, cached = await idempotency_context(request, "public_snapshot")
+        if cached is not None:
+            return PublicSnapshotResponse.model_validate_json(cached)
+        try:
+            snapshot = await cast(PublicDataPlane, app.state.public_data).fetch(
+                snapshot_request.source_id,
+                force=snapshot_request.force,
+            )
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+            ) from exc
+        except (KeyError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        response = PublicSnapshotResponse.from_snapshot(snapshot)
+        ledger.append(
+            "public_data_snapshot", snapshot.snapshot_id, response.model_dump(mode="json")
+        )
+        save_idempotency("public_snapshot", key, fingerprint, response)
+        return response
 
     @app.get("/metrics", response_class=PlainTextResponse)
     async def metrics() -> str:

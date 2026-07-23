@@ -129,6 +129,10 @@ The project is positioned as a Canadian-oriented, unclassified continuity eviden
 - `GET /readyz` checks runtime evidence storage, production key files, and ledger integrity.
 - `GET /healthz` preserves the public compatibility response and includes readiness/integrity details.
 - `GET /metrics` exposes minimal Prometheus-compatible counters; place it behind the existing private ingress or firewall in a customer deployment.
+- `GET /v1/public-data/sources` requires the API key and lists the allow-listed public source manifests, freshness policy, parser, and key requirement.
+- `POST /v1/public-data/snapshots` requires the API key and fetches only an allow-listed source; it returns HTTP 503 when outbound HTTP is disabled and stores successful responses as immutable content-addressed snapshots.
+- `scripts/public_data_probe.py --enable-outbound` performs an explicit operator-run source probe; it never runs as a hidden background job.
+- `scripts/validate_regression_dataset.py` validates a provenance-bearing JSON dataset before it is submitted to `/v1/analysis/regression`.
 - `GET /v1/evidence/verify` and `GET /v1/evidence?offset=0&limit=100` require the API key and are bounded/paginated.
 - Mutating routes accept `Idempotency-Key`; a same-key same-payload retry returns the original response, while a changed payload returns HTTP 409.
 - Operator telemetry requires timestamped HMAC and monotonically increasing tenant/asset sequence numbers; replay returns HTTP 409.

@@ -48,3 +48,26 @@ def test_regression_endpoint_is_authenticated_and_idempotent(tmp_path) -> None:
     assert second.json() == first.json()
     assert first.json()["test_row_count"] == 3
     assert "source_ids" in first.json()
+
+
+def test_public_data_routes_are_protected_and_fail_closed_without_outbound(tmp_path) -> None:
+    app = create_app(
+        Settings(
+            environment="test",
+            data_dir=tmp_path,
+            api_key="test-key-012345678901234567890123456789",
+            outbound_http_enabled=False,
+        )
+    )
+    client = TestClient(app)
+    assert client.get("/v1/public-data/sources").status_code == 401
+    headers = {"X-Continuity-API-Key": "test-key-012345678901234567890123456789"}
+    listing = client.get("/v1/public-data/sources", headers=headers)
+    assert listing.status_code == 200
+    assert any(item["source_id"] == "statcan-wds" for item in listing.json())
+    blocked = client.post(
+        "/v1/public-data/snapshots",
+        json={"source_id": "statcan-wds"},
+        headers=headers,
+    )
+    assert blocked.status_code == 503
