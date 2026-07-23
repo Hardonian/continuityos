@@ -15,6 +15,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
+from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
@@ -211,6 +212,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "allowed_assertions": sorted(value.value for value in item.allowed_assertions),
                 "licence": item.licence,
                 "notes": item.notes,
+                "access": item.access,
+                "api_key_required": item.api_key_required,
+                "cadence": item.cadence,
             }
             for item in sorted(SOURCES.values(), key=lambda source: source.source_id)
         ]
@@ -245,6 +249,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         save_idempotency("assess", key, fingerprint, assessment)
         return assessment
+
+    @app.post(
+        "/v1/analysis/regression",
+        response_model=RegressionResult,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def regression_analysis(
+        request: Request, regression_request: RegressionRequest
+    ) -> RegressionResult:
+        key, fingerprint, cached = await idempotency_context(request, "regression")
+        if cached is not None:
+            return RegressionResult.model_validate_json(cached)
+        try:
+            result = run_regression(regression_request)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        ledger.append(
+            "multivariate_regression",
+            regression_request.dataset_id,
+            result.model_dump(mode="json"),
+        )
+        save_idempotency("regression", key, fingerprint, result)
+        return result
 
     @app.post(
         "/v1/graph/analyze",

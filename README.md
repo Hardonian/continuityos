@@ -116,6 +116,13 @@ X-Continuity-Signature: sha256=<hex digest>
 
 Production requires a secret of at least 32 characters and Ed25519 evidence keys.
 
+### Multivariate continuity analysis
+
+`POST /v1/analysis/regression` accepts a time-aligned, provenance-bearing dataset of normalized multidisciplinary indicators and returns a temporal-holdout ridge-regression result. It is associational exploratory analysis only—not causal inference, intelligence, operational forecasting, or autonomous control. The endpoint requires the API key and writes the model result to the evidence ledger. See [`docs/MULTIVARIATE_ANALYSIS.md`](docs/MULTIVARIATE_ANALYSIS.md).
+
+### National-security posture
+
+The project is positioned as a Canadian-oriented, unclassified continuity evidence and decision-support layer for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. It does not claim NORAD/NATO/Five Eyes endorsement, classified readiness, government procurement, or authority over operational systems. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md) and [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md).
 ### Operational endpoints
 
 - `GET /livez` is a cheap process liveness check for a supervisor.
@@ -143,7 +150,7 @@ Implemented adapters and boundaries include:
 - authenticated operator telemetry for live availability, capacity, cyber health, and insurance access
 - structured analyst assessments for geopolitical and policy judgments
 
-See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
+See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
 
 A release validation against the official NSIDC daily file is recorded in
 [`validation/open_data_validation.json`](validation/open_data_validation.json). The derived
