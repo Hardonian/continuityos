@@ -25,8 +25,8 @@
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **35 passed**.
-- Statement coverage: **86.76%**.
+- Test suite: **45 passed**.
+- Statement coverage: **85.52%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -36,7 +36,7 @@
 - Local `make verify` passed (Ruff, format, mypy, coverage, build, demo, evidence smoke).
 - Docker image build passed; Docker Compose health and protected-route smoke passed with non-root runtime and initialized key volume.
 - Backup/checksum and disposable restore drill passed.
-- Gitleaks scan passed with a narrow type-annotation false-positive allowlist.
+- Gitleaks scan passed with no leaks found.
 - Public unauthenticated evidence access returned HTTP 401; authenticated live smoke passed.
 - `/livez`, `/readyz`, and `/healthz` passed locally and through the public route.
 - Idempotency replay and payload-conflict tests passed; telemetry sequence replay is rejected with HTTP 409.
@@ -45,6 +45,13 @@
 - Runtime dependency versions verified after restart: FastAPI 0.139.2, Starlette 1.3.1, cryptography 49.0.0.
 - Official NSIDC daily snapshot parser validation passed against data through 2026-07-22.
 - Expanded 15-node Arctic maritime logistics graph validated and analyzed.
+- Governed public-data snapshot plane added with protected source listing and fail-closed fetch routes.
+- Real public-source probe succeeded with HTTP 200 for ECCC GeoMet, Statistics Canada WDS, Copernicus CDSE STAC, USGS Water, NOAA SWPC, GDACS, OpenAlex, and GDELT; responses were stored or reused as content-addressed snapshots with SHA-256 provenance.
+- Probe evidence included snapshot record counts: ECCC 100, Statistics Canada 8,212, Copernicus 10, USGS 35, NOAA SWPC 1, GDACS 99, OpenAlex 10, and GDELT 1.
+- ReliefWeb correctly failed closed because a registered application name was not configured; NASA FIRMS correctly requires a protected MAP_KEY.
+- Live public deployment after commit `1f8d7a8`: `/livez=200`, `/readyz=200`, `/healthz=200`; protected public-data listing returned 200, unauthenticated listing returned 401, and outbound-disabled fetch returned 503.
+- Live regression smoke returned 200 for an explicitly synthetic, provenance-shaped 8-row dataset; same-key replay returned 200 with byte-identical response.
+- GitHub Actions run `30054616150` for commit `1f8d7a8b96a791d3d7a0b4cd8ac401a8d9c6790e` completed successfully.
 
 ## Release artifact
 
