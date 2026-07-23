@@ -45,7 +45,7 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 31 | Delivery | Install/update must be idempotent | DONE | `scripts/install.sh`; systemd unit installation path |
 | 32 | Delivery | Status must be inspectable without reading unit files | DONE | `scripts/status.sh` |
 | 33 | Delivery | CI must lint, type-check, test, and build | DONE | `.github/workflows/ci.yml`; latest GitHub run passed |
-| 34 | Delivery | Dependencies must be reproducible | DONE | pinned `pyproject.toml`, `requirements.pinned.txt`, `uv.lock` |
+| 34 | Delivery | Dependencies must be reproducible | DONE | pinned `pyproject.toml`, `requirements.pinned.txt`, `uv.lock`; GitHub Dependabot advisories remediated in c6300cc follow-up |
 | 35 | Delivery | Release verification must be runnable locally | VERIFIED-SECURE | `Makefile`, `scripts/verify_release.sh`, successful local gates |
 | 36 | Delivery | Docker image must be independently exercised | DONE | image build and compose health/protected-route smoke passed |
 | 37 | Delivery | Container secret/key bootstrap must be documented | DONE | `scripts/docker_bootstrap.sh` plus compose init container copies keys with non-root runtime permissions |
