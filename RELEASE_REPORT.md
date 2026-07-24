@@ -82,9 +82,9 @@
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `6122b3a957f0b475d5c4144941b2f031ddfca0b20696435ec01c34222596a707`
-- Source distribution SHA-256: `e17109124ca2524d9ed98ddd395c63fa57727500972d93e6d927df9802b72b40`
-- Docker image digest: `sha256:35fbb8dad266ebe330310d2cf21b3a73dacae37f0a52fe7ea0fe003a3a59f0c8` (`continuityos-reference:0.1.0`; rebuilt after decision-packet implementation; non-root runtime).
+- Wheel SHA-256: `2fc3f7f2cbc009ed72d6165539ad370e78cfea3a2f95151a2097b348ce65db07`
+- Source distribution SHA-256: `02d889da6b7c720751f2397d53e7e4a9f30ca5470389b6b27a904d064148bffe`
+- Docker image digest: `sha256:2bf199bb6c9ad25548572ce4bc430f955a0b9437ad7ea77226ef12b50e3794f6` (`continuityos-reference:0.1.0`; rebuilt after strategic signal implementation; non-root runtime; disposable `/readyz` and `/healthz` smoke passed).
 
 ## Verification intentionally not represented as complete
 
