@@ -120,6 +120,8 @@ POST /v1/strategic/alerts/{alert_key}/ack
 
 The stream emits heartbeats and at most one snapshot per report identity. Alert state is durable across restarts, with stable alert keys, cooldown suppression, acknowledgement state, escalation deadlines, and source-freshness flags.
 
+A fail-soft user timer runs `/home/scott/ai-workspace/repos/continuityos/scripts/strategic_watchdog.py` every five minutes. It checks stream availability, missing snapshots, and stale sources; it emits only state transitions into the existing operator inbox and never dispatches external alerts or performs remediation.
+
 ### Operator telemetry authentication
 
 Clients serialize payload JSON with sorted keys, then sign:
