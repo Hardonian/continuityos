@@ -28,7 +28,7 @@
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **50 passed**.
+- Test suite: **53 passed**.
 - Statement coverage: **85.35%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
@@ -51,6 +51,9 @@
 - Governed public-data snapshot plane added with protected source listing and fail-closed fetch routes.
 - Real public-source probe succeeded with HTTP 200 for ECCC GeoMet, Statistics Canada WDS, Copernicus CDSE STAC, USGS Water, NOAA SWPC, GDACS, OpenAlex, and GDELT; responses were stored or reused as content-addressed snapshots with SHA-256 provenance.
 - Probe evidence included snapshot record counts: ECCC 100, Statistics Canada 8,212, Copernicus 10, USGS 35, NOAA SWPC 1, GDACS 99, OpenAlex 10, and GDELT 1.
+- Public Safety Canada CDD XLSX was fetched and schema-inspected, then parsed from an immutable imported snapshot after a subsequent automated portal download returned HTTP 403. The snapshot contains 1,489 historical event rows and produced 6,250 normalized indicators spanning 1900-01-09 through 2022-12-22; every CDD indicator is flagged `aggregated_secondary_source` and `not_primary_source`.
+- CDD cached indicator route smoke passed locally and through the public proxy: unauthenticated HTTP 401, authenticated HTTP 200, 6,250 indicators, snapshot `canadian-disaster-database-1321a40003599b690e89`.
+- Authoritative provider terms were captured in `docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md`; customer telemetry and labelled-outcome intake requirements were captured in `docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md`.
 - ReliefWeb correctly failed closed because a registered application name was not configured; NASA FIRMS correctly requires a protected MAP_KEY.
 - Live public deployment after commit `1f8d7a8`: `/livez=200`, `/readyz=200`, `/healthz=200`; protected public-data listing returned 200, unauthenticated listing returned 401, and outbound-disabled fetch returned 503.
 - Live regression smoke returned 200 for an explicitly synthetic, provenance-shaped 8-row dataset; same-key replay returned 200 with byte-identical response.
@@ -64,9 +67,9 @@
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `7158788359f50bbc3237ae86dac51db103058028d0c9e10db6ab7da014e44a84`
-- Source distribution SHA-256: `46ebd44eb2acbe73009fbc10a80b3ce8fe2116570a553e753009fa6b279e56cf`
-- Docker image digest: `sha256:694f604ce682a29b7222d53ef491bbbf4af51dea4303cbd0a3aa5388ad7b5322`
+- Wheel SHA-256: `34cabed9052b9fcf1866d2e5b3def038dbee3bb0d574afad4eb64fce99c9f9a6`
+- Source distribution SHA-256: `055821c572ee83aa47d3025094b4977a161233df97379a15c08d073fe71539aa`
+- Docker image digest: `sha256:b1d2ee46e876d7bdc64d91e269388fc375622881fa3f31c14712729979d7845a`
 
 ## Verification intentionally not represented as complete
 

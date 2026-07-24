@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlencode
+from zipfile import ZipFile
 
 from continuityos.public_data import (
+    CanadianDisasterDatabaseAdapter,
     DFOIWLSAdapter,
     ECCCGeoMetAdapter,
     PublicDataPlane,
     PublicSnapshot,
+    _parse_excel_date,
+    _records,
+    _xlsx_rows,
 )
 from continuityos.sources.cache import SnapshotCache
 
@@ -127,3 +133,69 @@ def test_dfo_station_selector_requires_operating_wlo_station(tmp_path: Path) -> 
     cache.import_file("dfo-iwls", url, path)
     _metadata, station = asyncio.run(DFOIWLSAdapter.fetch_operating_station(plane))
     assert station["id"] == "live"
+
+
+def test_cdd_xlsx_normalizer_marks_secondary_historical_context() -> None:
+    def cell(reference: str, value: str) -> str:
+        return f'<c r="{reference}" t="inlineStr"><is><t>{value}</t></is></c>'
+
+    sheet = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+        f'<row r="1">{cell("A1", "EVENT_ID")}'
+        f"{cell('B1', 'EVENT_START_DATE')}{cell('C1', 'DEAD')}</row>"
+        f'<row r="2">{cell("A2", "42")}{cell("B2", "36526")}{cell("C2", "3")}</row>'
+        "</sheetData></worksheet>"
+    ).encode()
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    indicators = CanadianDisasterDatabaseAdapter.normalize_events(
+        snapshot("canadian-disaster-database"), output.getvalue()
+    )
+    assert {item.indicator_id for item in indicators} == {
+        "cdd.disaster_event",
+        "cdd.deaths",
+    }
+    assert all("not_primary_source" in item.quality_flags for item in indicators)
+    death = next(item for item in indicators if item.indicator_id == "cdd.deaths")
+    assert death.value == 3.0
+    assert death.observed_at.isoformat() == "2000-01-01T00:00:00+00:00"
+
+
+def test_xlsx_shared_strings_and_empty_records_are_supported() -> None:
+    sheet = (
+        b'<?xml version="1.0" encoding="UTF-8"?>'
+        b'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+        b'<row r="1"><c r="A1" t="s"><v>0</v></c></row>'
+        b'<row r="2"><c r="A2" t="s"><v>1</v></c></row>'
+        b"</sheetData></worksheet>"
+    )
+    shared = (
+        b'<?xml version="1.0" encoding="UTF-8"?>'
+        b'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        b"<si><t>header</t></si><si><t>value</t></si></sst>"
+    )
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        archive.writestr("xl/sharedStrings.xml", shared)
+        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    assert _xlsx_rows(output.getvalue()) == [{"header": "value"}]
+    assert _records(output.getvalue(), "xlsx")[0] == 1
+    empty = io.BytesIO()
+    with ZipFile(empty, "w") as archive:
+        archive.writestr(
+            "xl/worksheets/sheet1.xml",
+            (
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                "<sheetData /></worksheet>"
+            ),
+        )
+    assert _records(empty.getvalue(), "xlsx") == (0, ("empty_dataset",))
+
+
+def test_excel_date_parser_handles_missing_and_iso_values() -> None:
+    assert _parse_excel_date("") is None
+    parsed = _parse_excel_date("2026-07-23T00:00:00Z")
+    assert parsed is not None
+    assert parsed.year == 2026

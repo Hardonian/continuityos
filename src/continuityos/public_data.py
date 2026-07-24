@@ -6,11 +6,12 @@ import io
 import json
 import os
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any, Literal
 from urllib.parse import urlencode
 from xml.etree import ElementTree
+from zipfile import ZipFile
 
 import httpx
 
@@ -27,7 +28,7 @@ class PublicSourceSpec:
     key_location: Literal["header", "query"] = "header"
     freshness_hours: float = 24.0
     licence: str = "Verify provider terms before production use"
-    parser: Literal["json", "csv", "rss", "geojson"] = "json"
+    parser: Literal["json", "csv", "rss", "geojson", "xlsx"] = "json"
 
 
 PUBLIC_SOURCE_SPECS: dict[str, PublicSourceSpec] = {
@@ -45,6 +46,17 @@ PUBLIC_SOURCE_SPECS: dict[str, PublicSourceSpec] = {
         "https://api-iwls.dfo-mpo.gc.ca/api/v1/",
         freshness_hours=1.0,
         licence="CHS IWLS public web-service licence; QC flags and official tide-table terms apply",
+    ),
+    "canadian-disaster-database": PublicSourceSpec(
+        "canadian-disaster-database",
+        "Public Safety Canada Canadian Disaster Database",
+        "https://open.canada.ca/data/dataset/1c3d15f9-9cfa-4010-8462-0d67e493d9b9/resource/c701e05e-4554-4c96-b7c9-0ec4a845fe91/download/cdd-extract-1.xlsx",
+        freshness_hours=720.0,
+        licence=(
+            "Open Government Licence - Canada; CDD warns aggregated data may include "
+            "third-party restrictions and is not a primary source"
+        ),
+        parser="xlsx",
     ),
     "statcan-wds": PublicSourceSpec(
         "statcan-wds",
@@ -140,6 +152,138 @@ class NormalizedIndicator:
     provenance_snapshot_ids: tuple[str, ...]
     quality_flags: tuple[str, ...]
     metadata: dict[str, str]
+
+
+def _xlsx_rows(body: bytes) -> list[dict[str, str]]:
+    """Read the first worksheet of a simple XLSX workbook without a new dependency."""
+    namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    with ZipFile(io.BytesIO(body)) as archive:
+        shared: list[str] = []
+        if "xl/sharedStrings.xml" in archive.namelist():
+            shared_root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
+            for item in shared_root.findall(f"{{{namespace}}}si"):
+                shared.append("".join(text.text or "" for text in item.iter(f"{{{namespace}}}t")))
+        sheet_name = "xl/worksheets/sheet1.xml"
+        if sheet_name not in archive.namelist():
+            raise ValueError("XLSX workbook has no first worksheet")
+        sheet = ElementTree.fromstring(archive.read(sheet_name))
+    rows: list[list[str]] = []
+    for row in sheet.findall(f".//{{{namespace}}}row"):
+        cells: dict[int, str] = {}
+        for cell in row.findall(f"{{{namespace}}}c"):
+            reference = str(cell.get("r") or "A1")
+            column = 0
+            for char in reference:
+                if not char.isalpha():
+                    break
+                column = column * 26 + ord(char.upper()) - ord("A") + 1
+            value = cell.find(f"{{{namespace}}}v")
+            inline = cell.find(f"{{{namespace}}}is")
+            text = value.text if value is not None and value.text is not None else ""
+            if cell.get("t") == "s" and text:
+                index = int(text)
+                text = shared[index] if index < len(shared) else ""
+            elif cell.get("t") == "inlineStr" and inline is not None:
+                text = "".join(item.text or "" for item in inline.iter(f"{{{namespace}}}t"))
+            cells[column] = text
+        if cells:
+            rows.append([cells.get(index, "") for index in range(1, max(cells) + 1)])
+    if not rows:
+        return []
+    headers = [value.strip() for value in rows[0]]
+    return [
+        {
+            headers[index]: value
+            for index, value in enumerate(row)
+            if index < len(headers) and headers[index]
+        }
+        for row in rows[1:]
+    ]
+
+
+def _parse_excel_date(value: Any) -> datetime | None:
+    if value in (None, "", "NULL"):
+        return None
+    try:
+        return (datetime(1899, 12, 30, tzinfo=UTC) + timedelta(days=float(value))).astimezone(UTC)
+    except (TypeError, ValueError, OverflowError):
+        return _parse_date(value)
+
+
+class CanadianDisasterDatabaseAdapter:
+    """Normalize CDD historical events as bounded, secondary-source context."""
+
+    @staticmethod
+    def normalize_events(
+        snapshot: PublicSnapshot,
+        body: bytes,
+    ) -> list[NormalizedIndicator]:
+        indicators: list[NormalizedIndicator] = []
+        for row in _xlsx_rows(body):
+            observed_at = _parse_excel_date(row.get("EVENT_START_DATE"))
+            event_id = row.get("EVENT_ID", "").strip()
+            if observed_at is None or not event_id:
+                continue
+            common_flags = ("aggregated_secondary_source", "not_primary_source")
+            metadata = {
+                "event_id": event_id,
+                "category": row.get("EVENT_CATEGORY_NAME", ""),
+                "group": row.get("EVENT_GROUP_NAME", ""),
+                "event_type": row.get("EVENT_TYPE", ""),
+                "place": row.get("PLACE", ""),
+                "provinces": row.get("PROVINCES_AFFECTED / PROVINCES AFFECTÉES", ""),
+            }
+            indicators.append(
+                NormalizedIndicator(
+                    indicator_id="cdd.disaster_event",
+                    observed_at=observed_at,
+                    value=1.0,
+                    unit="historical_event",
+                    source_id=snapshot.source_id,
+                    provenance_snapshot_ids=(snapshot.snapshot_id,),
+                    quality_flags=common_flags,
+                    metadata=metadata,
+                )
+            )
+            for column, indicator_id in {
+                "DEAD": "cdd.deaths",
+                "INJURED": "cdd.injured",
+                "EVACUATED": "cdd.evacuated",
+                "UTILITY_PEOPLE_AFFECTED": "cdd.utility_people_affected",
+            }.items():
+                try:
+                    value = float(row.get(column, ""))
+                except (TypeError, ValueError):
+                    continue
+                indicators.append(
+                    NormalizedIndicator(
+                        indicator_id=indicator_id,
+                        observed_at=observed_at,
+                        value=value,
+                        unit="persons",
+                        source_id=snapshot.source_id,
+                        provenance_snapshot_ids=(snapshot.snapshot_id,),
+                        quality_flags=common_flags,
+                        metadata=metadata,
+                    )
+                )
+        if not indicators:
+            raise ValueError("CDD workbook contained no dated event rows")
+        return indicators
+
+    @staticmethod
+    async def fetch(
+        plane: PublicDataPlane, *, force: bool = False
+    ) -> tuple[PublicSnapshot, list[NormalizedIndicator]]:
+        snapshot = await plane.fetch("canadian-disaster-database", force=force)
+        cached = plane.cache.latest(
+            "canadian-disaster-database",
+            url=PUBLIC_SOURCE_SPECS["canadian-disaster-database"].url,
+            max_age_hours=None,
+        )
+        if cached is None:
+            raise RuntimeError("CDD snapshot disappeared after fetch")
+        return snapshot, CanadianDisasterDatabaseAdapter.normalize_events(snapshot, cached[1])
 
 
 class ECCCGeoMetAdapter:
@@ -292,6 +436,11 @@ def _parse_date(value: Any) -> datetime | None:
 
 def _records(payload: Any, parser: str) -> tuple[int, tuple[str, ...]]:
     flags: list[str] = []
+    if parser == "xlsx":
+        rows = _xlsx_rows(payload if isinstance(payload, bytes) else bytes(payload))
+        if not rows:
+            flags.append("empty_dataset")
+        return len(rows), tuple(flags)
     if parser == "csv":
         if not isinstance(payload, str):
             raise ValueError("CSV parser requires text payload")
@@ -356,7 +505,7 @@ class PublicDataPlane:
         url: str,
         *,
         force: bool = False,
-        parser: Literal["json", "csv", "rss", "geojson"] | None = None,
+        parser: Literal["json", "csv", "rss", "geojson", "xlsx"] | None = None,
     ) -> PublicSnapshot:
         try:
             spec = PUBLIC_SOURCE_SPECS[source_id]
@@ -490,12 +639,14 @@ class PublicDataPlane:
         body: bytes,
         *,
         from_cache: bool,
-        parser: Literal["json", "csv", "rss", "geojson"] | None = None,
+        parser: Literal["json", "csv", "rss", "geojson", "xlsx"] | None = None,
     ) -> PublicSnapshot:
         active_parser = parser or spec.parser
         try:
             if active_parser == "csv":
                 payload: Any = body.decode("utf-8-sig")
+            elif active_parser == "xlsx":
+                payload = body
             elif active_parser == "rss":
                 payload = body.decode("utf-8", errors="strict")
             else:

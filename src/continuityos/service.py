@@ -25,6 +25,7 @@ from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessmen
 from continuityos.metrics import Metrics
 from continuityos.public_data import (
     PUBLIC_SOURCE_SPECS,
+    CanadianDisasterDatabaseAdapter,
     DFOIWLSAdapter,
     ECCCGeoMetAdapter,
     NormalizedIndicator,
@@ -368,6 +369,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             if indicator_request.source_id == "eccc-geomet-alerts":
                 snapshot, indicators = await ECCCGeoMetAdapter.fetch(
+                    plane, force=indicator_request.force
+                )
+                snapshot_ids = [snapshot.snapshot_id]
+            elif indicator_request.source_id == "canadian-disaster-database":
+                snapshot, indicators = await CanadianDisasterDatabaseAdapter.fetch(
                     plane, force=indicator_request.force
                 )
                 snapshot_ids = [snapshot.snapshot_id]

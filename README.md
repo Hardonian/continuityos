@@ -134,6 +134,7 @@ The project is positioned as a Canadian-oriented, unclassified continuity eviden
 - `POST /v1/public-data/indicators` requires the API key and serves normalized ECCC GeoMet alert indicators or DFO IWLS water-level observations. ECCC returns alert-event values with expiration/geometry/confidence flags; DFO returns station/data snapshot IDs, source-native units, and QC/review flags. It serves cached snapshots when outbound HTTP is disabled and returns HTTP 503 only when the requested evidence is absent.
 - `scripts/public_data_probe.py --enable-outbound` performs an explicit operator-run source probe; it never runs as a hidden background job.
 - `scripts/public_indicator_probe.py --enable-outbound` exercises the ECCC and DFO normalizers against real endpoints and emits sanitized provenance/QC output only.
+- `scripts/public_indicator_probe.py --enable-outbound --include-cdd` also parses the official Public Safety Canada CDD XLSX. The CDD is historical aggregated context only; its indicators carry `aggregated_secondary_source` and `not_primary_source` flags.
 - `scripts/validate_regression_dataset.py` validates a provenance-bearing JSON dataset before it is submitted to `/v1/analysis/regression`; rows also carry normalization method, quality flags, review state, label definition, and licence declaration.
 - `GET /v1/evidence/verify` and `GET /v1/evidence?offset=0&limit=100` require the API key and are bounded/paginated.
 - Mutating routes accept `Idempotency-Key`; a same-key same-payload retry returns the original response, while a changed payload returns HTTP 409.
@@ -156,7 +157,7 @@ Implemented adapters and boundaries include:
 - authenticated operator telemetry for live availability, capacity, cyber health, and insurance access
 - structured analyst assessments for geopolitical and policy judgments
 
-See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
+See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), [`docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md`](docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md), [`docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md`](docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
 
 A release validation against the official NSIDC daily file is recorded in
 [`validation/open_data_validation.json`](validation/open_data_validation.json). The derived
