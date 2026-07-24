@@ -57,6 +57,11 @@ from continuityos.sources.cache import SnapshotCache
 from continuityos.sources.policy import SourcePolicyError, validate_observation_source
 from continuityos.sources.registry import SOURCES
 from continuityos.state import IdempotencyConflict, PersistentState
+from continuityos.strategic import (
+    StrategicAnalysisReport,
+    StrategicAnalysisRequest,
+    build_strategic_report,
+)
 from continuityos.telemetry import (
     TelemetryAuthenticationError,
     normalized_operator_observation,
@@ -591,6 +596,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("decision_packet", str(packet.packet_id), packet.model_dump(mode="json"))
         save_idempotency("decision-packets", key, fingerprint, packet)
         return packet
+
+    @app.post(
+        "/v1/strategic/analyze",
+        response_model=StrategicAnalysisReport,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def strategic_analyze(
+        request: Request,
+        analysis_request: StrategicAnalysisRequest,
+    ) -> StrategicAnalysisReport:
+        key, fingerprint, cached = await idempotency_context(request, "strategic-analyze")
+        if cached is not None:
+            return StrategicAnalysisReport.model_validate_json(cached)
+        try:
+            report = build_strategic_report(analysis_request)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        ledger.append("strategic_analysis", str(report.report_id), report.model_dump(mode="json"))
+        save_idempotency("strategic-analyze", key, fingerprint, report)
+        return report
 
     def accept_operator_payload(
         payload: dict[str, Any],

@@ -105,6 +105,12 @@ The compiler is exact for up to 24 actions by default. It rejects larger unbound
 
 This is the high-leverage orchestration surface: one bounded, idempotent request produces a corridor assessment, dependency blast-radius analysis, deterministic mitigation plan, evidence manifest, approval requirement, and explicit human-action boundary. It records the packet and component results in the signed evidence ledger. It never executes, dispatches, or authorizes consequential actions.
 
+### Strategic signal analysis
+
+`POST /v1/strategic/analyze` (requires `X-Continuity-API-Key`)
+
+This protected, idempotent surface computes a freshness- and confidence-weighted multivariate heatmap, ranked explainable alerts, and human-gated coordination recommendations from current observations. Supplying a provenance-bearing regression dataset adds the existing temporal-holdout ridge result. Predictive status remains explicit; no output is represented as causal truth, validated forecasting, autonomous coordination, or dispatch.
+
 ### Operator telemetry authentication
 
 Clients serialize payload JSON with sorted keys, then sign:

@@ -236,6 +236,19 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
         authoritative_spec="https://github.com/Hardonian/continuityos",
     ),
     InteroperabilityCapability(
+        protocol="strategic-signal-api",
+        version="1",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/json",),
+        endpoint="/v1/strategic/analyze",
+        notes=(
+            "Protected idempotent freshness/confidence-weighted heatmap and alert ranking "
+            "with optional temporal-holdout multivariate analysis; advisory only."
+        ),
+        authoritative_spec="https://github.com/Hardonian/continuityos",
+    ),
+    InteroperabilityCapability(
         protocol="stac-catalog",
         version="1.0.0",
         status="implemented",

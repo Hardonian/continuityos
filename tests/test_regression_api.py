@@ -101,6 +101,7 @@ def test_interoperability_manifest_is_protected_and_truthful(tmp_path) -> None:
     assert capabilities["operator-telemetry-hmac-json"]["status"] == "implemented"
     assert capabilities["ogc-api-features"]["status"] == "source-consumer"
     assert capabilities["common-alerting-protocol"]["status"] == "implemented"
+    assert capabilities["strategic-signal-api"]["endpoint"] == "/v1/strategic/analyze"
 
 
 def test_signed_cloudevent_observation_bridge_is_idempotent(tmp_path) -> None:
@@ -219,6 +220,7 @@ def test_ogc_stac_and_export_surfaces_are_protected_and_valid(tmp_path) -> None:
     ):
         assert client.get(path).status_code == 401
     assert client.post("/v1/decision-packets", json={}).status_code == 401
+    assert client.post("/v1/strategic/analyze", json={}).status_code == 401
 
     headers = {"X-Continuity-API-Key": api_key}
     collections = client.get("/v1/ogc/collections", headers=headers)
