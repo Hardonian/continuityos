@@ -72,7 +72,7 @@
 - Go-live posture and host-level MicroK8s exposure blockers are documented in `docs/GO_LIVE_SECURITY_CLOSURE_2026.md`; no host-wide lockdown or national-security accreditation is claimed.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
 - Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3308911`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.
-- GitHub Actions run `30058876549` for commit `1ca874936230ada4fc520ac0b68563aaf4f44b48` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30058876549
+- GitHub Actions run `30059353106` for commit `19d50c0ae8346c159b298c63fe78353c798e1c8d` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30059353106
 
 ## Release artifact
 
