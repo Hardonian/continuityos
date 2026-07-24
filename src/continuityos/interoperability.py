@@ -223,6 +223,19 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
         authoritative_spec="https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html",
     ),
     InteroperabilityCapability(
+        protocol="decision-packet-api",
+        version="1",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/json",),
+        endpoint="/v1/decision-packets",
+        notes=(
+            "Protected single-call assessment, dependency impact, and bounded mitigation "
+            "packet with idempotency, evidence recording, and explicit human approval boundary."
+        ),
+        authoritative_spec="https://github.com/Hardonian/continuityos",
+    ),
+    InteroperabilityCapability(
         protocol="stac-catalog",
         version="1.0.0",
         status="implemented",

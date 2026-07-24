@@ -99,6 +99,12 @@ Body: a `DependencyGraph` such as `examples/arctic_dependency_graph.yaml` conver
 
 The compiler is exact for up to 24 actions by default. It rejects larger unbounded plans rather than silently using a heuristic. A production OR-Tools adapter can implement the same evidence contract for larger action sets.
 
+### Generate a complete decision packet
+
+`POST /v1/decision-packets` (requires `X-Continuity-API-Key`)
+
+This is the high-leverage orchestration surface: one bounded, idempotent request produces a corridor assessment, dependency blast-radius analysis, deterministic mitigation plan, evidence manifest, approval requirement, and explicit human-action boundary. It records the packet and component results in the signed evidence ledger. It never executes, dispatches, or authorizes consequential actions.
+
 ### Operator telemetry authentication
 
 Clients serialize payload JSON with sorted keys, then sign:

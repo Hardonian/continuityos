@@ -217,6 +217,65 @@ def test_health_sources_assessment_graph_compile_and_evidence(tmp_path) -> None:
     assert verification.json()["valid"] is True
 
 
+def test_decision_packet_is_single_call_idempotent_and_advisory(tmp_path) -> None:
+    client = TestClient(create_app(Settings(environment="test", data_dir=tmp_path, api_key=None)))
+    observation = _observation(
+        "eccc-geomet",
+        SourceTrust.AUTHORITATIVE_PUBLIC,
+        AssertionClass.WEATHER,
+        MetricName.WIND_SEVERITY,
+        0.3,
+    )
+    payload = {
+        "corridor_id": "packet-corridor",
+        "observations": [observation.model_dump(mode="json")],
+        "graph": {
+            "graph_id": "packet-graph",
+            "nodes": [
+                {
+                    "node_id": "source",
+                    "name": "Source",
+                    "node_type": "data_feed",
+                    "criticality": 0.8,
+                },
+                {
+                    "node_id": "dependent",
+                    "name": "Dependent",
+                    "node_type": "corridor",
+                    "criticality": 1.0,
+                },
+            ],
+            "edges": [
+                {
+                    "source": "source",
+                    "target": "dependent",
+                    "dependency_strength": 0.9,
+                }
+            ],
+        },
+        "failed_nodes": ["source"],
+        "objective": {
+            "minimum_continuity": 0.7,
+            "maximum_shortage_days": 7,
+            "maximum_recovery_days": 45,
+            "budget": 1000,
+            "human_approval_required": True,
+        },
+        "available_actions": [],
+    }
+    headers = {"Idempotency-Key": "decision-packet-1"}
+    response = client.post("/v1/decision-packets", headers=headers, json=payload)
+    assert response.status_code == 200
+    packet = response.json()
+    assert packet["contract_version"] == "continuityos.decision-packet.v1"
+    assert packet["dependency_assessment"]["failed_nodes"] == ["source"]
+    assert packet["approval_required"] is True
+    assert "does not execute" in packet["human_action_boundary"]
+    replay = client.post("/v1/decision-packets", headers=headers, json=payload)
+    assert replay.status_code == 200
+    assert replay.json() == packet
+
+
 def test_assess_validation_errors_do_not_hard_500(tmp_path) -> None:
     client = TestClient(create_app(Settings(environment="test", data_dir=tmp_path, api_key=None)))
     response = client.post(

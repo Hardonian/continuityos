@@ -218,6 +218,7 @@ def test_ogc_stac_and_export_surfaces_are_protected_and_valid(tmp_path) -> None:
         "/v1/stac/catalog",
     ):
         assert client.get(path).status_code == 401
+    assert client.post("/v1/decision-packets", json={}).status_code == 401
 
     headers = {"X-Continuity-API-Key": api_key}
     collections = client.get("/v1/ogc/collections", headers=headers)

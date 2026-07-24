@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
+from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.exchange import (
@@ -547,6 +548,49 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("compiled_plan", str(plan.plan_id), plan.model_dump(mode="json"))
         save_idempotency("compile", key, fingerprint, plan)
         return plan
+
+    @app.post(
+        "/v1/decision-packets",
+        response_model=DecisionPacket,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def create_decision_packet(
+        request: Request,
+        packet_request: DecisionPacketRequest,
+    ) -> DecisionPacket:
+        key, fingerprint, cached = await idempotency_context(request, "decision-packets")
+        if cached is not None:
+            return DecisionPacket.model_validate_json(cached)
+        try:
+            packet = build_decision_packet(
+                packet_request,
+                fusion=fusion,
+                dependency_engine=dependency_engine,
+                compiler=compiler,
+                evidence_manifest=export_manifest(ledger.records(0, 1000)),
+            )
+        except (SourcePolicyError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        ledger.append(
+            "corridor_assessment",
+            str(packet.assessment.assessment_id),
+            packet.assessment.model_dump(mode="json"),
+        )
+        ledger.append(
+            "dependency_graph_assessment",
+            packet.dependency_assessment.graph_id,
+            packet.dependency_assessment.model_dump(mode="json"),
+        )
+        ledger.append(
+            "compiled_plan",
+            str(packet.plan.plan_id),
+            packet.plan.model_dump(mode="json"),
+        )
+        ledger.append("decision_packet", str(packet.packet_id), packet.model_dump(mode="json"))
+        save_idempotency("decision-packets", key, fingerprint, packet)
+        return packet
 
     def accept_operator_payload(
         payload: dict[str, Any],
