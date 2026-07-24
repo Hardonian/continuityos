@@ -69,7 +69,7 @@
 - IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
 - Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3135850`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.
-- GitHub Actions run `30057993185` for commit `986b90fed7b91a431a7b8b45e9e097bbc791bb22` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30057993185
+- GitHub Actions run `30058876549` for commit `1ca874936230ada4fc520ac0b68563aaf4f44b48` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30058876549
 
 ## Release artifact
 
