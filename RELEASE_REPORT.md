@@ -61,8 +61,8 @@
 - DFO station and data snapshots carried separate immutable IDs; source-native QC code `1` and `not_reviewed` status were preserved rather than promoted to a clean-data claim.
 - Cached production-route smoke passed with outbound HTTP disabled: local and public `/v1/public-data/indicators` returned HTTP 200 for ECCC and DFO, unauthenticated access returned HTTP 401, and responses contained snapshot IDs and normalized observations.
 - Regression governance smoke passed: normalization methods, quality flags, review states, label definition, and licence declaration are returned in the result limitations/metadata.
-- Exact runtime deployment verification after the new service restart: systemd active, `MainPID=2480144`, `ExecMainStatus=0`, local `127.0.0.1:8082` listener, and public Caddy/Cloudflare route success.
-- GitHub Actions run `30054616150` for commit `1f8d7a8b96a791d3d7a0b4cd8ac401a8d9c6790e` completed successfully.
+- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2696712`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated CDD indicators.
+- GitHub Actions run `30056665494` for commit `3e4552079fd5cd9ae53f8291dde2977523b88b93` completed successfully.
 
 ## Release artifact
 
