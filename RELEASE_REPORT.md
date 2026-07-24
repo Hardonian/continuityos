@@ -64,7 +64,7 @@
 - Standards-backed interoperability manifest added at `/v1/interoperability` and verified locally/publicly with anonymous HTTP 401 and authenticated HTTP 200. It reports seven capabilities with explicit implemented/source-consumer/contract-only/planned status; it does not claim conformance certification.
 - Authoritative interoperability references recorded for CloudEvents 1.0, OGC API Features 1.0.1, OGC SensorThings 1.1, STAC API 1.0.0, CAP 1.2, and OTLP/HTTP.
 - Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2843702`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest and CDD indicators.
-- GitHub Actions run pending for the final interoperability commit.
+- GitHub Actions run `30057276441` for commit `aa2171a16665c44e94e262f7ab8f302b40a28f9f` completed successfully.
 
 ## Release artifact
 
