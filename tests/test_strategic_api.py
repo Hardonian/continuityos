@@ -62,4 +62,4 @@ def test_strategic_operational_routes_require_auth(tmp_path) -> None:
     app = create_app(Settings(environment="test", data_dir=tmp_path, api_key="x" * 32))
     client = TestClient(app)
     assert client.get("/v1/strategic/stream").status_code == 401
-    assert client.post("/v1/strategic/alerts/test/ack").status_code == 401
+    assert client.post("/v1/strategic/alerts/test/unack").status_code == 401

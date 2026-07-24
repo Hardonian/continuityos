@@ -116,6 +116,7 @@ The latest persisted report is available as a bounded Server-Sent Events stream:
 ```text
 GET /v1/strategic/stream?duration_seconds=15
 POST /v1/strategic/alerts/{alert_key}/ack
+POST /v1/strategic/alerts/{alert_key}/unack
 ```
 
 The stream emits heartbeats and at most one snapshot per report identity. Alert state is durable across restarts, with stable alert keys, cooldown suppression, acknowledgement state, escalation deadlines, and source-freshness flags.

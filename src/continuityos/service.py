@@ -683,6 +683,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("strategic_alert_acknowledgement", alert_key, {"alert_key": alert_key})
         return {"alert_key": alert_key, "acknowledged": True}
 
+    @app.post(
+        "/v1/strategic/alerts/{alert_key}/unack",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def unacknowledge_strategic_alert(alert_key: str) -> dict[str, Any]:
+        if len(alert_key) > 512 or not alert_key:
+            raise HTTPException(status_code=400, detail="invalid alert key")
+        record = app.state.persistent_state.get_value("strategic_alerts", alert_key)
+        record = record if isinstance(record, dict) else {}
+        record["acknowledged"] = False
+        record["unacknowledged_at"] = datetime.now(UTC).isoformat()
+        app.state.persistent_state.set_value("strategic_alerts", alert_key, record)
+        latest = app.state.persistent_state.get_value("strategic", "latest")
+        if isinstance(latest, dict):
+            for alert in latest.get("alerts", []):
+                if isinstance(alert, dict) and alert.get("alert_key") == alert_key:
+                    alert["delivery_state"] = "ready"
+            app.state.persistent_state.set_value("strategic", "latest", latest)
+        ledger.append("strategic_alert_unacknowledgement", alert_key, {"alert_key": alert_key})
+        return {"alert_key": alert_key, "acknowledged": False}
+
     @app.get(
         "/v1/strategic/stream",
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
