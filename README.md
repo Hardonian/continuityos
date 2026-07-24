@@ -157,7 +157,7 @@ Implemented adapters and boundaries include:
 - authenticated operator telemetry for live availability, capacity, cyber health, and insurance access
 - structured analyst assessments for geopolitical and policy judgments
 
-See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), [`docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md`](docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md), [`docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md`](docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
+See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), [`docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md`](docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md), [`docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md`](docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md), [`docs/INTEROPERABILITY_PROFILE_2026.md`](docs/INTEROPERABILITY_PROFILE_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
 
 A release validation against the official NSIDC daily file is recorded in
 [`validation/open_data_validation.json`](validation/open_data_validation.json). The derived

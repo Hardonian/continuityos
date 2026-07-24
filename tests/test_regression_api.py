@@ -75,6 +75,30 @@ def test_public_data_routes_are_protected_and_fail_closed_without_outbound(tmp_p
     assert blocked.status_code == 503
 
 
+def test_interoperability_manifest_is_protected_and_truthful(tmp_path) -> None:
+    app = create_app(
+        Settings(
+            environment="test",
+            data_dir=tmp_path,
+            api_key="test-key-012345678901234567890123456789",
+            outbound_http_enabled=False,
+        )
+    )
+    client = TestClient(app)
+    assert client.get("/v1/interoperability").status_code == 401
+    response = client.get(
+        "/v1/interoperability",
+        headers={"X-Continuity-API-Key": "test-key-012345678901234567890123456789"},
+    )
+    assert response.status_code == 200
+    manifest = response.json()
+    assert manifest["claim_boundary"].startswith("This manifest reports implemented")
+    capabilities = {item["protocol"]: item for item in manifest["capabilities"]}
+    assert capabilities["operator-telemetry-hmac-json"]["status"] == "implemented"
+    assert capabilities["ogc-api-features"]["status"] == "source-consumer"
+    assert capabilities["common-alerting-protocol"]["status"] == "planned"
+
+
 def test_cached_eccc_indicators_are_served_without_outbound(tmp_path) -> None:
     cache = SnapshotCache(tmp_path / "public-snapshots")
     body = {

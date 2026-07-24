@@ -28,8 +28,8 @@
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **53 passed**.
-- Statement coverage: **85.35%**.
+- Test suite: **54 passed**.
+- Statement coverage: **85.51%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -61,14 +61,16 @@
 - DFO station and data snapshots carried separate immutable IDs; source-native QC code `1` and `not_reviewed` status were preserved rather than promoted to a clean-data claim.
 - Cached production-route smoke passed with outbound HTTP disabled: local and public `/v1/public-data/indicators` returned HTTP 200 for ECCC and DFO, unauthenticated access returned HTTP 401, and responses contained snapshot IDs and normalized observations.
 - Regression governance smoke passed: normalization methods, quality flags, review states, label definition, and licence declaration are returned in the result limitations/metadata.
-- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2696712`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated CDD indicators.
-- GitHub Actions run `30056665494` for commit `3e4552079fd5cd9ae53f8291dde2977523b88b93` completed successfully.
+- Standards-backed interoperability manifest added at `/v1/interoperability` and verified locally/publicly with anonymous HTTP 401 and authenticated HTTP 200. It reports seven capabilities with explicit implemented/source-consumer/contract-only/planned status; it does not claim conformance certification.
+- Authoritative interoperability references recorded for CloudEvents 1.0, OGC API Features 1.0.1, OGC SensorThings 1.1, STAC API 1.0.0, CAP 1.2, and OTLP/HTTP.
+- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2843702`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest and CDD indicators.
+- GitHub Actions run pending for the final interoperability commit.
 
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `34cabed9052b9fcf1866d2e5b3def038dbee3bb0d574afad4eb64fce99c9f9a6`
-- Source distribution SHA-256: `055821c572ee83aa47d3025094b4977a161233df97379a15c08d073fe71539aa`
+- Wheel SHA-256: `db1f02966a5bafb144e50c856862112e3c4f841a71bb365efb89f861a1b86d80`
+- Source distribution SHA-256: `c39cd123500dcaa88648bbf0217876075dc5915b9827ae5b2c27204c248fa280`
 - Docker image digest: `sha256:b1d2ee46e876d7bdc64d91e269388fc375622881fa3f31c14712729979d7845a`
 
 ## Verification intentionally not represented as complete

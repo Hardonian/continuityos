@@ -22,6 +22,7 @@ from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
+from continuityos.interoperability import interoperability_manifest
 from continuityos.metrics import Metrics
 from continuityos.public_data import (
     PUBLIC_SOURCE_SPECS,
@@ -302,6 +303,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             }
             for item in sorted(SOURCES.values(), key=lambda source: source.source_id)
         ]
+
+    @app.get(
+        "/v1/interoperability",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def interoperability() -> dict[str, object]:
+        return interoperability_manifest()
 
     @app.get(
         "/v1/public-data/sources",
