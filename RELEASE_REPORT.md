@@ -67,14 +67,14 @@
 - Protected CAP 1.2 XML ingress is implemented at `/v1/integrations/cap` with bounded payloads, DOCTYPE/ENTITY rejection, lifecycle/area preservation, API-key auth, idempotency, and ledger recording. It does not dispatch or retransmit alerts.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
 - Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2976617`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest; anonymous CAP ingress returned HTTP 401 without writing production data.
-- GitHub Actions run pending for the current IaC/interoperability milestone.
+- GitHub Actions run `30057993185` for commit `986b90fed7b91a431a7b8b45e9e097bbc791bb22` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30057993185
 
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `db1f02966a5bafb144e50c856862112e3c4f841a71bb365efb89f861a1b86d80`
-- Source distribution SHA-256: `c39cd123500dcaa88648bbf0217876075dc5915b9827ae5b2c27204c248fa280`
-- Docker image digest: `sha256:b1d2ee46e876d7bdc64d91e269388fc375622881fa3f31c14712729979d7845a`
+- Wheel SHA-256: `8919f6d0e43d009fabe2da14d9e87d476f71f4a1985d7208ca65b72836675656`
+- Source distribution SHA-256: `aeecf8564c32e12505b4040ea969b43ddbe739d51d3fb36f8ed6a82adb98bf6c`
+- Docker image digest: `sha256:c1af799e48385bdfea8a15542865a566d453c2c85e6cf23470572c8e2afbac12` (`continuityos-reference:0.1.0`; disposable Compose health smoke passed; container user `continuityos`).
 
 ## Verification intentionally not represented as complete
 
