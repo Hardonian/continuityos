@@ -205,6 +205,42 @@ def test_cap_ingress_is_protected_idempotent_and_entity_safe(tmp_path) -> None:
     assert unsafe.status_code == 422
 
 
+def test_ogc_stac_and_export_surfaces_are_protected_and_valid(tmp_path) -> None:
+    api_key = "test-key-012345678901234567890123456789"
+    app = create_app(Settings(environment="test", data_dir=tmp_path, api_key=api_key))
+    client = TestClient(app)
+    for path in (
+        "/v1/ogc/collections",
+        "/v1/ogc/collections/evidence/items",
+        "/v1/exports/evidence/manifest",
+        "/v1/exports/evidence/ndjson",
+        "/v1/exports/evidence/geopackage",
+        "/v1/stac/catalog",
+    ):
+        assert client.get(path).status_code == 401
+
+    headers = {"X-Continuity-API-Key": api_key}
+    collections = client.get("/v1/ogc/collections", headers=headers)
+    assert collections.status_code == 200
+    assert collections.json()["collections"][0]["id"] == "evidence"
+    items = client.get("/v1/ogc/collections/evidence/items", headers=headers)
+    assert items.status_code == 200
+    assert items.json()["type"] == "FeatureCollection"
+    manifest = client.get("/v1/exports/evidence/manifest", headers=headers)
+    assert manifest.status_code == 200
+    assert manifest.json()["schema_version"] == "continuityos.evidence-export.v1"
+    ndjson = client.get("/v1/exports/evidence/ndjson", headers=headers)
+    assert ndjson.status_code == 200
+    assert ndjson.headers["content-type"] == "application/x-ndjson"
+    geopackage = client.get("/v1/exports/evidence/geopackage", headers=headers)
+    assert geopackage.status_code == 200
+    assert geopackage.headers["content-type"] == "application/geopackage+sqlite3"
+    assert geopackage.content.startswith(b"SQLite format 3")
+    stac = client.get("/v1/stac/catalog", headers=headers)
+    assert stac.status_code == 200
+    assert stac.json()["stac_version"] == "1.0.0"
+
+
 def test_cached_eccc_indicators_are_served_without_outbound(tmp_path) -> None:
     cache = SnapshotCache(tmp_path / "public-snapshots")
     body = {

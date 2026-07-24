@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import orjson
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel
 
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
@@ -20,6 +20,13 @@ from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
+from continuityos.exchange import (
+    GeoJSONFeatureCollection,
+    export_manifest,
+    feature_collection,
+    geopackage_bytes,
+    ndjson_bytes,
+)
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
 from continuityos.interoperability import (
@@ -649,6 +656,100 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("cap_alert", alert.identifier, response.model_dump(mode="json"))
         save_idempotency("cap-alerts", key, fingerprint, response)
         return response
+
+    @app.get(
+        "/v1/ogc/collections",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def ogc_collections(request: Request) -> dict[str, Any]:
+        base = str(request.base_url).rstrip("/")
+        return {
+            "title": "ContinuityOS evidence collections",
+            "links": [{"rel": "self", "href": f"{base}/v1/ogc/collections"}],
+            "collections": [
+                {
+                    "id": "evidence",
+                    "title": "Immutable continuity evidence",
+                    "description": "Read-only bounded evidence snapshot; not a live feature feed.",
+                    "itemType": "feature",
+                    "crs": ["http://www.opengis.net/def/crs/OGC/1.3/CRS84"],
+                    "links": [
+                        {
+                            "rel": "items",
+                            "href": f"{base}/v1/ogc/collections/evidence/items",
+                            "type": "application/geo+json",
+                        }
+                    ],
+                }
+            ],
+        }
+
+    @app.get(
+        "/v1/ogc/collections/evidence/items",
+        response_model=GeoJSONFeatureCollection,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def ogc_evidence_items(
+        request: Request,
+        offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    ) -> GeoJSONFeatureCollection:
+        bounded = ledger.records(0, 1000)
+        page = bounded[offset : offset + limit]
+        return feature_collection(page, str(request.url).split("?")[0])
+
+    @app.get(
+        "/v1/exports/evidence/manifest",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evidence_export_manifest() -> dict[str, Any]:
+        return export_manifest(ledger.records(0, 1000)).model_dump(mode="json")
+
+    @app.get(
+        "/v1/exports/evidence/ndjson",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evidence_ndjson() -> Response:
+        return Response(
+            content=ndjson_bytes(ledger.records(0, 1000)),
+            media_type="application/x-ndjson",
+            headers={"Content-Disposition": 'attachment; filename="continuityos-evidence.ndjson"'},
+        )
+
+    @app.get(
+        "/v1/exports/evidence/geopackage",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evidence_geopackage() -> Response:
+        return Response(
+            content=geopackage_bytes(ledger.records(0, 1000)),
+            media_type="application/geopackage+sqlite3",
+            headers={"Content-Disposition": 'attachment; filename="continuityos-evidence.gpkg"'},
+        )
+
+    @app.get(
+        "/v1/stac/catalog",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def stac_catalog(request: Request) -> dict[str, Any]:
+        base = str(request.base_url).rstrip("/")
+        return {
+            "stac_version": "1.0.0",
+            "id": "continuityos-evidence",
+            "type": "Catalog",
+            "title": "ContinuityOS evidence catalog",
+            "description": (
+                "Metadata catalog for immutable evidence exports; no imagery assets are implied."
+            ),
+            "links": [
+                {"rel": "self", "href": f"{base}/v1/stac/catalog", "type": "application/json"},
+                {
+                    "rel": "child",
+                    "href": f"{base}/v1/exports/evidence/manifest",
+                    "type": "application/json",
+                },
+            ],
+        }
 
     @app.get(
         "/v1/evidence/verify",

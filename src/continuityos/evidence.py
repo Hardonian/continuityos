@@ -140,6 +140,15 @@ class EvidenceLedger:
             previous = record.record_hash
         return errors
 
+    def records(self, offset: int = 0, limit: int = 100) -> list[EvidenceRecord]:
+        """Read a bounded immutable snapshot for export consumers."""
+        if offset < 0 or limit < 1 or limit > 1000:
+            raise ValueError("offset must be non-negative and limit must be between 1 and 1000")
+        if not self.path.exists():
+            return []
+        lines = self.path.read_text(encoding="utf-8").splitlines()
+        return [EvidenceRecord.model_validate_json(line) for line in lines[offset : offset + limit]]
+
     def _last_hash(self) -> str:
         if not self.path.exists() or self.path.stat().st_size == 0:
             return "0" * 64

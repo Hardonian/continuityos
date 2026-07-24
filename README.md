@@ -135,6 +135,10 @@ The project is positioned as a Canadian-oriented, unclassified continuity eviden
 - `GET /v1/interoperability` requires the API key and returns the machine-readable standards capability manifest. It distinguishes implemented, source-consumer, contract-only, and planned boundaries.
 - `POST /v1/integrations/cloudevents` accepts a signed CloudEvents 1.0 envelope for the approved `com.continuityos.operator.observation.v1` type. The event is HMAC-verified, tenant/asset/sequence-validated, idempotent, and written to the evidence ledger; unknown event types are rejected.
 - `POST /v1/integrations/cap` accepts protected CAP 1.2 XML metadata, rejects DOCTYPE/ENTITY payloads, preserves alert lifecycle/area fields, and records the normalized alert in the ledger. It does not dispatch or retransmit alerts.
+- `GET /v1/ogc/collections` and `GET /v1/ogc/collections/evidence/items` expose a protected, bounded OGC-style GeoJSON evidence projection. This is an interoperability surface, not an OGC conformance claim.
+- `GET /v1/exports/evidence/manifest` returns a versioned content-hashed export manifest; `GET /v1/exports/evidence/geopackage` returns a read-only GeoPackage SQLite snapshot for GIS/offline workflows.
+- `GET /v1/exports/evidence/ndjson` returns deterministic signed ledger records for data-lake, SIEM, and ITSM staging; it performs no outbound delivery.
+- `GET /v1/stac/catalog` returns a metadata-only STAC 1.0 catalog for evidence exports; imagery assets and STAC conformance are not implied.
 - `scripts/public_data_probe.py --enable-outbound` performs an explicit operator-run source probe; it never runs as a hidden background job.
 - `scripts/public_indicator_probe.py --enable-outbound` exercises the ECCC and DFO normalizers against real endpoints and emits sanitized provenance/QC output only.
 - `scripts/public_indicator_probe.py --enable-outbound --include-cdd` also parses the official Public Safety Canada CDD XLSX. The CDD is historical aggregated context only; its indicators carry `aggregated_secondary_source` and `not_primary_source` flags.

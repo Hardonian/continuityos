@@ -28,8 +28,8 @@
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **56 passed**.
-- Statement coverage: **86.37%**.
+- Test suite: **59 passed**.
+- Statement coverage: **86.90%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -37,7 +37,7 @@
 - Wheel package built successfully and installed into an isolated target.
 - Installed-wheel FastAPI `/healthz` smoke test passed.
 - Local `make verify` passed (Ruff, format, mypy, coverage, build, demo, evidence smoke).
-- Docker image build passed; Docker Compose health and protected-route smoke passed with non-root runtime and initialized key volume.
+- Docker image build passed; disposable Docker health and protected GeoPackage export smoke passed with non-root runtime and ephemeral read-only Ed25519 key volume.
 - Backup/checksum and disposable restore drill passed.
 - Gitleaks scan passed with no leaks found.
 - Public unauthenticated evidence access returned HTTP 401; authenticated live smoke passed.
@@ -61,20 +61,22 @@
 - DFO station and data snapshots carried separate immutable IDs; source-native QC code `1` and `not_reviewed` status were preserved rather than promoted to a clean-data claim.
 - Cached production-route smoke passed with outbound HTTP disabled: local and public `/v1/public-data/indicators` returned HTTP 200 for ECCC and DFO, unauthenticated access returned HTTP 401, and responses contained snapshot IDs and normalized observations.
 - Regression governance smoke passed: normalization methods, quality flags, review states, label definition, and licence declaration are returned in the result limitations/metadata.
-- Standards-backed interoperability manifest added at `/v1/interoperability` and verified locally/publicly with anonymous HTTP 401 and authenticated HTTP 200. It reports seven capabilities with explicit implemented/source-consumer/contract-only/planned status; it does not claim conformance certification.
+- Standards-backed interoperability manifest added at `/v1/interoperability` and verified locally/publicly with anonymous HTTP 401 and authenticated HTTP 200. It reports eleven capabilities with explicit implemented/source-consumer/contract-only/planned status; it does not claim conformance certification.
 - Authoritative interoperability references recorded for CloudEvents 1.0, OGC API Features 1.0.1, OGC SensorThings 1.1, STAC API 1.0.0, CAP 1.2, and OTLP/HTTP.
 - Signed CloudEvents 1.0 observation ingress is implemented at `/v1/integrations/cloudevents` with one approved event type, HMAC verification, event-ID idempotency, replay protection, and ledger recording.
 - Protected CAP 1.2 XML ingress is implemented at `/v1/integrations/cap` with bounded payloads, DOCTYPE/ENTITY rejection, lifecycle/area preservation, API-key auth, idempotency, and ledger recording. It does not dispatch or retransmit alerts.
+- Protected GeoJSON, GeoPackage, deterministic NDJSON, and metadata-only STAC catalog exports are implemented for bounded evidence snapshots. The GeoPackage live smoke returned a valid SQLite GeoPackage with seven evidence rows; all new export routes returned anonymous HTTP 401 and authenticated HTTP 200.
+- IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
-- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2976617`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest; anonymous CAP ingress returned HTTP 401 without writing production data.
+- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3135850`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.
 - GitHub Actions run `30057993185` for commit `986b90fed7b91a431a7b8b45e9e097bbc791bb22` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30057993185
 
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `8919f6d0e43d009fabe2da14d9e87d476f71f4a1985d7208ca65b72836675656`
-- Source distribution SHA-256: `aeecf8564c32e12505b4040ea969b43ddbe739d51d3fb36f8ed6a82adb98bf6c`
-- Docker image digest: `sha256:c1af799e48385bdfea8a15542865a566d453c2c85e6cf23470572c8e2afbac12` (`continuityos-reference:0.1.0`; disposable Compose health smoke passed; container user `continuityos`).
+- Wheel SHA-256: `252ae3c0643cef0f23dc7ce5fb0a43541b057af1c5bb85cab3e0dd4b534341a6`
+- Source distribution SHA-256: `7b0e7af841653dcff946d846f3b6aa34de4c60001a7e54e081614a44c15f4096`
+- Docker image digest: `sha256:444f949f152ff65637914f99fa70b687c28cedc6ae84169b2a0fa4a5d903546c` (`continuityos-reference:0.1.0`; disposable health and GeoPackage smoke passed; container user `continuityos`).
 
 ## Verification intentionally not represented as complete
 

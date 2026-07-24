@@ -154,6 +154,38 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
         authoritative_spec="https://www.ogc.org/standards/ogcapi-features/",
     ),
     InteroperabilityCapability(
+        protocol="geojson-evidence-export",
+        version="RFC 7946",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/geo+json",),
+        endpoint="/v1/ogc/collections/evidence/items",
+        notes="Protected bounded read-only GeoJSON feature projection of signed evidence records.",
+        authoritative_spec="https://www.rfc-editor.org/rfc/rfc7946",
+    ),
+    InteroperabilityCapability(
+        protocol="geopackage-evidence-export",
+        version="1.3",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/geopackage+sqlite3",),
+        endpoint="/v1/exports/evidence/geopackage",
+        notes=(
+            "Protected in-memory GeoPackage snapshot with EPSG:4326 point geometry when available."
+        ),
+        authoritative_spec="https://www.geopackage.org/spec131/index.html",
+    ),
+    InteroperabilityCapability(
+        protocol="ndjson-evidence-export",
+        version="1",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/x-ndjson",),
+        endpoint="/v1/exports/evidence/ndjson",
+        notes="Deterministic read-only ledger records for data-lake, SIEM, and ITSM staging.",
+        authoritative_spec="https://github.com/ndjson/ndjson-spec",
+    ),
+    InteroperabilityCapability(
         protocol="ogc-sensorthings",
         version="1.1",
         status="contract-only",
@@ -189,6 +221,19 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
             "idempotency, lifecycle fields, and evidence-ledger recording."
         ),
         authoritative_spec="https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html",
+    ),
+    InteroperabilityCapability(
+        protocol="stac-catalog",
+        version="1.0.0",
+        status="implemented",
+        direction="outbound",
+        media_types=("application/json",),
+        endpoint="/v1/stac/catalog",
+        notes=(
+            "Metadata-only STAC catalog for evidence exports; no imagery asset "
+            "conformance is claimed."
+        ),
+        authoritative_spec="https://stacspec.org/en/",
     ),
     InteroperabilityCapability(
         protocol="opentelemetry-otlp-http",

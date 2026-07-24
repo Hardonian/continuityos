@@ -28,14 +28,18 @@ ContinuityOS preserves provenance, dependency context, bounded analysis, and hum
 | HMAC operator telemetry JSON | Implemented | Inbound | Signed customer-owned capacity, availability, cyber-health, inventory, insurer, escort, and SATCOM assertions. |
 | CloudEvents 1.0 envelope | Implemented | Inbound | Signed `application/cloudevents+json` observation bridge at `/v1/integrations/cloudevents`; one approved event type is mapped into the existing telemetry ledger. |
 | OGC API Features 1.0.1 | Source-consumer | Inbound | ECCC/Canadian geospatial source acquisition; ContinuityOS is not claiming to be a conformant feature server. |
+| GeoJSON evidence export | Implemented | Outbound | Protected bounded feature projection at `/v1/ogc/collections/evidence/items`. |
+| GeoPackage evidence export | Implemented | Outbound | Read-only EPSG:4326 GeoPackage snapshot at `/v1/exports/evidence/geopackage`. |
+| NDJSON evidence export | Implemented | Outbound | Deterministic ledger records at `/v1/exports/evidence/ndjson` for data-lake/SIEM/ITSM staging. |
 | OGC SensorThings 1.1 | Contract-only | Inbound | Future customer sensor mapping over REST/MQTT without installing a broker by default. |
 | STAC API 1.0.0 | Source-consumer | Inbound | Copernicus and earth-observation catalogue discovery. Imagery processing is not implied. |
+| STAC metadata catalog | Implemented | Outbound | Metadata-only catalog at `/v1/stac/catalog`; no imagery asset conformance is claimed. |
 | Common Alerting Protocol 1.2 | Implemented | Inbound | Protected `/v1/integrations/cap` parser with alert lifecycle/area preservation; no dispatch or retransmission. |
 | OTLP/HTTP | Planned | Outbound | Export service traces/metrics/logs to an existing OpenTelemetry Collector. Current `/metrics` remains Prometheus text. |
 
 ## Highest-ROI sequence
 
-### 1. CloudEvents profile and signed webhook bridge
+### Completed: CloudEvents profile and signed webhook bridge
 
 Priority: highest.
 
@@ -59,7 +63,7 @@ Authoritative specification:
 - https://github.com/cloudevents/spec/blob/v1.0/spec.md
 - https://github.com/cloudevents/spec/blob/v1.0/http-protocol-binding.md
 
-### 1. OGC API Features and GeoPackage export profile
+### Completed: OGC-style evidence export profile
 
 Priority: highest for GIS and disconnected operations.
 
@@ -69,13 +73,13 @@ Why:
 - GeoPackage is useful for field/offline exchange.
 - Avoids forcing customers into a proprietary graph or API.
 
-Required implementation:
+Implemented controls:
 
-- Publish a read-only OGC API Features profile for approved continuity features.
-- Start with `/collections`, `/conformance`, and read-only `/collections/{id}/items`.
+- Publish a protected read-only OGC-style profile for one evidence collection.
+- Implement `/v1/ogc/collections` and `/v1/ogc/collections/{id}/items`.
 - Export only approved evidence/feature classes, not raw private telemetry by default.
 - Provide GeoJSON and GeoPackage bundles with manifest, snapshot IDs, timestamps, CRS, licence, tenant scope, and retention metadata.
-- Run an OGC conformance test before claiming support.
+- Do not claim OGC conformance until an external conformance test is run.
 
 Authoritative specification:
 
