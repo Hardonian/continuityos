@@ -67,8 +67,11 @@
 - Protected CAP 1.2 XML ingress is implemented at `/v1/integrations/cap` with bounded payloads, DOCTYPE/ENTITY rejection, lifecycle/area preservation, API-key auth, idempotency, and ledger recording. It does not dispatch or retransmit alerts.
 - Protected GeoJSON, GeoPackage, deterministic NDJSON, and metadata-only STAC catalog exports are implemented for bounded evidence snapshots. The GeoPackage live smoke returned a valid SQLite GeoPackage with seven evidence rows; all new export routes returned anonymous HTTP 401 and authenticated HTTP 200.
 - IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
+- Application defense-in-depth headers are now emitted by the API: CSP, frame denial, nosniff, no-referrer, permissions policy, HSTS behind HTTPS forwarding, request IDs, and no-store.
+- Non-destructive `make doctor` now verifies repository/runtime ownership, liveness/readiness/health, protected-route rejection, environment-file mode, backup timer, IaC policy, and tracked-secret hygiene.
+- Go-live posture and host-level MicroK8s exposure blockers are documented in `docs/GO_LIVE_SECURITY_CLOSURE_2026.md`; no host-wide lockdown or national-security accreditation is claimed.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
-- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3135850`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.
+- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3308911`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.
 - GitHub Actions run `30058876549` for commit `1ca874936230ada4fc520ac0b68563aaf4f44b48` completed successfully: https://github.com/Hardonian/continuityos/actions/runs/30058876549
 
 ## Release artifact

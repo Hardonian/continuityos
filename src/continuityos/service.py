@@ -250,7 +250,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.metrics.observe(perf_counter() - started, response.status_code)
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+        )
         response.headers["Cache-Control"] = "no-store"
+        if request.headers.get("x-forwarded-proto", request.url.scheme) == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         logger.info(
             json.dumps(
                 {

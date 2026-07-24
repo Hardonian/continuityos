@@ -66,7 +66,25 @@ systemctl --user status continuityos-caddy-route.timer continuityos-backup.timer
 curl -fsS http://127.0.0.1:8082/healthz
 curl -fsS https://aiautomatedsystems.ca/continuityos/healthz
 bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos
+make doctor
 ```
+
+`make doctor` is non-destructive. It verifies the managed PID owns the loopback
+listener, liveness/readiness/health, anonymous protection, environment-file mode,
+backup timer, Terraform/IaC policy, and tracked-secret hygiene. It writes a
+sanitized report to `/tmp/continuityos-go-live-doctor.txt` by default.
+
+The broader host currently contains root-owned MicroK8s control-plane wildcard
+listeners. ContinuityOS does not modify those automatically. The reviewed,
+backup-first host audit/apply runbook is staged at:
+
+```text
+/home/scott/.staged/continuityos-host-exposure-hardening.sh
+```
+
+It is audit-only unless run by root with `APPLY=1`; review its generated backup
+and maintenance window before applying. Never claim host-wide lockdown while
+UFW remains inactive or MicroK8s exposure has not been independently verified.
 
 Create a backup before upgrades with `bash scripts/backup_data.sh`. Restore only with an explicit confirmation:
 

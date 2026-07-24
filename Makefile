@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test coverage build demo evidence iac verify clean keys
+.PHONY: install lint typecheck test coverage build demo evidence iac doctor verify clean keys
 
 install:
 	uv sync --all-extras
@@ -29,6 +29,9 @@ evidence:
 
 iac:
 	bash scripts/iac_verify.sh
+
+doctor:
+	bash scripts/go_live_doctor.sh
 
 verify: lint typecheck coverage build demo evidence iac
 

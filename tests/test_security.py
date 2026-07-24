@@ -28,6 +28,10 @@ def test_request_id_metrics_and_protected_pagination(tmp_path) -> None:
     client = TestClient(create_app(settings))
     response = client.get("/healthz", headers={"X-Request-ID": "test-request"})
     assert response.headers["X-Request-ID"] == "test-request"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+    assert response.headers["Permissions-Policy"] == "geolocation=(), microphone=(), camera=()"
+    assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
     metrics = client.get("/metrics")
     assert metrics.status_code == 200
     assert "continuityos_requests_total" in metrics.text
