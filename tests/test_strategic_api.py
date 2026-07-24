@@ -44,6 +44,10 @@ def test_strategic_stream_ack_and_cooldown_loop(tmp_path, provenance) -> None:
     assert acknowledged.status_code == 200
     assert acknowledged.json()["acknowledged"] is True
 
+    replay_after_ack = client.post("/v1/strategic/analyze", json=payload, headers=headers)
+    assert replay_after_ack.status_code == 200
+    assert replay_after_ack.json()["alerts"][0]["delivery_state"] == "acknowledged"
+
     stream = client.get(
         "/v1/strategic/stream?duration_seconds=1",
         headers={"X-Continuity-API-Key": api_key},
@@ -51,7 +55,7 @@ def test_strategic_stream_ack_and_cooldown_loop(tmp_path, provenance) -> None:
     assert stream.status_code == 200
     assert stream.headers["content-type"].startswith("text/event-stream")
     assert "event: strategic" in stream.text
-    assert report["report_id"] in stream.text
+    assert '"delivery_state":"acknowledged"' in stream.text
 
 
 def test_strategic_operational_routes_require_auth(tmp_path) -> None:

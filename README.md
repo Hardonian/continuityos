@@ -122,6 +122,8 @@ The stream emits heartbeats and at most one snapshot per report identity. Alert 
 
 A fail-soft user timer runs `/home/scott/ai-workspace/repos/continuityos/scripts/strategic_watchdog.py` every five minutes. It checks stream availability, missing snapshots, and stale sources; it emits only state transitions into the existing operator inbox and never dispatches external alerts or performs remediation.
 
+A separate five-minute producer timer runs `/home/scott/ai-workspace/repos/continuityos/scripts/strategic_ingest.py`. It verifies the signed evidence hash chain, maps only approved public-data indicator IDs into typed observations, preserves ledger record/snapshot provenance, deduplicates semantic replays, caps the newest window at 800 observations, and refuses request bodies above 900 KiB. Unknown indicators are skipped and counted; they are never guessed.
+
 ### Operator telemetry authentication
 
 Clients serialize payload JSON with sorted keys, then sign:

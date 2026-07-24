@@ -610,7 +610,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> StrategicAnalysisReport:
         key, fingerprint, cached = await idempotency_context(request, "strategic-analyze")
         if cached is not None:
-            return StrategicAnalysisReport.model_validate_json(cached)
+            cached_report = StrategicAnalysisReport.model_validate_json(cached)
+            for alert in cached_report.alerts:
+                previous = app.state.persistent_state.get_value("strategic_alerts", alert.alert_key)
+                if isinstance(previous, dict) and previous.get("acknowledged"):
+                    alert.delivery_state = "acknowledged"
+            app.state.persistent_state.set_value(
+                "strategic", "latest", cached_report.model_dump(mode="json")
+            )
+            return cached_report
         try:
             report = build_strategic_report(analysis_request)
         except ValueError as exc:
@@ -666,6 +674,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         record["acknowledged"] = True
         record["acknowledged_at"] = datetime.now(UTC).isoformat()
         app.state.persistent_state.set_value("strategic_alerts", alert_key, record)
+        latest = app.state.persistent_state.get_value("strategic", "latest")
+        if isinstance(latest, dict):
+            for alert in latest.get("alerts", []):
+                if isinstance(alert, dict) and alert.get("alert_key") == alert_key:
+                    alert["delivery_state"] = "acknowledged"
+            app.state.persistent_state.set_value("strategic", "latest", latest)
         ledger.append("strategic_alert_acknowledgement", alert_key, {"alert_key": alert_key})
         return {"alert_key": alert_key, "acknowledged": True}
 

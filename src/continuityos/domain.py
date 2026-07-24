@@ -36,6 +36,7 @@ class AssertionClass(StrEnum):
     CYBER_HEALTH = "cyber_health"
     INSURANCE_ACCESS = "insurance_access"
     HUMAN_INTELLIGENCE = "human_intelligence"
+    DISASTER_RESPONSE = "disaster_response"
 
 
 class MetricName(StrEnum):
@@ -57,6 +58,13 @@ class MetricName(StrEnum):
     GEOPOLITICAL_PRESSURE = "geopolitical_pressure"
     ESCORT_CAPACITY = "escort_capacity"
     INVENTORY_DAYS = "inventory_days"
+    WEATHER_ALERT_ACTIVITY = "weather_alert_activity"
+    DISASTER_EVENT_ACTIVITY = "disaster_event_activity"
+    CASUALTY_COUNT = "casualty_count"
+    INJURED_COUNT = "injured_count"
+    EVACUATION_COUNT = "evacuation_count"
+    UTILITY_IMPACT_COUNT = "utility_impact_count"
+    WATER_LEVEL = "water_level"
 
 
 class GeoPoint(BaseModel):

@@ -69,6 +69,7 @@
 - The protected `/v1/strategic/analyze` surface is implemented: freshness/confidence-weighted multivariate heatmaps, explainable ranked alerts, human-gated coordination recommendations, and optional provenance-bearing temporal-holdout regression; predictive status and limitations remain explicit.
 - Strategic alert operations are durable: stable alert keys, cooldown suppression, acknowledgement audit records, escalation deadlines, source-freshness flags, and a bounded authenticated SSE stream at `/v1/strategic/stream`. The stream is advisory and never dispatches consequential actions.
 - A five-minute user-level `continuityos-strategic-watchdog.timer` is installed and verified. It is fail-soft, transition-deduplicated, and writes only to the existing operator inbox when the stream is unavailable, has no snapshot, or reports stale sources.
+- A five-minute user-level `continuityos-strategic-ingest.timer` is installed and verified. It verifies the signed ledger, maps only approved ECCC/Canadian Disaster Database/DFO indicator IDs, preserves provenance, semantically deduplicates replays, and enforces a newest-800-observation / 900 KiB request budget before submitting idempotently.
 - Protected GeoJSON, GeoPackage, deterministic NDJSON, and metadata-only STAC catalog exports are implemented for bounded evidence snapshots. The GeoPackage live smoke returned a valid SQLite GeoPackage with seven evidence rows; all new export routes returned anonymous HTTP 401 and authenticated HTTP 200.
 - IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
 - Application defense-in-depth headers are now emitted by the API: CSP, frame denial, nosniff, no-referrer, permissions policy, HSTS behind HTTPS forwarding, request IDs, and no-store.
@@ -84,9 +85,9 @@
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `fdeb6acd4d2446ff5d83f72cb3517617c04c937cec3814e3b733f2ddd5d19286`
-- Source distribution SHA-256: `fc8d26688f96a0d6b592722189917c1ade248b5e77e7063b7405bc8a152685ca`
-- Docker image digest: `sha256:5262d9e47a3c33ba47ccaf9b0def0e419430d5829b67427eb821ae53b6641ae4` (`continuityos-reference:0.1.0`; rebuilt after durable strategic stream/alert-state implementation; non-root runtime; disposable `/readyz` and `/healthz` smoke passed).
+- Wheel SHA-256: `0455f3cfe47fc3e3203843e1f78fadc2e7196967a15883e21aa5010fedff979b`
+- Source distribution SHA-256: `c05e070f5f18c472ea14377865939477d25badb8890b65f994e000e6202b282d`
+- Docker image digest: `sha256:5209a5b7031a3a46f65eeb2db37d3ba6d047742a12b3dce1f18971ccf5a1bd92` (`continuityos-reference:0.1.0`; rebuilt after typed public-data ingestion and ACK snapshot hardening; non-root runtime; disposable `/readyz` and `/healthz` smoke passed).
 
 ## Verification intentionally not represented as complete
 
