@@ -22,7 +22,13 @@ from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
-from continuityos.interoperability import interoperability_manifest
+from continuityos.interoperability import (
+    SUPPORTED_CLOUD_EVENT_TYPES,
+    CAPAlert,
+    ContinuityCloudEvent,
+    interoperability_manifest,
+    parse_cap_alert,
+)
 from continuityos.metrics import Metrics
 from continuityos.public_data import (
     PUBLIC_SOURCE_SPECS,
@@ -61,6 +67,11 @@ class AssessmentRequest(BaseModel):
 class TelemetryResponse(BaseModel):
     accepted: bool
     observation: Observation
+
+
+class CAPAlertResponse(BaseModel):
+    accepted: bool
+    alert: CAPAlert
 
 
 class PublicSnapshotRequest(BaseModel):
@@ -522,31 +533,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         save_idempotency("compile", key, fingerprint, plan)
         return plan
 
-    @app.post(
-        "/v1/operator-observations",
-        response_model=TelemetryResponse,
-        dependencies=[Depends(enforce_rate_limit)],
-    )
-    async def ingest_operator_observation(
-        request: Request,
-        x_continuity_timestamp: Annotated[str, Header()],
-        x_continuity_signature: Annotated[str, Header()],
-        payload: Annotated[dict[str, Any], Body(...)],
+    def accept_operator_payload(
+        payload: dict[str, Any],
+        body: bytes,
+        timestamp: str,
+        signature: str,
+        key: str | None,
+        fingerprint: str | None,
     ) -> TelemetryResponse:
-        key, fingerprint, cached = await idempotency_context(request, "operator-observations")
-        if cached is not None:
-            return TelemetryResponse.model_validate_json(cached)
         if configured.operator_webhook_secret is None:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="telemetry disabled",
             )
-        body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
         try:
             verify_operator_signature(
                 body=body,
-                timestamp=x_continuity_timestamp,
-                signature=x_continuity_signature,
+                timestamp=timestamp,
+                signature=signature,
                 secret=configured.operator_webhook_secret,
             )
             observation = normalized_operator_observation(payload, body)
@@ -568,6 +572,82 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         response = TelemetryResponse(accepted=True, observation=observation)
         save_idempotency("operator-observations", key, fingerprint, response)
+        return response
+
+    @app.post(
+        "/v1/operator-observations",
+        response_model=TelemetryResponse,
+        dependencies=[Depends(enforce_rate_limit)],
+    )
+    async def ingest_operator_observation(
+        request: Request,
+        x_continuity_timestamp: Annotated[str, Header()],
+        x_continuity_signature: Annotated[str, Header()],
+        payload: Annotated[dict[str, Any], Body(...)],
+    ) -> TelemetryResponse:
+        key, fingerprint, cached = await idempotency_context(request, "operator-observations")
+        if cached is not None:
+            return TelemetryResponse.model_validate_json(cached)
+        body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
+        return accept_operator_payload(
+            payload, body, x_continuity_timestamp, x_continuity_signature, key, fingerprint
+        )
+
+    @app.post(
+        "/v1/integrations/cloudevents",
+        response_model=TelemetryResponse,
+        dependencies=[Depends(enforce_rate_limit)],
+    )
+    async def ingest_cloudevent(
+        request: Request,
+        x_continuity_timestamp: Annotated[str, Header()],
+        x_continuity_signature: Annotated[str, Header()],
+        event: ContinuityCloudEvent,
+    ) -> TelemetryResponse:
+        if event.type not in SUPPORTED_CLOUD_EVENT_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="unsupported CloudEvent type",
+            )
+        body = orjson.dumps(event.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
+        key = request.headers.get("idempotency-key") or event.id
+        if not key or len(key) > 128 or any(char.isspace() for char in key):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="invalid idempotency key"
+            )
+        fingerprint = hashlib.sha256(body + request.url.query.encode("utf-8")).hexdigest()
+        try:
+            cached = app.state.persistent_state.get_idempotent(
+                "operator-observations", key, fingerprint
+            )
+        except IdempotencyConflict as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        if cached is not None:
+            return TelemetryResponse.model_validate_json(cached)
+        return accept_operator_payload(
+            event.data, body, x_continuity_timestamp, x_continuity_signature, key, fingerprint
+        )
+
+    @app.post(
+        "/v1/integrations/cap",
+        response_model=CAPAlertResponse,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def ingest_cap_alert(
+        request: Request, payload: Annotated[bytes, Body(...)]
+    ) -> CAPAlertResponse:
+        key, fingerprint, cached = await idempotency_context(request, "cap-alerts")
+        if cached is not None:
+            return CAPAlertResponse.model_validate_json(cached)
+        try:
+            alert = parse_cap_alert(payload)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        response = CAPAlertResponse(accepted=True, alert=alert)
+        ledger.append("cap_alert", alert.identifier, response.model_dump(mode="json"))
+        save_idempotency("cap-alerts", key, fingerprint, response)
         return response
 
     @app.get(

@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars only when intentionally applying the local deployment.
+# The default is plan-only and does not touch systemd.
+apply_local = false
+repo_root   = "/home/scott/ai-workspace/repos/continuityos"
+data_dir    = "/home/scott/.local/share/continuityos"
+env_file    = "/home/scott/.config/continuityos.env"
+service_port = 8082
+enable_backup_timer = true

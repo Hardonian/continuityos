@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test coverage build demo evidence verify clean keys
+.PHONY: install lint typecheck test coverage build demo evidence iac verify clean keys
 
 install:
 	uv sync --all-extras
@@ -27,7 +27,10 @@ evidence:
 	PYTHONPATH=src uv run python scripts/evidence_smoke.py > /tmp/continuityos-evidence.json
 	python -m json.tool /tmp/continuityos-evidence.json >/dev/null
 
-verify: lint typecheck coverage build demo evidence
+iac:
+	bash scripts/iac_verify.sh
+
+verify: lint typecheck coverage build demo evidence iac
 
 keys:
 	uv run continuityos generate-evidence-keys ./secrets

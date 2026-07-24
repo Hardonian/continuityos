@@ -12,4 +12,7 @@ build/
 .env
 var/
 secrets/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
 .DS_Store

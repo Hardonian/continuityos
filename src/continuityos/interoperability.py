@@ -1,10 +1,107 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
+from xml.etree import ElementTree
 
 from pydantic import BaseModel, ConfigDict, Field
 
 CapabilityStatus = Literal["implemented", "source-consumer", "contract-only", "planned"]
+
+
+class ContinuityCloudEvent(BaseModel):
+    """Structured CloudEvents 1.0 envelope for approved ContinuityOS events."""
+
+    model_config = ConfigDict(extra="allow")
+
+    specversion: Literal["1.0"]
+    id: str = Field(min_length=1, max_length=256)
+    type: str = Field(min_length=1, max_length=256)
+    source: str = Field(min_length=1, max_length=512)
+    subject: str | None = Field(default=None, max_length=512)
+    time: datetime
+    datacontenttype: str = Field(default="application/json", max_length=128)
+    data: dict[str, object]
+
+
+SUPPORTED_CLOUD_EVENT_TYPES = frozenset({"com.continuityos.operator.observation.v1"})
+
+
+class CAPAlert(BaseModel):
+    """Bounded CAP 1.2 alert metadata; no dispatch or retransmission semantics."""
+
+    identifier: str = Field(min_length=1, max_length=256)
+    sender: str = Field(min_length=1, max_length=256)
+    sent: datetime
+    status: str = Field(min_length=1, max_length=64)
+    message_type: str = Field(min_length=1, max_length=64)
+    scope: str = Field(min_length=1, max_length=64)
+    language: str | None = Field(default=None, max_length=32)
+    category: str | None = Field(default=None, max_length=64)
+    event: str | None = Field(default=None, max_length=256)
+    headline: str | None = Field(default=None, max_length=512)
+    description: str | None = Field(default=None, max_length=4096)
+    area_description: str | None = Field(default=None, max_length=1024)
+    polygon: str | None = Field(default=None, max_length=4096)
+
+
+def parse_cap_alert(payload: bytes) -> CAPAlert:
+    if len(payload) > 2_000_000:
+        raise ValueError("CAP payload exceeds 2 MiB")
+    upper_payload = payload.upper()
+    if b"<!DOCTYPE" in upper_payload or b"<!ENTITY" in upper_payload:
+        raise ValueError("CAP payload cannot contain DOCTYPE or ENTITY declarations")
+    try:
+        root = ElementTree.fromstring(payload)
+    except ElementTree.ParseError as exc:
+        raise ValueError("invalid CAP XML") from exc
+
+    def text(name: str, parent: ElementTree.Element = root) -> str | None:
+        for element in parent.iter():
+            if element.tag.rsplit("}", 1)[-1] == name:
+                value = (element.text or "").strip()
+                return value or None
+        return None
+
+    info = next(
+        (element for element in root.iter() if element.tag.rsplit("}", 1)[-1] == "info"),
+        None,
+    )
+    if info is None:
+        raise ValueError("CAP alert has no info block")
+    identifier = text("identifier")
+    sender = text("sender")
+    sent = text("sent")
+    status = text("status")
+    message_type = text("msgType")
+    scope = text("scope")
+    if not all((identifier, sender, sent, status, message_type, scope)):
+        raise ValueError("CAP alert is missing required metadata")
+    assert identifier is not None
+    assert sender is not None
+    assert sent is not None
+    assert status is not None
+    assert message_type is not None
+    assert scope is not None
+    try:
+        sent_at = datetime.fromisoformat(sent.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("CAP sent timestamp is invalid") from exc
+    return CAPAlert(
+        identifier=identifier,
+        sender=sender,
+        sent=sent_at,
+        status=status,
+        message_type=message_type,
+        scope=scope,
+        language=text("language", info),
+        category=text("category", info),
+        event=text("event", info),
+        headline=text("headline", info),
+        description=text("description", info),
+        area_description=text("areaDesc", info),
+        polygon=text("polygon", info),
+    )
 
 
 class InteroperabilityCapability(BaseModel):
@@ -34,13 +131,13 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
     InteroperabilityCapability(
         protocol="cloud-events",
         version="1.0",
-        status="contract-only",
-        direction="bidirectional",
+        status="implemented",
+        direction="inbound",
         media_types=("application/cloudevents+json",),
         endpoint="/v1/integrations/cloudevents",
         notes=(
-            "Envelope profile is reserved for signed operator observations; "
-            "vendor adapters must preserve event id/source/time."
+            "Signed structured CloudEvents 1.0 are accepted for one approved "
+            "operator-observation event type and mapped to the telemetry ledger."
         ),
         authoritative_spec="https://github.com/cloudevents/spec/blob/v1.0/spec.md",
     ),
@@ -83,12 +180,13 @@ INTEROPERABILITY_CAPABILITIES: tuple[InteroperabilityCapability, ...] = (
     InteroperabilityCapability(
         protocol="common-alerting-protocol",
         version="1.2",
-        status="planned",
+        status="implemented",
         direction="inbound",
         media_types=("application/cap+xml", "application/xml"),
+        endpoint="/v1/integrations/cap",
         notes=(
-            "CAP profile is the next alert-ingress adapter; current ECCC GeoMet "
-            "JSON normalization remains available."
+            "Protected CAP 1.2 XML metadata ingress with entity/DOCTYPE rejection, "
+            "idempotency, lifecycle fields, and evidence-ledger recording."
         ),
         authoritative_spec="https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html",
     ),

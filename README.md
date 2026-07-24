@@ -132,6 +132,9 @@ The project is positioned as a Canadian-oriented, unclassified continuity eviden
 - `GET /v1/public-data/sources` requires the API key and lists the allow-listed public source manifests, freshness policy, parser, and key requirement.
 - `POST /v1/public-data/snapshots` requires the API key and fetches only an allow-listed source; it returns HTTP 503 when outbound HTTP is disabled and stores successful responses as immutable content-addressed snapshots.
 - `POST /v1/public-data/indicators` requires the API key and serves normalized ECCC GeoMet alert indicators or DFO IWLS water-level observations. ECCC returns alert-event values with expiration/geometry/confidence flags; DFO returns station/data snapshot IDs, source-native units, and QC/review flags. It serves cached snapshots when outbound HTTP is disabled and returns HTTP 503 only when the requested evidence is absent.
+- `GET /v1/interoperability` requires the API key and returns the machine-readable standards capability manifest. It distinguishes implemented, source-consumer, contract-only, and planned boundaries.
+- `POST /v1/integrations/cloudevents` accepts a signed CloudEvents 1.0 envelope for the approved `com.continuityos.operator.observation.v1` type. The event is HMAC-verified, tenant/asset/sequence-validated, idempotent, and written to the evidence ledger; unknown event types are rejected.
+- `POST /v1/integrations/cap` accepts protected CAP 1.2 XML metadata, rejects DOCTYPE/ENTITY payloads, preserves alert lifecycle/area fields, and records the normalized alert in the ledger. It does not dispatch or retransmit alerts.
 - `scripts/public_data_probe.py --enable-outbound` performs an explicit operator-run source probe; it never runs as a hidden background job.
 - `scripts/public_indicator_probe.py --enable-outbound` exercises the ECCC and DFO normalizers against real endpoints and emits sanitized provenance/QC output only.
 - `scripts/public_indicator_probe.py --enable-outbound --include-cdd` also parses the official Public Safety Canada CDD XLSX. The CDD is historical aggregated context only; its indicators carry `aggregated_secondary_source` and `not_primary_source` flags.
@@ -141,6 +144,7 @@ The project is positioned as a Canadian-oriented, unclassified continuity eviden
 - Operator telemetry requires timestamped HMAC and monotonically increasing tenant/asset sequence numbers; replay returns HTTP 409.
 - Every response includes `X-Request-ID`; clients may provide one for correlation.
 - Requests larger than `CONTINUITYOS_MAX_REQUEST_BYTES` are rejected before parsing. Protected routes use a process-local rate limit suitable for the single-worker reference service.
+- `bash scripts/iac_verify.sh` validates provider-free Terraform, Docker Compose configuration, shell syntax, and the plan-only local deployment. `terraform -chdir=infra/terraform apply -var='apply_local=true'` is an explicit opt-in deployment action.
 
 ## Open-source and public data plane
 

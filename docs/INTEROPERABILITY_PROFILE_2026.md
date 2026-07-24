@@ -26,11 +26,11 @@ ContinuityOS preserves provenance, dependency context, bounded analysis, and hum
 | Protocol/profile | Status | Direction | Practical use |
 |---|---|---|---|
 | HMAC operator telemetry JSON | Implemented | Inbound | Signed customer-owned capacity, availability, cyber-health, inventory, insurer, escort, and SATCOM assertions. |
-| CloudEvents 1.0 envelope | Contract-only | Bidirectional | Standard event envelope for future webhook/Event Grid/EventBridge/Kafka/NATS/n8n integration; no vendor connector is implied yet. |
+| CloudEvents 1.0 envelope | Implemented | Inbound | Signed `application/cloudevents+json` observation bridge at `/v1/integrations/cloudevents`; one approved event type is mapped into the existing telemetry ledger. |
 | OGC API Features 1.0.1 | Source-consumer | Inbound | ECCC/Canadian geospatial source acquisition; ContinuityOS is not claiming to be a conformant feature server. |
 | OGC SensorThings 1.1 | Contract-only | Inbound | Future customer sensor mapping over REST/MQTT without installing a broker by default. |
 | STAC API 1.0.0 | Source-consumer | Inbound | Copernicus and earth-observation catalogue discovery. Imagery processing is not implied. |
-| CAP 1.2 | Planned | Inbound | Normalize all-hazard alert XML from emergency-management systems and alert publishers. |
+| Common Alerting Protocol 1.2 | Implemented | Inbound | Protected `/v1/integrations/cap` parser with alert lifecycle/area preservation; no dispatch or retransmission. |
 | OTLP/HTTP | Planned | Outbound | Export service traces/metrics/logs to an existing OpenTelemetry Collector. Current `/metrics` remains Prometheus text. |
 
 ## Highest-ROI sequence
@@ -59,32 +59,9 @@ Authoritative specification:
 - https://github.com/cloudevents/spec/blob/v1.0/spec.md
 - https://github.com/cloudevents/spec/blob/v1.0/http-protocol-binding.md
 
-### 2. CAP 1.2 alert ingress
+### 1. OGC API Features and GeoPackage export profile
 
-Priority: high.
-
-Why:
-
-- Emergency-management, weather, public-warning, and provincial systems commonly exchange CAP-shaped alerts.
-- It directly complements ECCC GeoMet alert normalization.
-- It has clear alert lifecycle semantics: update, cancel, effective, expiry, area, severity, urgency, certainty.
-
-Required implementation:
-
-- XML parser with XXE/entity-expansion protection.
-- `identifier`, `sender`, `sent`, `status`, `msgType`, `scope`, and `info` preservation.
-- Geospatial area normalization to GeoJSON where possible.
-- Alert update/cancel linkage.
-- Source-specific attribution and quality flags.
-- No operational dispatch or public-warning retransmission without human approval.
-
-Authoritative specification:
-
-- https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html
-
-### 3. OGC API Features and GeoPackage export profile
-
-Priority: high for GIS and disconnected operations.
+Priority: highest for GIS and disconnected operations.
 
 Why:
 

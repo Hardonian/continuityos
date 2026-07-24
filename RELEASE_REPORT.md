@@ -28,8 +28,8 @@
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **54 passed**.
-- Statement coverage: **85.51%**.
+- Test suite: **56 passed**.
+- Statement coverage: **86.37%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -63,8 +63,11 @@
 - Regression governance smoke passed: normalization methods, quality flags, review states, label definition, and licence declaration are returned in the result limitations/metadata.
 - Standards-backed interoperability manifest added at `/v1/interoperability` and verified locally/publicly with anonymous HTTP 401 and authenticated HTTP 200. It reports seven capabilities with explicit implemented/source-consumer/contract-only/planned status; it does not claim conformance certification.
 - Authoritative interoperability references recorded for CloudEvents 1.0, OGC API Features 1.0.1, OGC SensorThings 1.1, STAC API 1.0.0, CAP 1.2, and OTLP/HTTP.
-- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2843702`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest and CDD indicators.
-- GitHub Actions run `30057276441` for commit `aa2171a16665c44e94e262f7ab8f302b40a28f9f` completed successfully.
+- Signed CloudEvents 1.0 observation ingress is implemented at `/v1/integrations/cloudevents` with one approved event type, HMAC verification, event-ID idempotency, replay protection, and ledger recording.
+- Protected CAP 1.2 XML ingress is implemented at `/v1/integrations/cap` with bounded payloads, DOCTYPE/ENTITY rejection, lifecycle/area preservation, API-key auth, idempotency, and ledger recording. It does not dispatch or retransmit alerts.
+- Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
+- Exact runtime deployment verification after the final service restart: systemd active, `MainPID=2976617`, `ExecMainStatus=0`, local `127.0.0.1:8082` and public Caddy/Cloudflare route success for authenticated interoperability manifest; anonymous CAP ingress returned HTTP 401 without writing production data.
+- GitHub Actions run pending for the current IaC/interoperability milestone.
 
 ## Release artifact
 
