@@ -111,6 +111,15 @@ This is the high-leverage orchestration surface: one bounded, idempotent request
 
 This protected, idempotent surface computes a freshness- and confidence-weighted multivariate heatmap, ranked explainable alerts, and human-gated coordination recommendations from current observations. Supplying a provenance-bearing regression dataset adds the existing temporal-holdout ridge result. Predictive status remains explicit; no output is represented as causal truth, validated forecasting, autonomous coordination, or dispatch.
 
+The latest persisted report is available as a bounded Server-Sent Events stream:
+
+```text
+GET /v1/strategic/stream?duration_seconds=15
+POST /v1/strategic/alerts/{alert_key}/ack
+```
+
+The stream emits heartbeats and at most one snapshot per report identity. Alert state is durable across restarts, with stable alert keys, cooldown suppression, acknowledgement state, escalation deadlines, and source-freshness flags.
+
 ### Operator telemetry authentication
 
 Clients serialize payload JSON with sorted keys, then sign:

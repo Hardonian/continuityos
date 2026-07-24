@@ -32,6 +32,8 @@ ContinuityOS preserves provenance, dependency context, bounded analysis, and hum
 | GeoPackage evidence export | Implemented | Outbound | Read-only EPSG:4326 GeoPackage snapshot at `/v1/exports/evidence/geopackage`. |
 | NDJSON evidence export | Implemented | Outbound | Deterministic ledger records at `/v1/exports/evidence/ndjson` for data-lake/SIEM/ITSM staging. |
 | Decision packet API | Implemented | Outbound | Protected `/v1/decision-packets` combines assessment, dependency impact, deterministic planning, evidence manifest, and human approval state in one idempotent artifact; it does not execute actions. |
+| Strategic signal API | Implemented | Outbound | Protected `/v1/strategic/analyze` computes freshness/confidence-weighted heatmaps, ranked alerts, optional temporal-holdout analysis, and human-gated coordination recommendations. |
+| Strategic SSE stream | Implemented | Outbound | Bounded `/v1/strategic/stream` emits the latest persisted analysis snapshot and heartbeats; it is not an autonomous dispatch channel. |
 | OGC SensorThings 1.1 | Contract-only | Inbound | Future customer sensor mapping over REST/MQTT without installing a broker by default. |
 | STAC API 1.0.0 | Source-consumer | Inbound | Copernicus and earth-observation catalogue discovery. Imagery processing is not implied. |
 | STAC metadata catalog | Implemented | Outbound | Metadata-only catalog at `/v1/stac/catalog`; no imagery asset conformance is claimed. |

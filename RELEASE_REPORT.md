@@ -67,6 +67,7 @@
 - Protected CAP 1.2 XML ingress is implemented at `/v1/integrations/cap` with bounded payloads, DOCTYPE/ENTITY rejection, lifecycle/area preservation, API-key auth, idempotency, and ledger recording. It does not dispatch or retransmit alerts.
 - The protected `/v1/decision-packets` orchestration surface is implemented: one idempotent bounded request produces assessment, dependency impact, deterministic mitigation planning, evidence manifest, approval state, and a human-action boundary; it records component and packet evidence but executes no action.
 - The protected `/v1/strategic/analyze` surface is implemented: freshness/confidence-weighted multivariate heatmaps, explainable ranked alerts, human-gated coordination recommendations, and optional provenance-bearing temporal-holdout regression; predictive status and limitations remain explicit.
+- Strategic alert operations are durable: stable alert keys, cooldown suppression, acknowledgement audit records, escalation deadlines, source-freshness flags, and a bounded authenticated SSE stream at `/v1/strategic/stream`. The stream is advisory and never dispatches consequential actions.
 - Protected GeoJSON, GeoPackage, deterministic NDJSON, and metadata-only STAC catalog exports are implemented for bounded evidence snapshots. The GeoPackage live smoke returned a valid SQLite GeoPackage with seven evidence rows; all new export routes returned anonymous HTTP 401 and authenticated HTTP 200.
 - IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
 - Application defense-in-depth headers are now emitted by the API: CSP, frame denial, nosniff, no-referrer, permissions policy, HSTS behind HTTPS forwarding, request IDs, and no-store.
@@ -82,9 +83,9 @@
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `2fc3f7f2cbc009ed72d6165539ad370e78cfea3a2f95151a2097b348ce65db07`
-- Source distribution SHA-256: `02d889da6b7c720751f2397d53e7e4a9f30ca5470389b6b27a904d064148bffe`
-- Docker image digest: `sha256:2bf199bb6c9ad25548572ce4bc430f955a0b9437ad7ea77226ef12b50e3794f6` (`continuityos-reference:0.1.0`; rebuilt after strategic signal implementation; non-root runtime; disposable `/readyz` and `/healthz` smoke passed).
+- Wheel SHA-256: `2f279b5905360ea563d9e4608cccb8a1bed083a3a7f4a0e37927015ba172cba0`
+- Source distribution SHA-256: `864dcafc135acf55358d3f3a76691b8f2122a3b8305b0ef1bdcb3cf0eea22ee2`
+- Docker image digest: `sha256:5262d9e47a3c33ba47ccaf9b0def0e419430d5829b67427eb821ae53b6641ae4` (`continuityos-reference:0.1.0`; rebuilt after durable strategic stream/alert-state implementation; non-root runtime; disposable `/readyz` and `/healthz` smoke passed).
 
 ## Verification intentionally not represented as complete
 

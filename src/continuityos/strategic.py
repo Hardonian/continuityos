@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from math import exp, isfinite
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,7 @@ class StrategicAnalysisRequest(BaseModel):
     alert_threshold: float = Field(default=0.65, ge=0.0, le=1.0)
     freshness_half_life_hours: float = Field(default=24.0, gt=0.0, le=720.0)
     coordination_scope: str = Field(default="operator-review", min_length=2, max_length=128)
+    alert_cooldown_seconds: int = Field(default=900, ge=60, le=86_400)
 
 
 class HeatmapCell(BaseModel):
@@ -31,13 +32,24 @@ class HeatmapCell(BaseModel):
 
 
 class StrategicAlert(BaseModel):
-    alert_id: UUID = Field(default_factory=uuid4)
+    alert_id: UUID
+    alert_key: str
     dimension: str
     severity: str
     score: float
     rationale: list[str]
     source_ids: list[str]
     requires_human_review: bool = True
+    delivery_state: str = "ready"
+    escalation_due_at: datetime | None = None
+
+
+class SourceFreshness(BaseModel):
+    source_id: str
+    latest_observed_at: datetime
+    age_hours: float
+    freshness: float
+    stale: bool
 
 
 class CoordinationRecommendation(BaseModel):
@@ -58,6 +70,7 @@ class StrategicAnalysisReport(BaseModel):
     heatmap: list[HeatmapCell]
     alerts: list[StrategicAlert]
     coordination: list[CoordinationRecommendation]
+    source_freshness: list[SourceFreshness]
     regression: RegressionResult | None = None
     predictive_status: str
     limitations: list[str]
@@ -79,6 +92,25 @@ def build_strategic_report(request: StrategicAnalysisRequest) -> StrategicAnalys
         grouped.setdefault(str(observation.metric), []).append(observation)
 
     heatmap: list[HeatmapCell] = []
+    source_freshness: list[SourceFreshness] = []
+    for source_id in sorted({item.source_id for item in ordered}):
+        source_values = [item for item in ordered if item.source_id == source_id]
+        newest_source = max(source_values, key=lambda item: item.observed_at)
+        age_hours = max(
+            0.0,
+            (latest - newest_source.observed_at.astimezone(UTC)).total_seconds() / 3600.0,
+        )
+        freshness = exp(-age_hours * 0.69314718056 / request.freshness_half_life_hours)
+        source_freshness.append(
+            SourceFreshness(
+                source_id=source_id,
+                latest_observed_at=newest_source.observed_at,
+                age_hours=age_hours,
+                freshness=freshness,
+                stale=age_hours > request.freshness_half_life_hours * 2,
+            )
+        )
+
     for dimension, values in sorted(grouped.items()):
         maximum = max(abs(item.value) for item in values) or 1.0
         newest = max(values, key=lambda item: item.observed_at)
@@ -115,9 +147,12 @@ def build_strategic_report(request: StrategicAnalysisRequest) -> StrategicAnalys
         ]
         if cell.quality_flags:
             rationale.append("quality flags present: " + ", ".join(cell.quality_flags))
+        alert_key = f"{cell.dimension}:{','.join(cell.source_ids)}"
         alerts.append(
             StrategicAlert(
-                dimension=cell.dimension,
+                alert_id=uuid5(NAMESPACE_URL, f"continuityos:strategic:{alert_key}"),
+                alert_key=alert_key,
+                dimension=dimension,
                 severity=severity,
                 score=cell.heat_score,
                 rationale=rationale,
@@ -152,6 +187,7 @@ def build_strategic_report(request: StrategicAnalysisRequest) -> StrategicAnalys
         heatmap=heatmap,
         alerts=alerts,
         coordination=coordination,
+        source_freshness=source_freshness,
         regression=regression,
         predictive_status=predictive_status,
         limitations=[

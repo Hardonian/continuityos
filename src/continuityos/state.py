@@ -98,3 +98,19 @@ class PersistentState:
             sequences[key] = sequence
             self._write_unlocked(state)
             return True
+
+    def get_value(self, namespace: str, key: str) -> Any | None:
+        with self._lock():
+            section = self._read_unlocked().get(namespace, {})
+            if not isinstance(section, dict):
+                raise RuntimeError(f"state namespace must contain an object: {namespace}")
+            return section.get(key)
+
+    def set_value(self, namespace: str, key: str, value: Any) -> None:
+        with self._lock():
+            state = self._read_unlocked()
+            section = state.setdefault(namespace, {})
+            if not isinstance(section, dict):
+                raise RuntimeError(f"state namespace must contain an object: {namespace}")
+            section[key] = value
+            self._write_unlocked(state)

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
-from datetime import datetime
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from time import perf_counter
@@ -12,7 +14,7 @@ from uuid import uuid4
 
 import orjson
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
@@ -615,9 +617,84 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
             ) from exc
-        ledger.append("strategic_analysis", str(report.report_id), report.model_dump(mode="json"))
+        now = datetime.now(UTC)
+        for alert in report.alerts:
+            previous = app.state.persistent_state.get_value("strategic_alerts", alert.alert_key)
+            previous = previous if isinstance(previous, dict) else {}
+            acknowledged = bool(previous.get("acknowledged", False))
+            last_emitted = previous.get("last_emitted_at")
+            in_cooldown = False
+            if isinstance(last_emitted, str):
+                try:
+                    elapsed = (now - datetime.fromisoformat(last_emitted)).total_seconds()
+                    in_cooldown = elapsed < analysis_request.alert_cooldown_seconds
+                except ValueError:
+                    in_cooldown = False
+            alert.delivery_state = (
+                "acknowledged" if acknowledged else ("cooldown" if in_cooldown else "ready")
+            )
+            due_at = previous.get("escalation_due_at")
+            if not isinstance(due_at, str):
+                seconds = 900 if alert.severity == "critical" else 3600
+                due_at = (now + timedelta(seconds=seconds)).isoformat()
+            alert.escalation_due_at = datetime.fromisoformat(due_at)
+            app.state.persistent_state.set_value(
+                "strategic_alerts",
+                alert.alert_key,
+                {
+                    "acknowledged": acknowledged,
+                    "last_emitted_at": now.isoformat() if not in_cooldown else last_emitted,
+                    "escalation_due_at": due_at,
+                    "dimension": alert.dimension,
+                },
+            )
+        report_payload = report.model_dump(mode="json")
+        app.state.persistent_state.set_value("strategic", "latest", report_payload)
+        ledger.append("strategic_analysis", str(report.report_id), report_payload)
         save_idempotency("strategic-analyze", key, fingerprint, report)
         return report
+
+    @app.post(
+        "/v1/strategic/alerts/{alert_key}/ack",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def acknowledge_strategic_alert(alert_key: str) -> dict[str, Any]:
+        if len(alert_key) > 512 or not alert_key:
+            raise HTTPException(status_code=400, detail="invalid alert key")
+        previous = app.state.persistent_state.get_value("strategic_alerts", alert_key)
+        record = previous if isinstance(previous, dict) else {}
+        record["acknowledged"] = True
+        record["acknowledged_at"] = datetime.now(UTC).isoformat()
+        app.state.persistent_state.set_value("strategic_alerts", alert_key, record)
+        ledger.append("strategic_alert_acknowledgement", alert_key, {"alert_key": alert_key})
+        return {"alert_key": alert_key, "acknowledged": True}
+
+    @app.get(
+        "/v1/strategic/stream",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def strategic_stream(
+        duration_seconds: Annotated[int, Query(ge=1, le=60)] = 15,
+    ) -> StreamingResponse:
+        async def events() -> AsyncIterator[str]:
+            deadline = asyncio.get_running_loop().time() + duration_seconds
+            sent_report_id: str | None = None
+            while asyncio.get_running_loop().time() < deadline:
+                latest = app.state.persistent_state.get_value("strategic", "latest")
+                if isinstance(latest, dict):
+                    report_id = str(latest.get("report_id"))
+                    if report_id != sent_report_id:
+                        payload = json.dumps(latest, separators=(",", ":"))
+                        yield f"event: strategic\ndata: {payload}\n\n"
+                        sent_report_id = report_id
+                yield ": heartbeat\n\n"
+                await asyncio.sleep(2)
+
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     def accept_operator_payload(
         payload: dict[str, Any],
