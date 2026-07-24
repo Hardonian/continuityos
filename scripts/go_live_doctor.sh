@@ -32,6 +32,13 @@ check "healthz" curl -fsS --max-time 10 "$BASE/healthz"
 check "anonymous protected route rejected" bash -c "test \"\$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 '$BASE/v1/interoperability')\" = 401"
 check "environment file mode" bash -c "test \"\$(stat -c '%a' /home/scott/.config/continuityos.env 2>/dev/null || true)\" = 600"
 check "backup timer active" systemctl --user is-active --quiet continuityos-backup.timer
+latest_backup="$(find /home/scott/.local/share/continuityos/backups -maxdepth 1 -type f -name 'continuityos-*.tar.gz' -printf '%T@ %p\n' 2>/dev/null | sort -nr | awk 'NR == 1 {print $2}')"
+if [[ -n "$latest_backup" ]]; then
+  check "latest backup integrity and disposable restore" bash "$ROOT/scripts/verify_backup.sh" "$latest_backup"
+else
+  fail "latest backup exists"
+fi
+check "installed deployment units synchronized" bash "$ROOT/scripts/drift_check.sh"
 check "Terraform/IaC policy" bash "$ROOT/scripts/iac_verify.sh"
 check "tracked secret scan" bash -c "matches=\$(git -C '$ROOT' grep -IlE -- '-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|sk_live_[A-Za-z0-9]|whsec_[A-Za-z0-9]' -- ':!tests' || true); test -z \"\$matches\""
 

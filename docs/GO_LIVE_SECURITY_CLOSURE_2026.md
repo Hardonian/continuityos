@@ -13,6 +13,7 @@ ContinuityOS is technically ready for a controlled reference/pilot deployment be
 - Evidence ledger integrity is checked by readiness.
 - Outbound HTTP remains disabled by default.
 - Local service binds only to `127.0.0.1:8082`.
+- User-level systemd sandbox is active with `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=read-only`, `LockPersonality`, `RestrictSUIDSGID`, restrictive `UMask`, and a write exception only for the ContinuityOS data directory.
 - The managed systemd PID owns the listener after restart.
 - Local `/livez`, `/readyz`, and `/healthz` pass.
 - Public `/continuityos/healthz` passes through Cloudflare/Caddy.
@@ -22,8 +23,9 @@ ContinuityOS is technically ready for a controlled reference/pilot deployment be
 - Signed CloudEvents and protected CAP ingestion are implemented with idempotency/replay controls.
 - GeoJSON, GeoPackage, NDJSON, manifest, and metadata-only STAC exports are implemented.
 - Docker runs as non-root and fails closed when production prerequisites are absent.
-- 59 tests pass at 86.90% coverage; Ruff, mypy, Gitleaks, package build, IaC, and CI pass.
+- 59 tests pass at 86.70% coverage; Ruff, mypy, Gitleaks, package build, IaC, and CI pass.
 - Local backup timer exists and restore is reversible/disposable; off-host disaster recovery is not claimed.
+- Latest local backup checksum and disposable extraction/ledger/state verification passed; off-host encrypted backup and RPO/RTO acceptance are not claimed.
 
 ## Host-level open blocker
 

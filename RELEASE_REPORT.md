@@ -29,7 +29,7 @@
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
 - Test suite: **59 passed**.
-- Statement coverage: **86.90%**.
+- Statement coverage: **86.70%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -69,6 +69,9 @@
 - IaC policy checks now fail closed on public binds, privileged workloads, host networking, and unignored Terraform state; `scripts/iac_verify.sh` reports `iac=valid`, `compose=valid`, `shell=valid`, and `policy=valid`.
 - Application defense-in-depth headers are now emitted by the API: CSP, frame denial, nosniff, no-referrer, permissions policy, HSTS behind HTTPS forwarding, request IDs, and no-store.
 - Non-destructive `make doctor` now verifies repository/runtime ownership, liveness/readiness/health, protected-route rejection, environment-file mode, backup timer, IaC policy, and tracked-secret hygiene.
+- The user-level systemd unit now uses a compatible sandbox (`NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=read-only`, `LockPersonality`, `RestrictSUIDSGID`, `UMask=0077`, and a data-directory write exception); live restart remained healthy with zero restarts.
+- Backup archives now have mode 600, tar validation, and a disposable checksum/path/ledger/state restore verifier; the latest local archive passed verification. Off-host disaster recovery remains open.
+- `scripts/drift_check.sh` verifies installed user units match the reviewed repository deployment units, and `docs/OPERATIONS_RUNBOOK_2026.md` records change, incident, rollback, recovery, and approval procedures.
 - Go-live posture and host-level MicroK8s exposure blockers are documented in `docs/GO_LIVE_SECURITY_CLOSURE_2026.md`; no host-wide lockdown or national-security accreditation is claimed.
 - Provider-free Terraform IaC added under `infra/terraform/`; default behavior is plan-only, with explicit `apply_local=true` required to synchronize user systemd units. Terraform, Compose, shell, and deployment validation are now part of `make verify` and CI.
 - Exact runtime deployment verification after the final service restart: systemd active, `MainPID=3308911`, `ExecMainStatus=0`, local `127.0.0.1:8082` and authenticated export/manifest routes passed; anonymous protected routes returned HTTP 401 without writing production data.

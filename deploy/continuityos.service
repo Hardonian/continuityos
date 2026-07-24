@@ -10,6 +10,19 @@ EnvironmentFile=/home/scott/.config/continuityos.env
 ExecStart=/home/scott/ai-workspace/repos/continuityos/.venv/bin/uvicorn continuityos.service:app --host 127.0.0.1 --port 8082 --workers 1 --proxy-headers
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+LockPersonality=true
+RestrictSUIDSGID=true
+UMask=0077
+ReadWritePaths=/home/scott/.local/share/continuityos
+ReadOnlyPaths=/home/scott/.config/continuityos.env
+SystemCallArchitectures=native
+LimitNOFILE=8192
+TimeoutStartSec=30s
+TimeoutStopSec=30s
 
 [Install]
 WantedBy=default.target
