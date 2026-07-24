@@ -20,13 +20,16 @@
 9. Hash-chained and optionally Ed25519-signed evidence records
 10. API-key protected operator routes, request limits, request IDs, metrics, idempotency, replay protection, and paginated evidence
 11. FastAPI and CLI interfaces
+12. Source-specific ECCC GeoMet alert and DFO IWLS water-level normalizers with quality/provenance preservation
+13. Protected normalized-indicator route operating from immutable cached snapshots while outbound HTTP remains disabled
+14. Regression rows carrying normalization method, quality flags, review state, label definition, and licence declaration
 
 ## Verification completed in the build environment
 
 - Package installed from source with pinned dependency resolution.
 - Python bytecode compilation completed successfully.
-- Test suite: **45 passed**.
-- Statement coverage: **85.52%**.
+- Test suite: **50 passed**.
+- Statement coverage: **85.35%**.
 - Coverage release gate: **85% passed**.
 - Demonstration scenario completed and produced valid JSON.
 - Ed25519 evidence key generation completed.
@@ -51,13 +54,19 @@
 - ReliefWeb correctly failed closed because a registered application name was not configured; NASA FIRMS correctly requires a protected MAP_KEY.
 - Live public deployment after commit `1f8d7a8`: `/livez=200`, `/readyz=200`, `/healthz=200`; protected public-data listing returned 200, unauthenticated listing returned 401, and outbound-disabled fetch returned 503.
 - Live regression smoke returned 200 for an explicitly synthetic, provenance-shaped 8-row dataset; same-key replay returned 200 with byte-identical response.
+- Real normalized-indicator probe completed against ECCC GeoMet and DFO IWLS. ECCC returned 100 alert indicators across alert classes `aqw`, `ehw`, and `stw`; DFO returned 2 current observations from Québec station `03057` Saint-Joseph-de-la-Rive at values `2.115` and `2.555` metres relative to the station product datum.
+- DFO station and data snapshots carried separate immutable IDs; source-native QC code `1` and `not_reviewed` status were preserved rather than promoted to a clean-data claim.
+- Cached production-route smoke passed with outbound HTTP disabled: local and public `/v1/public-data/indicators` returned HTTP 200 for ECCC and DFO, unauthenticated access returned HTTP 401, and responses contained snapshot IDs and normalized observations.
+- Regression governance smoke passed: normalization methods, quality flags, review states, label definition, and licence declaration are returned in the result limitations/metadata.
+- Exact runtime deployment verification after the new service restart: systemd active, `MainPID=2480144`, `ExecMainStatus=0`, local `127.0.0.1:8082` listener, and public Caddy/Cloudflare route success.
 - GitHub Actions run `30054616150` for commit `1f8d7a8b96a791d3d7a0b4cd8ac401a8d9c6790e` completed successfully.
 
 ## Release artifact
 
 - Wheel: `continuityos_reference-0.1.0-py3-none-any.whl`
-- Wheel SHA-256: `970f25e85e35b90869b5443c1e93ae4adb1c4e3593e2958de2205ec1b1aa56e9`
-- Source distribution SHA-256: `ba311e1891bd5a7fced973df5f1903b9591332bef38451ed1251452b38c39636`
+- Wheel SHA-256: `7158788359f50bbc3237ae86dac51db103058028d0c9e10db6ab7da014e44a84`
+- Source distribution SHA-256: `46ebd44eb2acbe73009fbc10a80b3ce8fe2116570a553e753009fa6b279e56cf`
+- Docker image digest: `sha256:694f604ce682a29b7222d53ef491bbbf4af51dea4303cbd0a3aa5388ad7b5322`
 
 ## Verification intentionally not represented as complete
 

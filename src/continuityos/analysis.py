@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from math import isfinite, sqrt
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,6 +15,9 @@ class RegressionRow(BaseModel):
     features: dict[str, float] = Field(min_length=2, max_length=64)
     source_ids: list[str] = Field(min_length=1, max_length=32)
     snapshot_ids: list[str] = Field(min_length=1, max_length=32)
+    normalization_method: str = Field(default="source-native", min_length=2, max_length=128)
+    quality_flags: list[str] = Field(default_factory=list, max_length=32)
+    review_state: Literal["unreviewed", "analyst_reviewed", "approved_for_pilot"] = "unreviewed"
 
     @field_validator("observed_at")
     @classmethod
@@ -45,6 +49,12 @@ class RegressionRequest(BaseModel):
     rows: list[RegressionRow] = Field(min_length=8, max_length=10000)
     ridge_alpha: float = Field(default=0.1, ge=0.0, le=1_000_000.0)
     test_fraction: float = Field(default=0.2, gt=0.0, lt=0.5)
+    label_definition: str = Field(
+        default="operator-defined; validate against an authoritative outcome before use",
+        min_length=8,
+        max_length=512,
+    )
+    dataset_licence: str = Field(default="source-specific; verify before deployment", min_length=8)
 
 
 class RegressionCoefficient(BaseModel):
@@ -74,6 +84,9 @@ class RegressionResult(BaseModel):
     test_r2: float | None
     source_ids: list[str]
     snapshot_ids: list[str]
+    normalization_methods: list[str]
+    quality_flags: list[str]
+    review_states: list[str]
     limitations: list[str]
 
 
@@ -166,6 +179,9 @@ def run_regression(request: RegressionRequest) -> RegressionResult:
     r2 = None if total <= 1e-12 else 1.0 - sum(value * value for value in residuals) / total
     all_sources = sorted({source for row in ordered for source in row.source_ids})
     all_snapshots = sorted({snapshot for row in ordered for snapshot in row.snapshot_ids})
+    all_normalization_methods = sorted({row.normalization_method for row in ordered})
+    all_quality_flags = sorted({flag for row in ordered for flag in row.quality_flags})
+    all_review_states: list[str] = sorted({str(row.review_state) for row in ordered})
 
     return RegressionResult(
         dataset_id=request.dataset_id,
@@ -195,6 +211,9 @@ def run_regression(request: RegressionRequest) -> RegressionResult:
         test_r2=r2,
         source_ids=all_sources,
         snapshot_ids=all_snapshots,
+        normalization_methods=all_normalization_methods,
+        quality_flags=all_quality_flags,
+        review_states=all_review_states,
         limitations=[
             "Associational model; coefficients are not causal effects or intelligence judgments.",
             "Temporal holdout is used, but this is not a validated operational forecast.",
@@ -205,6 +224,12 @@ def run_regression(request: RegressionRequest) -> RegressionResult:
             (
                 "Human review and domain-specific validation are required before any "
                 "consequential use."
+            ),
+            f"Label definition: {request.label_definition}",
+            f"Dataset licence: {request.dataset_licence}",
+            (
+                "Rows marked unreviewed or carrying quality flags must not be treated as "
+                "validated labels or operational truth."
             ),
         ],
     )

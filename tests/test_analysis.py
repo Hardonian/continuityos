@@ -57,3 +57,28 @@ def test_regression_requires_timezone_aware_rows() -> None:
             source_ids=["source"],
             snapshot_ids=["snapshot"],
         )
+
+
+def test_regression_surfaces_dataset_governance_fields() -> None:
+    sample = [
+        row.model_copy(
+            update={
+                "normalization_method": "dfo-iwls-qc-aware",
+                "quality_flags": ["not_reviewed"],
+                "review_state": "unreviewed",
+            }
+        )
+        for row in rows()
+    ]
+    result = run_regression(
+        RegressionRequest(
+            dataset_id="governance-fixture",
+            target_name="target",
+            rows=sample,
+            label_definition="fixture only; no operational label",
+        )
+    )
+    assert result.normalization_methods == ["dfo-iwls-qc-aware"]
+    assert result.quality_flags == ["not_reviewed"]
+    assert result.review_states == ["unreviewed"]
+    assert any("validated labels" in limitation for limitation in result.limitations)

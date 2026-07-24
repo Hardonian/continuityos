@@ -23,7 +23,14 @@ from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
 from continuityos.metrics import Metrics
-from continuityos.public_data import PUBLIC_SOURCE_SPECS, PublicDataPlane, PublicSnapshot
+from continuityos.public_data import (
+    PUBLIC_SOURCE_SPECS,
+    DFOIWLSAdapter,
+    ECCCGeoMetAdapter,
+    NormalizedIndicator,
+    PublicDataPlane,
+    PublicSnapshot,
+)
 from continuityos.security import (
     FixedWindowLimiter,
     RateLimitExceeded,
@@ -83,6 +90,44 @@ class PublicSnapshotResponse(BaseModel):
             freshness_hours=snapshot.freshness_hours,
             quality_flags=list(snapshot.quality_flags),
         )
+
+
+class PublicIndicatorRequest(BaseModel):
+    source_id: str
+    region: str = "QUE"
+    start: datetime | None = None
+    end: datetime | None = None
+    force: bool = False
+
+
+class PublicIndicatorResponse(BaseModel):
+    indicator_id: str
+    observed_at: datetime
+    value: float
+    unit: str
+    source_id: str
+    provenance_snapshot_ids: list[str]
+    quality_flags: list[str]
+    metadata: dict[str, str]
+
+    @classmethod
+    def from_indicator(cls, indicator: NormalizedIndicator) -> PublicIndicatorResponse:
+        return cls(
+            indicator_id=indicator.indicator_id,
+            observed_at=indicator.observed_at,
+            value=indicator.value,
+            unit=indicator.unit,
+            source_id=indicator.source_id,
+            provenance_snapshot_ids=list(indicator.provenance_snapshot_ids),
+            quality_flags=list(indicator.quality_flags),
+            metadata=indicator.metadata,
+        )
+
+
+class PublicIndicatorsResponse(BaseModel):
+    source_id: str
+    snapshot_ids: list[str]
+    indicators: list[PublicIndicatorResponse]
 
 
 @lru_cache
@@ -306,6 +351,63 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "public_data_snapshot", snapshot.snapshot_id, response.model_dump(mode="json")
         )
         save_idempotency("public_snapshot", key, fingerprint, response)
+        return response
+
+    @app.post(
+        "/v1/public-data/indicators",
+        response_model=PublicIndicatorsResponse,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def fetch_public_indicators(
+        request: Request, indicator_request: PublicIndicatorRequest
+    ) -> PublicIndicatorsResponse:
+        key, fingerprint, cached = await idempotency_context(request, "public_indicators")
+        if cached is not None:
+            return PublicIndicatorsResponse.model_validate_json(cached)
+        plane = cast(PublicDataPlane, app.state.public_data)
+        try:
+            if indicator_request.source_id == "eccc-geomet-alerts":
+                snapshot, indicators = await ECCCGeoMetAdapter.fetch(
+                    plane, force=indicator_request.force
+                )
+                snapshot_ids = [snapshot.snapshot_id]
+            elif indicator_request.source_id == "dfo-iwls":
+                if indicator_request.start is None or indicator_request.end is None:
+                    raise ValueError("DFO indicators require timezone-aware start and end")
+                (
+                    station_snapshot,
+                    data_snapshot,
+                    _station,
+                    indicators,
+                ) = await DFOIWLSAdapter.fetch_current(
+                    plane,
+                    region=indicator_request.region,
+                    start=indicator_request.start,
+                    end=indicator_request.end,
+                    force=indicator_request.force,
+                )
+                snapshot_ids = [station_snapshot.snapshot_id, data_snapshot.snapshot_id]
+            else:
+                raise ValueError("indicator adapter is not implemented for this source")
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+            ) from exc
+        except (KeyError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        response = PublicIndicatorsResponse(
+            source_id=indicator_request.source_id,
+            snapshot_ids=snapshot_ids,
+            indicators=[PublicIndicatorResponse.from_indicator(item) for item in indicators],
+        )
+        ledger.append(
+            "public_data_indicators",
+            ":".join(snapshot_ids),
+            response.model_dump(mode="json"),
+        )
+        save_idempotency("public_indicators", key, fingerprint, response)
         return response
 
     @app.get("/metrics", response_class=PlainTextResponse)
