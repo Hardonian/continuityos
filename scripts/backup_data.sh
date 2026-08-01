@@ -11,8 +11,15 @@ if [[ ! -d "$DATA_DIR" ]]; then
   printf 'no data directory: %s\n' "$DATA_DIR" >&2
   exit 1
 fi
-# Never place the backup directory inside the archived tree.
-tar -C "$(dirname "$DATA_DIR")" --exclude="$(basename "$BACKUP_DIR")" -czf "$ARCHIVE" "$(basename "$DATA_DIR")"
+# Never place the backup directory inside the archived tree. The host-exposure
+# audit is root-owned generated output, not ContinuityOS state; excluding it keeps
+# the non-root backup job fail-closed instead of producing a partial archive.
+# shellcheck disable=SC2016
+EXCLUDES=(
+  --exclude="$(basename "$BACKUP_DIR")"
+  --exclude="$(basename "$DATA_DIR")/host-exposure-audit.txt"
+)
+tar -C "$(dirname "$DATA_DIR")" "${EXCLUDES[@]}" -czf "$ARCHIVE" "$(basename "$DATA_DIR")"
 sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
 chmod 600 "$ARCHIVE" "$ARCHIVE.sha256"
 tar -tzf "$ARCHIVE" >/dev/null

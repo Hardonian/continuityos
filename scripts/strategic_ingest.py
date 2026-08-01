@@ -18,7 +18,7 @@ from continuityos.evidence import EvidenceLedger
 DATA_DIR = Path(os.environ.get("CONTINUITYOS_DATA_DIR", "/home/scott/.local/share/continuityos"))
 LEDGER = DATA_DIR / "evidence" / "ledger.jsonl"
 ENV_FILE = Path("/home/scott/.config/continuityos.env")
-API_URL = "http://127.0.0.1:8082/v1/strategic/analyze"
+API_URL = "http://127.0.0.1:8092/v1/strategic/analyze"
 
 MAPPING = {
     "eccc.alert.aqw": (MetricName.WEATHER_ALERT_ACTIVITY, AssertionClass.WEATHER),

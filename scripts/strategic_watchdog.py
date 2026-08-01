@@ -18,7 +18,7 @@ STATE = Path(
 )
 INBOX = Path("/home/scott/ai-lab/reports/operator-inbox.jsonl")
 ENV_FILE = Path("/home/scott/.config/continuityos.env")
-URL = "http://127.0.0.1:8082/v1/strategic/stream?duration_seconds=1"
+URL = "http://127.0.0.1:8092/v1/strategic/stream?duration_seconds=1"
 
 
 def api_key() -> str:
