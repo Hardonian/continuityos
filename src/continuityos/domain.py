@@ -184,6 +184,19 @@ class CorridorState(StrEnum):
     # Legacy alias for backward compatibility with existing fusion tests
     DEGRADED = "open_degraded"
 
+    @classmethod
+    def from_str(cls, val: str | CorridorState) -> CorridorState:
+        """Parse or normalize a string or CorridorState instance."""
+        if isinstance(val, cls):
+            return val
+        s = str(val).lower()
+        if s == "degraded":
+            return cls.OPEN_DEGRADED
+        for item in cls:
+            if item.value == s:
+                return item
+        return cls.UNKNOWN
+
 
 class CorridorAssessment(BaseModel):
     assessment_id: UUID = Field(default_factory=uuid4)
@@ -240,7 +253,27 @@ class CompiledPlan(BaseModel):
 class DataClassification(StrEnum):
     PUBLIC = "public"
     INTERNAL = "internal"
+    UNCLASSIFIED = "unclassified"
     RESTRICTED = "restricted"
+    CONFIDENTIAL = "confidential"
+    SECRET = "secret"
+    TOP_SECRET = "top_secret"
+    COSMIC_TOP_SECRET = "cosmic_top_secret"
+
+    @property
+    def level(self) -> int:
+        """Numeric clearance level for comparison."""
+        levels = {
+            self.PUBLIC: 0,
+            self.UNCLASSIFIED: 0,
+            self.INTERNAL: 1,
+            self.RESTRICTED: 2,
+            self.CONFIDENTIAL: 3,
+            self.SECRET: 4,
+            self.TOP_SECRET: 5,
+            self.COSMIC_TOP_SECRET: 6,
+        }
+        return levels.get(self, 0)
 
 
 class RecoveryObjective(BaseModel):

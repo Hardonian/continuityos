@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ContinuityOS — Sovereign Defense Common Operating Picture (COP)</title>
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: #111927;
+      --bg-surface: #1a2333;
+      --border-color: #243247;
+      --text-primary: #f0f4f8;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --security-secret: #dc2626;
+      --font-mono: "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Classification Header */
+    .classification-banner {
+      background: linear-gradient(90deg, #991b1b 0%, #dc2626 50%, #991b1b 100%);
+      color: #ffffff;
+      text-align: center;
+      padding: 5px 0;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+
+    /* Navigation Bar */
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge-c1 { background: rgba(16, 185, 129, 0.15); border-color: var(--accent-green); color: var(--accent-green); }
+    .badge-airgap { background: rgba(6, 182, 212, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    .badge-crypto { background: rgba(139, 92, 246, 0.15); border-color: var(--accent-purple); color: var(--accent-purple); }
+
+    /* Main Layout */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 320px 1fr 360px;
+      gap: 16px;
+      padding: 16px;
+      flex: 1;
+    }
+
+    .panel {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 16px;
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Scenario Selector Buttons */
+    .scenario-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .scenario-btn {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: var(--text-primary);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-sans);
+    }
+    .scenario-btn:hover {
+      border-color: var(--accent-cyan);
+      background-color: rgba(6, 182, 212, 0.08);
+    }
+    .scenario-btn.active {
+      border-color: var(--accent-cyan);
+      background-color: rgba(6, 182, 212, 0.15);
+    }
+    .scenario-name { font-size: 13px; font-weight: 600; }
+    .scenario-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Corridor Status Cards */
+    .corridor-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .corridor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .corridor-name { font-size: 13px; font-weight: 700; }
+    .state-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .state-open { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+    .state-warn { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
+    .state-danger { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+    /* Map & Symbology View */
+    .map-viewport {
+      background: radial-gradient(circle at center, #131d2e 0%, #0a0e17 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      height: 320px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arctic-grid-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Metric Gauges */
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .metric-box {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+    }
+    .metric-val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-cyan); }
+    .metric-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-top: 2px; }
+
+    /* Timeline & Chart Canvas */
+    .chart-container {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      height: 160px;
+      position: relative;
+    }
+
+    /* Remediation Table */
+    .remediation-item {
+      background-color: var(--bg-surface);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 10px;
+      border-radius: 0 6px 6px 0;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .remediation-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .remediation-gain { color: var(--accent-green); font-family: var(--font-mono); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Military Security Classification Banner -->
+  <div class="classification-banner">
+    SECRET // REL TO NATO // FVEY // DEFENSE LOGISTICS CONTINUITY COMMON OPERATING PICTURE
+  </div>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">C</div>
+      <div>
+        <div class="brand-title">ContinuityOS Sovereign Defense Suite</div>
+        <div class="brand-subtitle">Resilience-as-Code Corridor Orchestration Engine</div>
+      </div>
+    </div>
+
+    <div class="status-badges">
+      <div class="badge badge-c1">DRRS RATING: C-1 FULLY CAPABLE</div>
+      <div class="badge badge-airgap">AIR-GAP SCIF: 100% OFFLINE</div>
+      <div class="badge badge-crypto">Ed25519 CHAIN: IMMUTABLE</div>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Tactical Dashboard Layout -->
+  <main class="dashboard-container">
+
+    <!-- Column 1: Threat Scenarios & Correlated Stress Injector -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Correlated Threat Matrix</span>
+      </div>
+      <div class="panel-body">
+        <div class="scenario-grid">
+          <button class="scenario-btn active" onclick="selectScenario('baseline')">
+            <div>
+              <div class="scenario-name">Baseline Operational State</div>
+              <div class="scenario-desc">Normal summer/winter transit conditions</div>
+            </div>
+            <span class="state-badge state-open">100% OK</span>
+          </button>
+
+          <button class="scenario-btn" onclick="selectScenario('ew_pnt')">
+            <div>
+              <div class="scenario-name">Scenario C: GNSS Spoofing</div>
+              <div class="scenario-desc">Nation-state EW PNT loss in Kara Sea</div>
+            </div>
+            <span class="state-badge state-danger">UNTRUSTED</span>
+          </button>
+
+          <button class="scenario-btn" onclick="selectScenario('insurance')">
+            <div>
+              <div class="scenario-name">Scenario D: War-Risk Revocation</div>
+              <div class="scenario-desc">Lloyd's marine insurance withdrawal</div>
+            </div>
+            <span class="state-badge state-danger">UNINSURABLE</span>
+          </button>
+
+          <button class="scenario-btn" onclick="selectScenario('cyber_port')">
+            <div>
+              <div class="scenario-name">Scenario B: Port OT Ransomware</div>
+              <div class="scenario-desc">SCADA crane & bunker lockout at Kirkenes</div>
+            </div>
+            <span class="state-badge state-warn">BLOCKED</span>
+          </button>
+
+          <button class="scenario-btn" onclick="selectScenario('blockade')">
+            <div>
+              <div class="scenario-name">Scenario F: 60-Day Sea Blockade</div>
+              <div class="scenario-desc">Strategic fuel stockpile exhaustion model</div>
+            </div>
+            <span class="state-badge state-danger">EXHAUSTION</span>
+          </button>
+        </div>
+
+        <div class="corridor-card">
+          <div class="corridor-header">
+            <span class="corridor-name">4-Layer Functional Closure</span>
+          </div>
+          <div style="font-size: 11px; font-family: var(--font-mono); display: flex; flex-direction: column; gap: 4px;">
+            <div id="layer-phys">Physical Layer: [PASS] Navigable Waterway</div>
+            <div id="layer-oper">Operational Layer: [PASS] Escort Icebreakers Ready</div>
+            <div id="layer-comm">Commercial Layer: [PASS] Hull & P&I Covered</div>
+            <div id="layer-trust">Trust Layer: [PASS] PNT & SATCOM Validated</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 2: MIL-STD-2525D Map & Inventory Drainage Graph -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Theater Common Operating Picture (COP)</span>
+        <span style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan);">NATO APP-6D / STANAG 7074</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Map Canvas Viewport -->
+        <div class="map-viewport">
+          <svg class="arctic-grid-svg" viewBox="0 0 800 400">
+            <!-- Latitude circles and grid lines -->
+            <path d="M 50,350 Q 400,150 750,350" fill="none" stroke="#243247" stroke-width="1.5" stroke-dasharray="4,4" />
+            <path d="M 100,280 Q 400,100 700,280" fill="none" stroke="#243247" stroke-width="1.5" stroke-dasharray="4,4" />
+
+            <!-- Arctic Sea Route Corridor Polyline -->
+            <path id="corridor-path" d="M 80,310 L 220,240 L 380,210 L 520,220 L 680,290" fill="none" stroke="#10b981" stroke-width="4" />
+
+            <!-- Strategic Hub Nodes with MIL-STD-2525 Symbology -->
+            <circle cx="80" cy="310" r="7" fill="#06b6d4" />
+            <text x="70" y="335" fill="#f0f4f8" font-size="11" font-family="var(--font-mono)">Murmansk Hub</text>
+
+            <circle cx="220" cy="240" r="7" fill="#06b6d4" />
+            <text x="185" y="225" fill="#f0f4f8" font-size="11" font-family="var(--font-mono)">Kara Strait (Chokepoint)</text>
+
+            <circle cx="380" cy="210" r="7" fill="#06b6d4" />
+            <text x="340" y="195" fill="#f0f4f8" font-size="11" font-family="var(--font-mono)">Vilkitsky Strait</text>
+
+            <circle cx="520" cy="220" r="7" fill="#06b6d4" />
+            <text x="500" y="245" fill="#f0f4f8" font-size="11" font-family="var(--font-mono)">Pevek Terminal</text>
+
+            <circle cx="680" cy="290" r="7" fill="#06b6d4" />
+            <text x="630" y="315" fill="#f0f4f8" font-size="11" font-family="var(--font-mono)">Bering Strait Entrance</text>
+          </svg>
+        </div>
+
+        <!-- Metric Gauges -->
+        <div class="metric-row">
+          <div class="metric-box">
+            <div id="m-continuity" class="metric-val">98.4%</div>
+            <div class="metric-label">Corridor Continuity</div>
+          </div>
+          <div class="metric-box">
+            <div id="m-inventory" class="metric-val">45.0 d</div>
+            <div class="metric-label">Reserve Runway</div>
+          </div>
+          <div class="metric-box">
+            <div id="m-lag" class="metric-val">T0 Nom</div>
+            <div class="metric-label">Recovery Phase</div>
+          </div>
+        </div>
+
+        <!-- Inventory Depletion Waterfall Canvas -->
+        <div class="chart-container">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">
+            Strategic Fuel Stockpile Drainage (Day 0 to 60)
+          </div>
+          <canvas id="drainageCanvas" width="540" height="110" style="width: 100%; height: 110px;"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Column 3: Recovery Lag & Advisory Remediation Engine -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Deterministic Remediation</span>
+      </div>
+      <div class="panel-body">
+        <div style="font-size: 11px; color: var(--text-secondary);">
+          Human-in-the-Loop Advisory Actions compiled via deterministic exact solver:
+        </div>
+
+        <div id="remediation-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="remediation-item">
+            <div class="remediation-header">
+              <span>Deploy Backup Inertial Navigation (INS)</span>
+              <span class="remediation-gain">+15.0% Cont</span>
+            </div>
+            <div style="color: var(--text-secondary);">Attenuates Kara Sea GNSS spoofing risk</div>
+          </div>
+
+          <div class="remediation-item">
+            <div class="remediation-header">
+              <span>Activate Sovereign State Re-Insurance</span>
+              <span class="remediation-gain">+20.0% Cont</span>
+            </div>
+            <div style="color: var(--text-secondary);">Restores P&I liability indemnity</div>
+          </div>
+
+          <div class="remediation-item">
+            <div class="remediation-header">
+              <span>Direct Fuel Stockpile Substitution</span>
+              <span class="remediation-gain">+18.0% Days</span>
+            </div>
+            <div style="color: var(--text-secondary);">Blends Arctic diesel with reserve stocks</div>
+          </div>
+        </div>
+
+        <div class="corridor-card" style="margin-top: auto;">
+          <div class="corridor-header">
+            <span class="corridor-name">Audit Hash Chain</span>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--accent-cyan); word-break: break-all;">
+            SHA256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function renderCanvas(mode) {
+      const cvs = document.getElementById("drainageCanvas");
+      if (!cvs) return;
+      const ctx = cvs.getContext("2d");
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+      // Draw Grid
+      ctx.strokeStyle = "#243247";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(30, 90); ctx.lineTo(520, 90);
+      ctx.moveTo(30, 10); ctx.lineTo(30, 90);
+      ctx.stroke();
+
+      // Draw Baseline or Depletion line
+      ctx.lineWidth = 2.5;
+      if (mode === "blockade") {
+        ctx.strokeStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(30, 20);
+        ctx.lineTo(180, 45); // Day 22 Warning
+        ctx.lineTo(320, 70); // Day 33 Critical
+        ctx.lineTo(420, 90); // Day 39.6 Exhaustion
+        ctx.stroke();
+
+        // Marker for exhaustion
+        ctx.fillStyle = "#ef4444";
+        ctx.fillText("Exhaustion @ Day 39.6", 280, 85);
+      } else {
+        ctx.strokeStyle = "#10b981";
+        ctx.beginPath();
+        ctx.moveTo(30, 20);
+        ctx.lineTo(520, 25);
+        ctx.stroke();
+        ctx.fillStyle = "#10b981";
+        ctx.fillText("Stable Reserve Equilibrium (45d)", 280, 20);
+      }
+    }
+
+    function selectScenario(scenarioKey) {
+      const buttons = document.querySelectorAll(".scenario-btn");
+      buttons.forEach(b => b.classList.remove("active"));
+      event.currentTarget.classList.add("active");
+
+      const path = document.getElementById("corridor-path");
+      const mCont = document.getElementById("m-continuity");
+      const mInv = document.getElementById("m-inventory");
+      const mLag = document.getElementById("m-lag");
+
+      const lPhys = document.getElementById("layer-phys");
+      const lOper = document.getElementById("layer-oper");
+      const lComm = document.getElementById("layer-comm");
+      const lTrust = document.getElementById("layer-trust");
+
+      if (scenarioKey === "ew_pnt") {
+        path.setAttribute("stroke", "#8b5cf6");
+        mCont.innerText = "52.0%";
+        mCont.style.color = "#8b5cf6";
+        lTrust.innerText = "Trust Layer: [FAIL] GNSS Spoofing Detected";
+        renderCanvas("normal");
+      } else if (scenarioKey === "insurance") {
+        path.setAttribute("stroke", "#f59e0b");
+        mCont.innerText = "0.0%";
+        mCont.style.color = "#f59e0b";
+        lComm.innerText = "Commercial Layer: [FAIL] War-Risk Withdrawn";
+        renderCanvas("normal");
+      } else if (scenarioKey === "blockade") {
+        path.setAttribute("stroke", "#ef4444");
+        mCont.innerText = "38.0%";
+        mCont.style.color = "#ef4444";
+        mInv.innerText = "0.0 d";
+        mInv.style.color = "#ef4444";
+        renderCanvas("blockade");
+      } else {
+        path.setAttribute("stroke", "#10b981");
+        mCont.innerText = "98.4%";
+        mCont.style.color = "#06b6d4";
+        mInv.innerText = "45.0 d";
+        mInv.style.color = "#06b6d4";
+        lPhys.innerText = "Physical Layer: [PASS] Navigable Waterway";
+        lOper.innerText = "Operational Layer: [PASS] Escort Icebreakers Ready";
+        lComm.innerText = "Commercial Layer: [PASS] Hull & P&I Covered";
+        lTrust.innerText = "Trust Layer: [PASS] PNT & SATCOM Validated";
+        renderCanvas("normal");
+      }
+    }
+
+    window.onload = function() {
+      renderCanvas("normal");
+    };
+  </script>
+</body>
+</html>

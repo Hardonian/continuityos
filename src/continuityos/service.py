@@ -965,6 +965,104 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lines = path.read_text().splitlines()[offset : offset + limit]
         return [EvidenceRecord.model_validate_json(line) for line in lines]
 
+    @app.post(
+        "/v1/sovereign/audit",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def sovereign_audit() -> dict[str, Any]:
+        from continuityos.sovereign import AirGapAuditor
+
+        report = AirGapAuditor().audit(Path("."))
+        return report.model_dump(mode="json")
+
+    @app.post(
+        "/v1/readiness",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evaluate_readiness_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.domain import CorridorState
+        from continuityos.readiness import ReadinessEngine
+
+        theater_id = str(payload.get("theater_id", "theater-1"))
+        overall_continuity = float(payload.get("overall_continuity", 0.95))
+        inventory_reserve_days = float(payload.get("inventory_reserve_days", 30.0))
+        corridor_state = CorridorState.from_str(str(payload.get("corridor_state", "open")))
+        res = ReadinessEngine().evaluate_readiness(
+            theater_id,
+            overall_continuity=overall_continuity,
+            inventory_reserve_days=inventory_reserve_days,
+            corridor_state=corridor_state,
+        )
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/cop/export",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def export_cop_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.cop import export_cop_feature, export_cop_feature_collection
+        from continuityos.domain import CorridorAssessment
+
+        assessment = CorridorAssessment.model_validate(payload.get("assessment", payload))
+        corridor_id = str(payload.get("corridor_id", "corridor-1"))
+        banner = str(payload.get("security_banner", "UNCLASSIFIED"))
+        coords = payload.get("coordinates")
+        feature = export_cop_feature(
+            corridor_id, assessment, coordinates=coords, security_banner=banner
+        )
+        return export_cop_feature_collection([feature])
+
+    @app.post(
+        "/v1/inventory/simulate",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def simulate_inventory_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.inventory import InventoryProfile, simulate_inventory
+
+        profile = InventoryProfile.model_validate(payload.get("profile", payload))
+        days = int(payload.get("simulation_days", 90))
+        degraded = bool(payload.get("degraded", False))
+        disrupted = bool(payload.get("disrupted_replenishment", False))
+        res = simulate_inventory(
+            profile,
+            simulation_days=days,
+            degraded=degraded,
+            disrupted_replenishment=disrupted,
+        )
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/recovery/model",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def model_recovery_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.recovery import RecoveryProfile, model_recovery
+
+        profile = RecoveryProfile.model_validate(payload.get("profile", payload))
+        days_since = int(payload.get("days_since_incident", 0))
+        res = model_recovery(profile, days_since_incident=days_since)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/scenarios/simulate",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def simulate_scenario_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.graph import DependencyGraph
+        from continuityos.scenario import Scenario, simulate_scenario
+
+        scenario = Scenario.model_validate(payload["scenario"])
+        graph = DependencyGraph.model_validate(payload["graph"])
+        res = simulate_scenario(scenario, graph)
+        return res.model_dump(mode="json")
+
+    ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
+    if ui_index.exists():
+
+        @app.get("/ui", response_class=PlainTextResponse)
+        async def ui_dashboard() -> Response:
+            return Response(content=ui_index.read_text(encoding="utf-8"), media_type="text/html")
+
     return app
 
 

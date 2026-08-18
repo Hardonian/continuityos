@@ -405,6 +405,80 @@ def command_generate_keys(args: argparse.Namespace) -> None:
     _output({"private_key": str(private_path), "public_key": str(public_path)}, args)
 
 
+def command_sovereign_audit(args: argparse.Namespace) -> None:
+    """Audit air-gapped readiness, cryptographic isolation, and zero-egress compliance."""
+    from continuityos.sovereign import AirGapAuditor
+
+    report = AirGapAuditor().audit(args.repo_dir)
+    _output(report, args)
+    if not report.compliant:
+        sys.exit(1)
+
+
+def command_readiness(args: argparse.Namespace) -> None:
+    """Evaluate Defense Readiness Reporting System (DRRS) & NATO C-Level capability rating."""
+    from continuityos.domain import CorridorState
+    from continuityos.readiness import ReadinessEngine
+
+    raw = _load(args.file)
+    spec = raw.get("spec", raw)
+    overall_continuity = float(spec.get("overall_continuity", 0.95))
+    inventory_days = float(spec.get("inventory_reserve_days", 30.0))
+    corridor_state_str = spec.get("corridor_state", "open")
+    corridor_state = CorridorState.from_str(corridor_state_str)
+
+    assessment = ReadinessEngine().evaluate_readiness(
+        spec.get("theater_id", "theater-1"),
+        overall_continuity=overall_continuity,
+        inventory_reserve_days=inventory_days,
+        corridor_state=corridor_state,
+    )
+    _output(assessment, args)
+
+
+def command_export_cop(args: argparse.Namespace) -> None:
+    """Export corridor operational status as Mil-Std-2525D / NATO APP-6D GeoJSON COP layer."""
+    from continuityos.cop import export_cop_feature, export_cop_feature_collection
+    from continuityos.domain import CorridorAssessment
+
+    raw = _load(args.file)
+    assessment = CorridorAssessment.model_validate(raw.get("assessment", raw))
+    corridor_id = raw.get("corridor_id", "corridor-1")
+    feature = export_cop_feature(
+        corridor_id,
+        assessment,
+        coordinates=args.coordinates,
+        security_banner=args.classification or "UNCLASSIFIED",
+    )
+    collection = export_cop_feature_collection([feature])
+    _output(collection, args)
+
+
+def command_cross_domain_filter(args: argparse.Namespace) -> None:
+    """Filter and sanitize payload across classification and compartment boundaries."""
+    from continuityos.domain import DataClassification
+    from continuityos.sovereign import CrossDomainFilter, SecurityLabel
+
+    payload = _load(args.file)
+    source_class = DataClassification(args.source_classification or "secret")
+    target_class = DataClassification(args.target_classification or "unclassified")
+    source_label = SecurityLabel(
+        classification=source_class,
+        dissemination_controls=set(args.controls.split(",")) if args.controls else set(),
+        owner_nation=args.owner_nation or "USA",
+    )
+    result = CrossDomainFilter().filter_payload(
+        payload,
+        source_label=source_label,
+        target_clearance=target_class,
+        target_nation=args.target_nation or "USA",
+        target_compartments=set(args.compartments.split(",")) if args.compartments else set(),
+    )
+    _output(result, args)
+    if not result.allowed:
+        sys.exit(1)
+
+
 # --- Parser builder ---
 
 
@@ -530,6 +604,47 @@ def build_parser() -> argparse.ArgumentParser:
     p_keys = subparsers.add_parser("generate-evidence-keys", help="Generate Ed25519 signing keys")
     p_keys.add_argument("output_dir", type=Path)
     p_keys.set_defaults(func=command_generate_keys)
+
+    # sovereign-audit
+    p_sova = subparsers.add_parser(
+        "sovereign-audit", help="Audit air-gapped readiness and SCIF compliance"
+    )
+    p_sova.add_argument("--repo-dir", type=Path, default=Path("."), help="Repository root")
+    p_sova.set_defaults(func=command_sovereign_audit)
+
+    # readiness
+    p_read = subparsers.add_parser(
+        "readiness", help="Evaluate Defense Readiness (DRRS) & C-Level capability rating"
+    )
+    p_read.add_argument("file", type=Path, help="Theater readiness spec JSON/YAML")
+    p_read.set_defaults(func=command_readiness)
+
+    # export-cop
+    p_cop = subparsers.add_parser(
+        "export-cop", help="Export corridor status as Mil-Std-2525D / NATO APP-6D GeoJSON COP"
+    )
+    p_cop.add_argument("file", type=Path, help="Assessment file JSON/YAML")
+    p_cop.add_argument("--classification", default="UNCLASSIFIED", help="Security banner marking")
+    p_cop.add_argument(
+        "--coordinates",
+        type=json.loads,
+        default=None,
+        help="Optional GeoJSON coordinate list [[lon,lat],...]",
+    )
+    p_cop.set_defaults(func=command_export_cop)
+
+    # cross-domain-filter
+    p_xdom = subparsers.add_parser(
+        "cross-domain-filter", help="Filter and sanitize payload across security enclaves"
+    )
+    p_xdom.add_argument("file", type=Path, help="Payload JSON/YAML")
+    p_xdom.add_argument("--source-classification", default="secret")
+    p_xdom.add_argument("--target-classification", default="unclassified")
+    p_xdom.add_argument("--owner-nation", default="USA")
+    p_xdom.add_argument("--target-nation", default="USA")
+    p_xdom.add_argument("--controls", help="Comma-separated dissemination controls (e.g. NOFORN)")
+    p_xdom.add_argument("--compartments", help="Comma-separated target compartments")
+    p_xdom.set_defaults(func=command_cross_domain_filter)
 
     return parser
 

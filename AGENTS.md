@@ -56,7 +56,10 @@ src/continuityos/
 ├── compiler.py        # Deterministic bounded exact solver for mitigation plan generation
 ├── evidence.py        # Append-only SHA-256 evidence ledger with Ed25519 cryptographic signatures
 ├── exchange.py        # Interoperability export (GeoJSON, GeoPackage, NDJSON)
-├── cli.py             # Unified CLI (continuity / continuityos) with 15 commands
+├── sovereign.py       # Sovereign security, security labeling, air-gap SCIF audit, and cross-domain guards
+├── readiness.py       # Defense Readiness Reporting System (DRRS) & NATO C-Level capability rating
+├── cop.py             # MIL-STD-2525D / NATO APP-6D Common Operating Picture symbology exporter
+├── cli.py             # Unified CLI (continuity / continuityos) with 19 commands
 ├── service.py         # FastAPI sovereign REST service with rate limiting, idempotency, and audit trails
 ├── providers/         # Provider SDK and offline MockProvider implementation
 └── sources/           # Public authoritative data adapters, caching, and policy enforcement
@@ -84,7 +87,7 @@ continuity validate examples/arctic/network.yaml
 
 ## 5. CLI Command Reference
 
-The `continuity` (or `continuityos`) CLI provides 15 subcommands:
+The `continuity` (or `continuityos`) CLI provides 19 subcommands:
 
 | Command | Purpose |
 |---|---|
@@ -103,6 +106,10 @@ The `continuity` (or `continuityos`) CLI provides 15 subcommands:
 | `doctor` | Run comprehensive system diagnostics (Python, Ed25519, schemas, offline mock) |
 | `verify-ledger` | Cryptographically verify evidence ledger hash chains and Ed25519 signatures |
 | `generate-evidence-keys` | Generate new Ed25519 keypairs for evidence signing |
+| `sovereign-audit` | Audit air-gapped readiness, cryptographic key isolation, and SCIF compliance |
+| `readiness <file>` | Evaluate Defense Readiness (DRRS) & NATO C-Level capability ratings |
+| `export-cop <file>` | Export corridor operational status as Mil-Std-2525D / NATO APP-6D GeoJSON COP |
+| `cross-domain-filter` | Filter and sanitize payloads across classification and security enclaves |
 
 ---
 
