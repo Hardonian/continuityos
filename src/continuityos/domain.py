@@ -170,9 +170,19 @@ class FactorAssessment(BaseModel):
 
 class CorridorState(StrEnum):
     OPEN = "open"
-    DEGRADED = "degraded"
+    OPEN_DEGRADED = "open_degraded"
+    OPEN_CAPACITY_CONSTRAINED = "open_capacity_constrained"
+    OPEN_BUT_UNINSURABLE = "open_but_uninsurable"
+    OPEN_BUT_NO_CARRIER_CAPACITY = "open_but_no_carrier_capacity"
+    OPEN_BUT_NAVIGATION_UNTRUSTED = "open_but_navigation_untrusted"
+    OPEN_BUT_COMMUNICATIONS_DEGRADED = "open_but_communications_degraded"
+    OPEN_BUT_SERVICE_DEPENDENT = "open_but_service_dependent"
+    RECOVERY_BACKLOGGED = "recovery_backlogged"
     FUNCTIONALLY_CLOSED = "functionally_closed"
     PHYSICALLY_CLOSED = "physically_closed"
+    UNKNOWN = "unknown"
+    # Legacy alias for backward compatibility with existing fusion tests
+    DEGRADED = "open_degraded"
 
 
 class CorridorAssessment(BaseModel):
@@ -225,3 +235,19 @@ class CompiledPlan(BaseModel):
     deterministic_solver: str
     approval_required: bool
     rejected_reason: str | None = None
+
+
+class DataClassification(StrEnum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    RESTRICTED = "restricted"
+
+
+class RecoveryObjective(BaseModel):
+    """Recovery time/point objectives for a resource or supply network."""
+
+    recovery_time_hours: int = Field(ge=0, le=8760)
+    recovery_point_hours: int = Field(ge=0, le=8760)
+    minimum_service_level: Score = 0.5
+    maximum_data_loss_hours: int = Field(default=24, ge=0, le=8760)
+    priority: int = Field(default=1, ge=1, le=5)

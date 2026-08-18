@@ -267,8 +267,36 @@ class FusionEngine:
         ]
         if port_values and max(port_values) <= 0.01:
             return CorridorState.PHYSICALLY_CLOSED
+
         if overall_risk >= 0.72:
             return CorridorState.FUNCTIONALLY_CLOSED
+
+        # Check specific factor-driven degraded states
+        insurance_values = [
+            item.value
+            for item in grouped.get(CorridorFactor.COMMERCIAL, [])
+            if item.metric == MetricName.INSURANCE_AVAILABILITY
+        ]
+        if insurance_values and max(insurance_values) <= 0.1:
+            return CorridorState.OPEN_BUT_UNINSURABLE
+
+        comms_values = [
+            item.value
+            for item in grouped.get(CorridorFactor.COMMUNICATIONS, [])
+            if item.metric == MetricName.SATCOM_AVAILABILITY
+        ]
+        if comms_values and max(comms_values) <= 0.2:
+            return CorridorState.OPEN_BUT_COMMUNICATIONS_DEGRADED
+
+        port_capacity_values = [
+            item.value
+            for item in grouped.get(CorridorFactor.PORT, [])
+            if item.metric == MetricName.PORT_CAPACITY
+        ]
+        if port_capacity_values and max(port_capacity_values) <= 0.15:
+            return CorridorState.OPEN_CAPACITY_CONSTRAINED
+
         if overall_risk >= 0.38:
-            return CorridorState.DEGRADED
+            return CorridorState.OPEN_DEGRADED
+
         return CorridorState.OPEN

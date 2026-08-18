@@ -209,3 +209,75 @@ class DependencyEngine:
             )
             for node_id, value in probability.items()
         ]
+
+    def find_alternative_paths(
+        self, graph: DependencyGraph, source: str, target: str, failed: set[str]
+    ) -> list[list[str]]:
+        """Find alternative paths from source to target avoiding failed nodes."""
+        outgoing: dict[str, list[DependencyEdge]] = defaultdict(list)
+        for edge in graph.edges:
+            outgoing[edge.source].append(edge)
+
+        paths: list[list[str]] = []
+        stack: list[tuple[str, list[str], set[str]]] = [(source, [source], {source})]
+        while stack:
+            current, path, visited = stack.pop()
+            if current == target:
+                paths.append(path)
+                continue
+            for edge in outgoing.get(current, []):
+                if edge.target not in visited and edge.target not in failed:
+                    stack.append((edge.target, path + [edge.target], visited | {edge.target}))
+        return sorted(paths, key=len)
+
+    def calculate_blast_radius(
+        self, graph: DependencyGraph, failed_nodes: set[str]
+    ) -> dict[str, float]:
+        """Calculate the blast radius as a map of node_id → impact probability."""
+        assessment = self.analyze(graph, failed_nodes)
+        return {
+            node.node_id: node.impact_probability
+            for node in assessment.impacted_nodes
+        }
+
+
+def detect_cycles(graph: DependencyGraph) -> list[list[str]]:
+    """Detect cycles in the dependency graph using DFS-based coloring.
+
+    Returns a list of cycles, each represented as a list of node IDs.
+    """
+    adjacency: dict[str, list[str]] = defaultdict(list)
+    for edge in graph.edges:
+        adjacency[edge.source].append(edge.target)
+
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = {node.node_id: WHITE for node in graph.nodes}
+    parent: dict[str, str | None] = {node.node_id: None for node in graph.nodes}
+    cycles: list[list[str]] = []
+
+    def _dfs(node: str) -> None:
+        color[node] = GRAY
+        for neighbor in sorted(adjacency.get(node, [])):
+            if color[neighbor] == GRAY:
+                # Back edge found — reconstruct cycle
+                cycle = [neighbor]
+                current = node
+                while current != neighbor:
+                    cycle.append(current)
+                    p = parent.get(current)
+                    if p is None:
+                        break
+                    current = p
+                cycle.append(neighbor)
+                cycles.append(list(reversed(cycle)))
+            elif color[neighbor] == WHITE:
+                parent[neighbor] = node
+                _dfs(neighbor)
+        color[node] = BLACK
+
+    for node in sorted(color):
+        if color[node] == WHITE:
+            _dfs(node)
+
+    return cycles
+
