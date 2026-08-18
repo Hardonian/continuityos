@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
+from continuityos.crypto import ZKPReserveProof
 from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
@@ -78,6 +79,13 @@ class AssessmentRequest(BaseModel):
     corridor_id: str
     observations: list[Observation]
     as_of: datetime | None = None
+
+
+class VerifyReserveResponse(BaseModel):
+    valid: bool
+    policy_minimum: int
+    commitment_hash_hex: str
+    message: str
 
 
 class TelemetryResponse(BaseModel):
@@ -580,6 +588,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ledger.append("compiled_plan", str(plan.plan_id), plan.model_dump(mode="json"))
         save_idempotency("compile", key, fingerprint, plan)
         return plan
+
+    @app.post(
+        "/v1/crypto/verify-reserve-proof",
+        response_model=VerifyReserveResponse,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def verify_reserve_proof(request: Request, proof: ZKPReserveProof) -> VerifyReserveResponse:
+        key, fingerprint, cached = await idempotency_context(request, "verify-reserve")
+        if cached is not None:
+            return VerifyReserveResponse.model_validate_json(cached)
+            
+        is_valid = proof.verify()
+        response = VerifyReserveResponse(
+            valid=is_valid,
+            policy_minimum=proof.policy_minimum,
+            commitment_hash_hex=proof.commitment_hash_hex,
+            message="Zero-Knowledge Proof mathematically verified." if is_valid else "Zero-Knowledge Proof verification failed."
+        )
+        ledger.append("zkp_reserve_verification", proof.commitment_hash_hex, response.model_dump(mode="json"))
+        save_idempotency("verify-reserve", key, fingerprint, response)
+        
+        if not is_valid:
+            raise HTTPException(status_code=400, detail="ZKP Reserve Proof verification failed.")
+            
+        return response
 
     @app.post(
         "/v1/decision-packets",
