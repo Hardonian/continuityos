@@ -46,7 +46,7 @@ class EdgeNode:
     def get_manifest(self) -> EdgeManifest:
         """Generate a manifest of all local snapshot IDs."""
         snapshot_ids = []
-        for metadata_path in self.cache.root.glob("*/*/metadata.json"):
+        for metadata_path in self.cache.root.glob("*/*/*/metadata.json"):
             import json
 
             try:
