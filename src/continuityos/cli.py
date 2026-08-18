@@ -552,6 +552,8 @@ def command_merkle_proof(args: argparse.Namespace) -> None:
         "inclusion_proof_valid": verified,
         "audit_path_depth": len(proof.audit_path),
     }
+    _output(result, args)
+    
     if proof.verify():
         print("\n✅ Zero-Knowledge Merkle Proof Verified Mathematically.")
     else:

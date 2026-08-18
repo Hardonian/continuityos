@@ -14,7 +14,6 @@ from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
 
 from continuityos.compiler import ContinuityCompiler
-from continuityos.domain import CompileRequest
 
 logger = logging.getLogger("continuityos.operator")
 
@@ -100,21 +99,20 @@ class ContinuityOperator:
         """Reconcile a Custom Resource by running the ContinuityOS compiler."""
         name = obj.get("metadata", {}).get("name")
         namespace = obj.get("metadata", {}).get("namespace", "default")
-        spec = obj.get("spec", {})
         
         logger.info(f"Reconciling {plural} {namespace}/{name}")
         
         try:
             # Here we would normally build a complete CompileRequest from the spec.
-            # For demonstration in the operator, we run a stub compilation if the spec is incomplete,
-            # or pass the actual dictionaries if fully populated.
+            # For demonstration, we run a stub compilation if the spec is incomplete.
             # In a real environment, the CRDs exactly match the internal Pydantic models.
             
+            import datetime
             # Update the status of the CRD with compilation results
             status_update = {
                 "status": {
                     "phase": "Reconciled",
-                    "compiled_at": __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat(),
+                    "compiled_at": datetime.datetime.now(datetime.UTC).isoformat(),
                     "actions_required": 0, # Stub value
                     "message": "ContinuityOS Compiler successfully verified desired state."
                 }
