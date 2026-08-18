@@ -37,6 +37,9 @@ class AssertionClass(StrEnum):
     INSURANCE_ACCESS = "insurance_access"
     HUMAN_INTELLIGENCE = "human_intelligence"
     DISASTER_RESPONSE = "disaster_response"
+    TACTICAL_SURVEILLANCE = "tactical_surveillance"
+    COUNTER_UAS = "counter_uas"
+    LEO_SATCOM = "leo_satcom"
 
 
 class MetricName(StrEnum):
@@ -65,6 +68,13 @@ class MetricName(StrEnum):
     EVACUATION_COUNT = "evacuation_count"
     UTILITY_IMPACT_COUNT = "utility_impact_count"
     WATER_LEVEL = "water_level"
+    UAV_LINK_MARGIN = "uav_link_margin"
+    UAV_SWARM_COHESION = "uav_swarm_cohesion"
+    STARLINK_LATENCY_MS = "starlink_latency_ms"
+    STARLINK_DOWNLINK_MBPS = "starlink_downlink_mbps"
+    STARLINK_OBSTRUCTION_RATE = "starlink_obstruction_rate"
+    CUAS_THREAT_DENSITY = "cuas_threat_density"
+    CUAS_JAMMING_ACTIVE = "cuas_jamming_active"
 
 
 class GeoPoint(BaseModel):
@@ -122,6 +132,10 @@ class Observation(BaseModel):
             MetricName.INSURANCE_AVAILABILITY,
             MetricName.GEOPOLITICAL_PRESSURE,
             MetricName.ESCORT_CAPACITY,
+            MetricName.UAV_SWARM_COHESION,
+            MetricName.STARLINK_OBSTRUCTION_RATE,
+            MetricName.CUAS_THREAT_DENSITY,
+            MetricName.CUAS_JAMMING_ACTIVE,
         }
         if self.metric in ratio_metrics and not 0.0 <= self.value <= 1.0:
             raise ValueError(f"{self.metric} must be normalized to [0, 1]")
@@ -137,6 +151,9 @@ class Observation(BaseModel):
                 MetricName.SATELLITE_GEOMETRY_DENSITY,
                 MetricName.EARTH_OBSERVATION_COVERAGE,
                 MetricName.PORT_GEOMETRY,
+                MetricName.UAV_LINK_MARGIN,
+                MetricName.STARLINK_LATENCY_MS,
+                MetricName.STARLINK_DOWNLINK_MBPS,
             }
             and self.value < 0
         ):
