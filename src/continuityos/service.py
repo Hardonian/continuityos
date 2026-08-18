@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -24,6 +25,7 @@ from continuityos.config import Settings
 from continuityos.crypto import ZKPReserveProof
 from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
+from continuityos.edge import EdgeNode
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.exchange import (
     GeoJSONFeatureCollection,
@@ -34,6 +36,7 @@ from continuityos.exchange import (
 )
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
+from continuityos.intelligence import AgenticIntelligenceEngine
 from continuityos.interoperability import (
     SUPPORTED_CLOUD_EVENT_TYPES,
     CAPAlert,
@@ -184,7 +187,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     compiler = ContinuityCompiler(configured.compiler_max_actions)
     dependency_engine = DependencyEngine()
 
+    @asynccontextmanager
+    async def app_lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
+        if configured.edge_enabled:
+            app_instance.state.edge_node.start()
+        yield
+        if configured.edge_enabled:
+            await app_instance.state.edge_node.stop()
+
     app = FastAPI(
+        lifespan=app_lifespan,
         title="Aegis Continuity (Sovereign Edition) API",
         version="0.1.0",
         description=(
@@ -204,7 +216,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/openapi.json" if configured.environment != "production" else None,
         redoc_url=None,
     )
-    
+
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(
         CORSMiddleware,
@@ -222,6 +234,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         SnapshotCache(configured.data_dir / "public-snapshots"),
         outbound_enabled=configured.outbound_http_enabled,
         timeout_seconds=configured.outbound_timeout_seconds,
+    )
+
+    app.state.intelligence_engine = AgenticIntelligenceEngine(
+        llm_endpoint=configured.llm_endpoint,
+        model=configured.llm_model,
+    )
+
+    app.state.edge_node = EdgeNode(
+        node_id=str(uuid4())[:8],
+        cache=app.state.public_data.cache,
+        gossip_interval=configured.edge_gossip_interval_seconds,
     )
 
     async def idempotency_context(
@@ -594,24 +617,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response_model=VerifyReserveResponse,
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
     )
-    async def verify_reserve_proof(request: Request, proof: ZKPReserveProof) -> VerifyReserveResponse:
+    async def verify_reserve_proof(
+        request: Request, proof: ZKPReserveProof
+    ) -> VerifyReserveResponse:
         key, fingerprint, cached = await idempotency_context(request, "verify-reserve")
         if cached is not None:
             return VerifyReserveResponse.model_validate_json(cached)
-            
+
         is_valid = proof.verify()
         response = VerifyReserveResponse(
             valid=is_valid,
             policy_minimum=proof.policy_minimum,
             commitment_hash_hex=proof.commitment_hash_hex,
-            message="Zero-Knowledge Proof mathematically verified." if is_valid else "Zero-Knowledge Proof verification failed."
+            message="Zero-Knowledge Proof mathematically verified."
+            if is_valid
+            else "Zero-Knowledge Proof verification failed.",
         )
-        ledger.append("zkp_reserve_verification", proof.commitment_hash_hex, response.model_dump(mode="json"))
+        ledger.append(
+            "zkp_reserve_verification", proof.commitment_hash_hex, response.model_dump(mode="json")
+        )
         save_idempotency("verify-reserve", key, fingerprint, response)
-        
+
         if not is_valid:
             raise HTTPException(status_code=400, detail="ZKP Reserve Proof verification failed.")
-            
+
         return response
 
     @app.post(
@@ -1174,6 +1203,59 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         proof = MerkleInclusionProof.model_validate(payload)
         is_valid = proof.verify()
         return {"valid": is_valid, "root_hash": proof.root_hash, "leaf_hash": proof.leaf_hash}
+
+    @app.post(
+        "/v1/intelligence/briefing",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_briefing_endpoint(
+        payload: dict[str, Any], request: Request
+    ) -> dict[str, Any]:
+        packet = DecisionPacket.model_validate(payload)
+        engine: AgenticIntelligenceEngine = request.app.state.intelligence_engine
+        briefing = await engine.generate_briefing(packet)
+        return briefing.model_dump(mode="json")
+
+    @app.get("/v1/edge/manifest")
+    async def edge_manifest_endpoint(request: Request) -> dict[str, Any]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+        node: EdgeNode = request.app.state.edge_node
+        return node.get_manifest().model_dump(mode="json")
+
+    @app.get("/v1/edge/sync/{snapshot_id}")
+    async def edge_sync_endpoint(request: Request, snapshot_id: str) -> dict[str, Any]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+
+        # In a real app we'd fetch the exact snapshot payload and metadata from SnapshotCache.
+        # Here we just look through the cache directories for simplicity.
+        cache = request.app.state.public_data.cache
+        for metadata_path in cache.root.glob("*/*/*/metadata.json"):
+            import json
+
+            try:
+                data = json.loads(metadata_path.read_text())
+                if data["snapshot_id"] == snapshot_id:
+                    payload_path = metadata_path.parent / "payload.bin"
+                    body = payload_path.read_bytes()
+                    return {"metadata": data, "payload": body.hex()}
+            except (json.JSONDecodeError, KeyError, FileNotFoundError):
+                continue
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    @app.post("/v1/edge/peers")
+    async def edge_add_peer_endpoint(request: Request, payload: dict[str, str]) -> dict[str, str]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+
+        peer_url = payload.get("url")
+        if not peer_url:
+            raise HTTPException(status_code=400, detail="Missing peer url")
+
+        node: EdgeNode = request.app.state.edge_node
+        node.add_peer(peer_url)
+        return {"status": "ok", "message": f"Added peer {peer_url}"}
 
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():

@@ -553,7 +553,7 @@ def command_merkle_proof(args: argparse.Namespace) -> None:
         "audit_path_depth": len(proof.audit_path),
     }
     _output(result, args)
-    
+
     if proof.verify():
         print("\n✅ Zero-Knowledge Merkle Proof Verified Mathematically.")
     else:
@@ -564,7 +564,7 @@ def command_merkle_proof(args: argparse.Namespace) -> None:
 def command_operator(args: argparse.Namespace) -> None:
     """Start the ContinuityOS Kubernetes Operator."""
     from continuityos.operator import ContinuityOperator
-    
+
     if args.subcommand == "start":
         operator = ContinuityOperator(max_actions=args.max_actions)
         operator.run()
@@ -770,11 +770,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_mkl.add_argument("ledger", type=Path, help="Evidence ledger file")
     p_mkl.add_argument("--index", type=int, default=0, help="Record index to prove")
     p_mkl.set_defaults(func=command_merkle_proof)
-    
+
     # operator
-    p_op = subparsers.add_parser(
-        "operator", help="Manage the Kubernetes Operator"
-    )
+    p_op = subparsers.add_parser("operator", help="Manage the Kubernetes Operator")
     p_op.add_argument("subcommand", choices=["start"], help="Action to perform")
     p_op.add_argument("--max-actions", type=int, default=100, help="Max compiler actions")
     p_op.set_defaults(func=command_operator)

@@ -250,20 +250,19 @@ def hash_chain(seed: bytes, n_iterations: int) -> bytes:
 
 class ZKPReserveCommitment(BaseModel):
     """A cryptographic commitment to a strategic reserve amount."""
-    
+
     entity_id: str
     commodity_id: str
     commitment_hash_hex: str
     max_capacity: int = Field(
-        default=1000, 
-        description="The upper bound N of the hash chain (e.g. max days of fuel)."
+        default=1000, description="The upper bound N of the hash chain (e.g. max days of fuel)."
     )
     timestamp_utc: str
 
 
 class ZKPReserveProof(BaseModel):
     """A Zero-Knowledge Proof that a committed reserve meets a policy minimum."""
-    
+
     commitment_hash_hex: str
     policy_minimum: int
     proof_hash_hex: str
@@ -271,7 +270,7 @@ class ZKPReserveProof(BaseModel):
     def verify(self, max_capacity: int = 1000) -> bool:
         """
         Cryptographically verify that the prover holds at least `policy_minimum`.
-        
+
         The verifier takes the `proof_hash` (which is H^(N - min)(S)) and hashes it
         `policy_minimum` times. If the result matches the published `commitment_hash` (H^N(S)),
         then the prover definitively knows a pre-image further back in the chain, proving
@@ -279,16 +278,16 @@ class ZKPReserveProof(BaseModel):
         """
         if self.policy_minimum < 0 or self.policy_minimum > max_capacity:
             return False
-            
+
         proof_bytes = bytes.fromhex(self.proof_hash_hex)
         expected_commitment = hash_chain(proof_bytes, self.policy_minimum)
-        
+
         return expected_commitment.hex() == self.commitment_hash_hex
 
 
 class ZKPProver:
     """Prover logic for generating ZKP reserve proofs."""
-    
+
     def __init__(self, actual_reserve: int, max_capacity: int = 1000):
         if actual_reserve < 0 or actual_reserve > max_capacity:
             raise ValueError(f"Reserve {actual_reserve} out of bounds (0-{max_capacity})")
@@ -296,6 +295,7 @@ class ZKPProver:
         self.max_capacity = max_capacity
         # Generate a high-entropy secret seed S
         import os
+
         self._secret_seed = os.urandom(32)
         # C = H^N(S)
         self.commitment_bytes = hash_chain(self._secret_seed, self.max_capacity)
@@ -303,31 +303,31 @@ class ZKPProver:
     def generate_commitment(self, entity_id: str, commodity_id: str) -> ZKPReserveCommitment:
         """Generate the public commitment to be recorded on the ledger."""
         from datetime import UTC, datetime
+
         return ZKPReserveCommitment(
             entity_id=entity_id,
             commodity_id=commodity_id,
             commitment_hash_hex=self.commitment_bytes.hex(),
             max_capacity=self.max_capacity,
-            timestamp_utc=datetime.now(UTC).isoformat()
+            timestamp_utc=datetime.now(UTC).isoformat(),
         )
 
     def prove_minimum(self, required_minimum: int) -> ZKPReserveProof:
         """
         Generate a proof that actual_reserve >= required_minimum.
-        
+
         Throws ValueError if actual_reserve is less than required_minimum.
         """
         if self.actual_reserve < required_minimum:
             raise ValueError("Cannot generate proof: actual reserve is below required minimum.")
-            
+
         # The proof is P_min = H^(N - min)(S)
         # Since actual_reserve >= min, the prover has S and can compute this easily.
         iterations = self.max_capacity - required_minimum
         proof_bytes = hash_chain(self._secret_seed, iterations)
-        
+
         return ZKPReserveProof(
             commitment_hash_hex=self.commitment_bytes.hex(),
             policy_minimum=required_minimum,
-            proof_hash_hex=proof_bytes.hex()
+            proof_hash_hex=proof_bytes.hex(),
         )
-

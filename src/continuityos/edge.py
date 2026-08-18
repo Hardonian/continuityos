@@ -14,6 +14,7 @@ logger = logging.getLogger("continuityos.edge")
 
 class EdgeManifest(BaseModel):
     """Manifest of snapshot hashes hosted by a peer."""
+
     peer_id: str
     snapshot_ids: list[str]
 
@@ -47,6 +48,7 @@ class EdgeNode:
         snapshot_ids = []
         for metadata_path in self.cache.root.glob("*/*/metadata.json"):
             import json
+
             try:
                 data = json.loads(metadata_path.read_text())
                 snapshot_ids.append(data["snapshot_id"])
@@ -67,7 +69,7 @@ class EdgeNode:
                 local_ids = set(local_manifest.snapshot_ids)
 
                 missing_ids = set(manifest.snapshot_ids) - local_ids
-                
+
                 for missing_id in missing_ids:
                     # Request the raw snapshot payload
                     sync_resp = await client.get(f"{peer_url}/v1/edge/sync/{missing_id}")
@@ -79,18 +81,26 @@ class EdgeNode:
                         data = sync_resp.json()
                         source_id = data["metadata"]["source_id"]
                         url = data["metadata"]["url"]
-                        body = data["payload"].encode() if isinstance(data["payload"], str) else bytes.fromhex(data["payload"])
+                        body = (
+                            data["payload"].encode()
+                            if isinstance(data["payload"], str)
+                            else bytes.fromhex(data["payload"])
+                        )
                         headers = {"content-type": data["metadata"].get("content_type") or ""}
-                        
+
                         self.cache.store(source_id, url, body, headers, 200)
-                        logger.info(f"Edge Node {self.node_id} synced snapshot {missing_id} from {peer_url}")
+                        logger.info(
+                            f"Edge Node {self.node_id} synced snapshot {missing_id} from {peer_url}"
+                        )
 
         except (httpx.RequestError, ValueError) as e:
             logger.warning(f"Edge Node {self.node_id} failed to sync with {peer_url}: {e}")
 
     async def _loop(self) -> None:
         """Background asynchronous gossip loop."""
-        logger.info(f"Edge Node {self.node_id} starting gossip loop (interval={self.gossip_interval}s)")
+        logger.info(
+            f"Edge Node {self.node_id} starting gossip loop (interval={self.gossip_interval}s)"
+        )
         while self._running:
             for peer in list(self.peers):
                 await self._sync_with_peer(peer)

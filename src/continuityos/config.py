@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(default=60, ge=1, le=10_000)
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
 
+    # Intelligence Plane settings
+    llm_endpoint: str = "http://127.0.0.1:11434/v1/chat/completions"
+    llm_model: str = "llama3"
+
+    # Edge Data Plane settings
+    edge_enabled: bool = False
+    edge_gossip_interval_seconds: float = Field(default=30.0, gt=0)
+
     @model_validator(mode="after")
     def validate_production_controls(self) -> Settings:
         if self.environment == "production":
