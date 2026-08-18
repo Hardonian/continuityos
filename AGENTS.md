@@ -18,6 +18,7 @@ Kubernetes answers:
 > *Will my supply chain, logistics network, or critical mission corridor function through degradation, denial, and cascade failure — and what exact, explainable, bounded actions restore continuity?*
 
 Resilience is **not binary** (OPEN vs. CLOSED). Infrastructure can remain physically open while becoming operationally or commercially unusable:
+
 - **`OPEN_BUT_UNINSURABLE`** — route physically clear, but Lloyd's / war-risk underwriters withdraw coverage.
 - **`OPEN_BUT_NO_CARRIER_CAPACITY`** — ports open, but container carriers divert vessels away.
 - **`OPEN_BUT_NAVIGATION_UNTRUSTED`** — waterway navigable, but GNSS spoofing / PNT loss makes transit unsafe.
@@ -38,7 +39,7 @@ ContinuityOS is strictly engineered for **defensive resilience planning, busines
 
 ## 3. Architecture Overview & Core Modules
 
-```
+```text
 src/continuityos/
 ├── domain.py          # Core domain models, 12-state CorridorState enum, metrics, observations
 ├── dsl.py             # Declarative YAML DSL (apiVersion: continuity.io/v1) for SupplyNetwork, Policy, Trust, Scenario
@@ -75,13 +76,16 @@ src/continuityos/
 ContinuityOS resources are declared as YAML documents:
 
 ### Resource Kinds
+
 - `SupplyNetwork`: Declares desired redundancy, inventory reserves, failure tolerance, and recovery constraints.
 - `ContinuityPolicy`: Declares resilience rules evaluated against observed supply network state.
 - `DependencyTrust`: Declares multi-dimensional trust ratings (0.0–1.0) across physical, cyber, legal, commercial, insurance, communications, navigation, and operator confidence.
 - `Scenario`: Declares correlated disruption events for defensive simulation.
 
 ### Validation
+
 Validate any spec via the CLI:
+
 ```bash
 continuity validate examples/arctic/network.yaml
 ```
@@ -93,7 +97,7 @@ continuity validate examples/arctic/network.yaml
 The `continuity` (or `continuityos`) CLI provides 23 subcommands:
 
 | Command | Purpose |
-|---|---|
+| --- | --- |
 | `init <dir>` | Scaffold a new Continuity-as-Code directory with `network.yaml` and `policy.yaml` |
 | `validate <file>` | Validate declarative YAML files against JSON Schema rules |
 | `graph <file>` | Analyze dependency graph, detect cycles, find alternate paths, calculate blast radius |
@@ -129,6 +133,7 @@ The `continuity` (or `continuityos`) CLI provides 23 subcommands:
 - **Determinism**: Plan compilation, scenario simulation, and inventory models must produce bit-for-bit deterministic results for identical inputs.
 
 ### Verification Commands
+
 ```bash
 uv sync --all-extras
 uv run ruff check .

@@ -270,6 +270,49 @@
       color: var(--text-primary);
     }
     .remediation-gain { color: var(--accent-green); font-family: var(--font-mono); font-weight: 700; }
+    .functional-layers {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .header-subtitle {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+    }
+    .chart-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .drainage-canvas {
+      width: 100%;
+      height: 110px;
+    }
+    .solver-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .remediation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .remediation-desc {
+      color: var(--text-secondary);
+    }
+    .audit-card {
+      margin-top: auto;
+    }
+    .audit-hash {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent-cyan);
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -351,7 +394,7 @@
           <div class="corridor-header">
             <span class="corridor-name">4-Layer Functional Closure</span>
           </div>
-          <div style="font-size: 11px; font-family: var(--font-mono); display: flex; flex-direction: column; gap: 4px;">
+          <div class="functional-layers">
             <div id="layer-phys">Physical Layer: [PASS] Navigable Waterway</div>
             <div id="layer-oper">Operational Layer: [PASS] Escort Icebreakers Ready</div>
             <div id="layer-comm">Commercial Layer: [PASS] Hull & P&I Covered</div>
@@ -365,7 +408,7 @@
     <section class="panel">
       <div class="panel-header">
         <span class="panel-title">Theater Common Operating Picture (COP)</span>
-        <span style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan);">NATO APP-6D / STANAG 7074</span>
+        <span class="header-subtitle">NATO APP-6D / STANAG 7074</span>
       </div>
       <div class="panel-body">
 
@@ -415,10 +458,10 @@
 
         <!-- Inventory Depletion Waterfall Canvas -->
         <div class="chart-container">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">
+          <div class="chart-title">
             Strategic Fuel Stockpile Drainage (Day 0 to 60)
           </div>
-          <canvas id="drainageCanvas" width="540" height="110" style="width: 100%; height: 110px;"></canvas>
+          <canvas id="drainageCanvas" width="540" height="110" class="drainage-canvas"></canvas>
         </div>
 
       </div>
@@ -430,17 +473,17 @@
         <span class="panel-title">Deterministic Remediation</span>
       </div>
       <div class="panel-body">
-        <div style="font-size: 11px; color: var(--text-secondary);">
+        <div class="solver-desc">
           Human-in-the-Loop Advisory Actions compiled via deterministic exact solver:
         </div>
 
-        <div id="remediation-list" style="display: flex; flex-direction: column; gap: 8px;">
+        <div id="remediation-list" class="remediation-list">
           <div class="remediation-item">
             <div class="remediation-header">
               <span>Deploy Backup Inertial Navigation (INS)</span>
               <span class="remediation-gain">+15.0% Cont</span>
             </div>
-            <div style="color: var(--text-secondary);">Attenuates Kara Sea GNSS spoofing risk</div>
+            <div class="remediation-desc">Attenuates Kara Sea GNSS spoofing risk</div>
           </div>
 
           <div class="remediation-item">
@@ -448,7 +491,7 @@
               <span>Activate Sovereign State Re-Insurance</span>
               <span class="remediation-gain">+20.0% Cont</span>
             </div>
-            <div style="color: var(--text-secondary);">Restores P&I liability indemnity</div>
+            <div class="remediation-desc">Restores P&I liability indemnity</div>
           </div>
 
           <div class="remediation-item">
@@ -456,15 +499,15 @@
               <span>Direct Fuel Stockpile Substitution</span>
               <span class="remediation-gain">+18.0% Days</span>
             </div>
-            <div style="color: var(--text-secondary);">Blends Arctic diesel with reserve stocks</div>
+            <div class="remediation-desc">Blends Arctic diesel with reserve stocks</div>
           </div>
         </div>
 
-        <div class="corridor-card" style="margin-top: auto;">
+        <div class="corridor-card audit-card">
           <div class="corridor-header">
             <span class="corridor-name">Audit Hash Chain</span>
           </div>
-          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--accent-cyan); word-break: break-all;">
+          <div class="audit-hash">
             SHA256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
           </div>
         </div>
