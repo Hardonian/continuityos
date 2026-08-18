@@ -55,11 +55,14 @@ src/continuityos/
 ├── remediation.py     # Advisory remediation option generator with confidence and cost estimates
 ├── compiler.py        # Deterministic bounded exact solver for mitigation plan generation
 ├── evidence.py        # Append-only SHA-256 evidence ledger with Ed25519 cryptographic signatures
+├── crypto.py          # Post-Quantum hybrid envelopes (ML-DSA), Merkle inclusion proofs & sealed intel (ML-KEM)
+├── threat.py          # Cyber-physical threat anomaly engine (GNSS EW spoofing, Port SCADA, AIS kinematics)
+├── intelligence.py    # Machine learning Bayesian cascade forecaster, stream anomaly detector & XAI Shapley explainer
 ├── exchange.py        # Interoperability export (GeoJSON, GeoPackage, NDJSON)
 ├── sovereign.py       # Sovereign security, security labeling, air-gap SCIF audit, and cross-domain guards
 ├── readiness.py       # Defense Readiness Reporting System (DRRS) & NATO C-Level capability rating
 ├── cop.py             # MIL-STD-2525D / NATO APP-6D Common Operating Picture symbology exporter
-├── cli.py             # Unified CLI (continuity / continuityos) with 19 commands
+├── cli.py             # Unified CLI (continuity / continuityos) with 23 commands
 ├── service.py         # FastAPI sovereign REST service with rate limiting, idempotency, and audit trails
 ├── providers/         # Provider SDK and offline MockProvider implementation
 └── sources/           # Public authoritative data adapters, caching, and policy enforcement
@@ -87,7 +90,7 @@ continuity validate examples/arctic/network.yaml
 
 ## 5. CLI Command Reference
 
-The `continuity` (or `continuityos`) CLI provides 19 subcommands:
+The `continuity` (or `continuityos`) CLI provides 23 subcommands:
 
 | Command | Purpose |
 |---|---|
@@ -110,6 +113,10 @@ The `continuity` (or `continuityos`) CLI provides 19 subcommands:
 | `readiness <file>` | Evaluate Defense Readiness (DRRS) & NATO C-Level capability ratings |
 | `export-cop <file>` | Export corridor operational status as Mil-Std-2525D / NATO APP-6D GeoJSON COP |
 | `cross-domain-filter` | Filter and sanitize payloads across classification and security enclaves |
+| `threat-scan <file>` | Scan telemetry for cyber-physical threats (GNSS EW spoofing, SCADA floods, AIS kinematics) |
+| `ai-forecast --graph ...` | Bayesian cascade failure probability forecasting across supply graph |
+| `xai-explain <file>` | Explain corridor risk breakdown using Shapley factor attribution (Explainable AI) |
+| `merkle-proof <ledger>` | Generate and verify zero-knowledge Merkle inclusion proofs for ledger records |
 
 ---
 
