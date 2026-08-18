@@ -59,6 +59,13 @@ class FusionPolicy:
         MetricName.ESCORT_CAPACITY: CorridorFactor.ESCORT,
         MetricName.INVENTORY_DAYS: CorridorFactor.INVENTORY,
         MetricName.TRADE_DEPENDENCY: CorridorFactor.COMMERCIAL,
+        MetricName.UAV_LINK_MARGIN: CorridorFactor.COMMUNICATIONS,
+        MetricName.UAV_SWARM_COHESION: CorridorFactor.ESCORT,
+        MetricName.STARLINK_LATENCY_MS: CorridorFactor.COMMUNICATIONS,
+        MetricName.STARLINK_DOWNLINK_MBPS: CorridorFactor.COMMUNICATIONS,
+        MetricName.STARLINK_OBSTRUCTION_RATE: CorridorFactor.COMMUNICATIONS,
+        MetricName.CUAS_THREAT_DENSITY: CorridorFactor.CYBER,
+        MetricName.CUAS_JAMMING_ACTIVE: CorridorFactor.CYBER,
     }
 
     MAX_AGE_HOURS: ClassVar[dict[MetricName, float]] = {
@@ -80,6 +87,13 @@ class FusionPolicy:
         MetricName.INVENTORY_DAYS: 24.0,
         MetricName.TRADE_DEPENDENCY: 24.0 * 90,
         MetricName.PORT_GEOMETRY: 24.0 * 365,
+        MetricName.UAV_LINK_MARGIN: 0.5,
+        MetricName.UAV_SWARM_COHESION: 0.5,
+        MetricName.STARLINK_LATENCY_MS: 0.25,
+        MetricName.STARLINK_DOWNLINK_MBPS: 0.25,
+        MetricName.STARLINK_OBSTRUCTION_RATE: 0.25,
+        MetricName.CUAS_THREAT_DENSITY: 0.25,
+        MetricName.CUAS_JAMMING_ACTIVE: 0.25,
     }
 
     FACTOR_WEIGHTS: ClassVar[dict[CorridorFactor, float]] = {

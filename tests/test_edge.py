@@ -35,6 +35,9 @@ async def test_edge_sync_peer(mock_cache: SnapshotCache, monkeypatch: pytest.Mon
     node.add_peer("http://peer-mock")
 
     class MockClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
         async def __aenter__(self):
             return self
 

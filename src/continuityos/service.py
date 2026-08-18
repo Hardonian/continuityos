@@ -1257,6 +1257,113 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         node.add_peer(peer_url)
         return {"status": "ok", "message": f"Added peer {peer_url}"}
 
+    @app.post(
+        "/v1/tactical/uav/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_uav_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import TacticalFusionBridge, UAVTacticalEngine, UAVTelemetryFrame
+
+        frame = UAVTelemetryFrame.model_validate(payload)
+        assessment = UAVTacticalEngine().analyze_frame(frame)
+        observations = TacticalFusionBridge.uav_to_observations(assessment, frame)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/tactical/starlink/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_starlink_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import (
+            StarlinkTacticalEngine,
+            StarlinkTelemetry,
+            TacticalFusionBridge,
+        )
+
+        telemetry = StarlinkTelemetry.model_validate(payload)
+        assessment = StarlinkTacticalEngine().evaluate_channel(telemetry)
+        observations = TacticalFusionBridge.starlink_to_observations(assessment, telemetry)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/tactical/cuas/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_cuas_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import (
+            CUASDefenseEngine,
+            CUASDetectionEvent,
+            TacticalFusionBridge,
+        )
+
+        sector = str(payload.get("sector", "SECTOR-ALPHA"))
+        raw_events = payload.get("events", [])
+        events = [CUASDetectionEvent.model_validate(e) for e in raw_events]
+        assessment = CUASDefenseEngine().analyze_events(sector, events)
+        observations = TacticalFusionBridge.cuas_to_observations(assessment, sector)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/embedded/compile-package",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_compile_package_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.embedded import (
+            EmbeddedArchitectureEngine,
+            TargetMicrocontroller,
+            TinyMoEConfig,
+        )
+
+        target_str = payload.get("target", "esp32-s3")
+        target = TargetMicrocontroller(target_str)
+        moe_dict = payload.get("moe_config")
+        moe_config = TinyMoEConfig.model_validate(moe_dict) if moe_dict else None
+
+        pkg = EmbeddedArchitectureEngine().compile_package(target, moe_config)
+        return pkg.model_dump(mode="json")
+
+    @app.post(
+        "/v1/embedded/micro-telemetry/encode",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_micro_encode_endpoint(payload: dict[str, Any]) -> dict[str, str]:
+        from continuityos.embedded import CompactBinaryProtocolCodec
+
+        frame_bytes = CompactBinaryProtocolCodec.encode(
+            node_id=int(payload.get("node_id", 1)),
+            sequence_id=int(payload.get("sequence_id", 0)),
+            timestamp_unix=int(payload.get("timestamp_unix", 1700000000)),
+            latitude=float(payload.get("latitude", 0.0)),
+            longitude=float(payload.get("longitude", 0.0)),
+            altitude_m=int(payload.get("altitude_m", 0)),
+            threat_flags=int(payload.get("threat_flags", 0)),
+            risk_score=float(payload.get("risk_score", 0.0)),
+            rssi_dbm=int(payload.get("rssi_dbm", -70)),
+            battery_pct=int(payload.get("battery_pct", 100)),
+        )
+        return {"frame_hex": frame_bytes.hex(), "size_bytes": str(len(frame_bytes))}
+
+    @app.post(
+        "/v1/embedded/micro-telemetry/decode",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_micro_decode_endpoint(payload: dict[str, str]) -> dict[str, Any]:
+        from continuityos.embedded import CompactBinaryProtocolCodec
+
+        frame_hex = payload.get("frame_hex", "")
+        frame_bytes = bytes.fromhex(frame_hex)
+        packet = CompactBinaryProtocolCodec.decode(frame_bytes)
+        return packet.model_dump(mode="json")
+
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():
 

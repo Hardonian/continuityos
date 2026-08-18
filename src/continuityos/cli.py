@@ -558,7 +558,66 @@ def command_merkle_proof(args: argparse.Namespace) -> None:
         print("\n✅ Zero-Knowledge Merkle Proof Verified Mathematically.")
     else:
         print("\n❌ Proof Verification Failed.")
-        sys.exit(1)
+
+
+def command_tactical_scan(args: argparse.Namespace) -> None:
+    """Run unified tactical surveillance scan across UAV, Starlink SATCOM, and C-UAS."""
+    from continuityos.tactical import (
+        CUASDefenseEngine,
+        CUASDetectionEvent,
+        StarlinkTacticalEngine,
+        StarlinkTelemetry,
+        UAVTacticalEngine,
+        UAVTelemetryFrame,
+    )
+
+    raw = _load(args.file)
+    results: dict[str, Any] = {}
+
+    if "uav" in raw:
+        frame = UAVTelemetryFrame.model_validate(raw["uav"])
+        results["uav_assessment"] = UAVTacticalEngine().analyze_frame(frame).model_dump(mode="json")
+
+    if "starlink" in raw:
+        tel = StarlinkTelemetry.model_validate(raw["starlink"])
+        results["starlink_assessment"] = StarlinkTacticalEngine().evaluate_channel(tel).model_dump(mode="json")
+
+    if "cuas" in raw:
+        cuas_data = raw["cuas"]
+        sector = str(cuas_data.get("sector", "SECTOR-ALPHA"))
+        events = [CUASDetectionEvent.model_validate(e) for e in cuas_data.get("events", [])]
+        results["cuas_assessment"] = CUASDefenseEngine().analyze_events(sector, events).model_dump(mode="json")
+
+    _output(results, args)
+
+
+def command_edge_package(args: argparse.Namespace) -> None:
+    """Generate C header, partition table, and TinyMoE hardware configuration for target microcontroller."""
+    from continuityos.embedded import (
+        EmbeddedArchitectureEngine,
+        MicroQuantization,
+        TargetMicrocontroller,
+        TinyMoEConfig,
+    )
+
+    target = TargetMicrocontroller(args.target)
+    quant = MicroQuantization(args.quantization)
+    moe = TinyMoEConfig(
+        total_parameters=args.total_params,
+        active_parameters_per_token=args.active_params,
+        quantization=quant,
+    )
+    engine = EmbeddedArchitectureEngine()
+    pkg = engine.compile_package(target, moe)
+
+    if args.export_dir:
+        out_dir = Path(args.export_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "aegis_embedded_config.h").write_text(pkg.c_header_source, encoding="utf-8")
+        (out_dir / "partitions.csv").write_text(pkg.partition_csv_source, encoding="utf-8")
+        print(f"Exported embedded configuration and partition table to {out_dir}")
+
+    _output(pkg.model_dump(mode="json"), args)
 
 
 def command_operator(args: argparse.Namespace) -> None:
@@ -776,6 +835,49 @@ def build_parser() -> argparse.ArgumentParser:
     p_op.add_argument("subcommand", choices=["start"], help="Action to perform")
     p_op.add_argument("--max-actions", type=int, default=100, help="Max compiler actions")
     p_op.set_defaults(func=command_operator)
+
+    # tactical-scan
+    p_tac = subparsers.add_parser(
+        "tactical-scan", help="Run unified tactical surveillance scan across UAV, Starlink, C-UAS"
+    )
+    p_tac.add_argument("file", type=Path, help="Tactical telemetry JSON/YAML")
+    p_tac.set_defaults(func=command_tactical_scan)
+
+    # edge-package
+    p_edge_pkg = subparsers.add_parser(
+        "edge-package",
+        help="Generate C header and TinyMoE hardware configuration for target microcontroller",
+    )
+    p_edge_pkg.add_argument(
+        "--target",
+        default="esp32-s3",
+        choices=["esp32-s3", "esp32-c6", "riscv32", "arm-cortex-m55"],
+        help="Target microcontroller SoC",
+    )
+    p_edge_pkg.add_argument(
+        "--quantization",
+        default="int4_weight",
+        choices=["bitnet_1_58b", "int4_weight", "int8_symm"],
+        help="Micro-quantization format",
+    )
+    p_edge_pkg.add_argument(
+        "--total-params",
+        type=int,
+        default=28_900_000,
+        help="Total model parameters (e.g. 28.9M)",
+    )
+    p_edge_pkg.add_argument(
+        "--active-params",
+        type=int,
+        default=8_500_000,
+        help="Active parameters evaluated per token",
+    )
+    p_edge_pkg.add_argument(
+        "--export-dir",
+        type=Path,
+        help="Optional directory to write aegis_embedded_config.h and partitions.csv",
+    )
+    p_edge_pkg.set_defaults(func=command_edge_package)
 
     return parser
 
