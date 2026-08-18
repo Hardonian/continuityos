@@ -1,0 +1,190 @@
+{
+  "$defs": {
+    "DependencyRulesSpec": {
+      "properties": {
+        "prohibit_single_state_service_dependency": {
+          "default": true,
+          "title": "Prohibit Single State Service Dependency",
+          "type": "boolean"
+        },
+        "require_independent_navigation_sources": {
+          "default": true,
+          "title": "Require Independent Navigation Sources",
+          "type": "boolean"
+        },
+        "require_independent_observation_sources": {
+          "default": true,
+          "title": "Require Independent Observation Sources",
+          "type": "boolean"
+        }
+      },
+      "title": "DependencyRulesSpec",
+      "type": "object"
+    },
+    "FailureToleranceSpec": {
+      "properties": {
+        "communication_providers_unavailable": {
+          "default": 1,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Communication Providers Unavailable",
+          "type": "integer"
+        },
+        "navigation_sources_untrusted": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Navigation Sources Untrusted",
+          "type": "integer"
+        },
+        "ports_unavailable": {
+          "default": 1,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Ports Unavailable",
+          "type": "integer"
+        },
+        "routes_unavailable": {
+          "default": 1,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Routes Unavailable",
+          "type": "integer"
+        }
+      },
+      "title": "FailureToleranceSpec",
+      "type": "object"
+    },
+    "InventorySpec": {
+      "properties": {
+        "fuel_reserve_days": {
+          "default": 30,
+          "maximum": 3650,
+          "minimum": 0,
+          "title": "Fuel Reserve Days",
+          "type": "integer"
+        },
+        "medical_reserve_days": {
+          "default": 60,
+          "maximum": 3650,
+          "minimum": 0,
+          "title": "Medical Reserve Days",
+          "type": "integer"
+        }
+      },
+      "title": "InventorySpec",
+      "type": "object"
+    },
+    "ObjectivesSpec": {
+      "properties": {
+        "maximum_critical_shortage_days": {
+          "default": 7,
+          "maximum": 365,
+          "minimum": 0,
+          "title": "Maximum Critical Shortage Days",
+          "type": "integer"
+        },
+        "maximum_recovery_days": {
+          "default": 30,
+          "maximum": 730,
+          "minimum": 1,
+          "title": "Maximum Recovery Days",
+          "type": "integer"
+        },
+        "minimum_continuity": {
+          "default": 0.95,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Minimum Continuity",
+          "type": "number"
+        }
+      },
+      "title": "ObjectivesSpec",
+      "type": "object"
+    },
+    "RecoverySpec": {
+      "properties": {
+        "require_carrier_return_model": {
+          "default": true,
+          "title": "Require Carrier Return Model",
+          "type": "boolean"
+        },
+        "require_inventory_recovery_model": {
+          "default": true,
+          "title": "Require Inventory Recovery Model",
+          "type": "boolean"
+        },
+        "require_port_backlog_model": {
+          "default": true,
+          "title": "Require Port Backlog Model",
+          "type": "boolean"
+        }
+      },
+      "title": "RecoverySpec",
+      "type": "object"
+    },
+    "RedundancySpec": {
+      "properties": {
+        "minimum_navigation_sources": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Navigation Sources",
+          "type": "integer"
+        },
+        "minimum_observation_sources": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Observation Sources",
+          "type": "integer"
+        },
+        "minimum_ports": {
+          "default": 2,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Minimum Ports",
+          "type": "integer"
+        },
+        "minimum_routes": {
+          "default": 2,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Minimum Routes",
+          "type": "integer"
+        },
+        "minimum_satcom_providers": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Satcom Providers",
+          "type": "integer"
+        }
+      },
+      "title": "RedundancySpec",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "dependency_rules": {
+      "$ref": "#/$defs/DependencyRulesSpec"
+    },
+    "failure_tolerance": {
+      "$ref": "#/$defs/FailureToleranceSpec"
+    },
+    "inventory": {
+      "$ref": "#/$defs/InventorySpec"
+    },
+    "objectives": {
+      "$ref": "#/$defs/ObjectivesSpec"
+    },
+    "recovery": {
+      "$ref": "#/$defs/RecoverySpec"
+    },
+    "redundancy": {
+      "$ref": "#/$defs/RedundancySpec"
+    }
+  },
+  "title": "SupplyNetworkSpec",
+  "type": "object"
+}

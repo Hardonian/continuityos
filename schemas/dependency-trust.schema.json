@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "TrustAggregation": {
+      "enum": [
+        "minimum",
+        "weighted",
+        "mean"
+      ],
+      "title": "TrustAggregation",
+      "type": "string"
+    },
+    "TrustDimensions": {
+      "properties": {
+        "commercial_availability": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Commercial Availability",
+          "type": "number"
+        },
+        "communications_integrity": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Communications Integrity",
+          "type": "number"
+        },
+        "cyber_integrity": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Cyber Integrity",
+          "type": "number"
+        },
+        "information_confidence": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Information Confidence",
+          "type": "number"
+        },
+        "insurance_availability": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Insurance Availability",
+          "type": "number"
+        },
+        "legal_availability": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Legal Availability",
+          "type": "number"
+        },
+        "navigation_integrity": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Navigation Integrity",
+          "type": "number"
+        },
+        "operator_confidence": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Operator Confidence",
+          "type": "number"
+        },
+        "physical_availability": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Physical Availability",
+          "type": "number"
+        }
+      },
+      "title": "TrustDimensions",
+      "type": "object"
+    },
+    "TrustProvenanceSpec": {
+      "properties": {
+        "minimum_independent_sources": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Independent Sources",
+          "type": "integer"
+        }
+      },
+      "title": "TrustProvenanceSpec",
+      "type": "object"
+    },
+    "TrustStrategySpec": {
+      "properties": {
+        "aggregation": {
+          "$ref": "#/$defs/TrustAggregation",
+          "default": "minimum"
+        }
+      },
+      "title": "TrustStrategySpec",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "dependency_ref": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Dependency Ref",
+      "type": "string"
+    },
+    "dimensions": {
+      "$ref": "#/$defs/TrustDimensions"
+    },
+    "provenance": {
+      "$ref": "#/$defs/TrustProvenanceSpec"
+    },
+    "strategy": {
+      "$ref": "#/$defs/TrustStrategySpec"
+    }
+  },
+  "required": [
+    "dependency_ref"
+  ],
+  "title": "DependencyTrustSpec",
+  "type": "object"
+}

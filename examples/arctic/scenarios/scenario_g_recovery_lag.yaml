@@ -1,0 +1,11 @@
+resource_ref: corridor/northern-sea-route
+incident_description: Major polar cyclone with severe pressure ridge sea ice formation and shore power loss at Murmansk
+physical_reopening_days: 10
+port_backlog_days: 12
+vessel_repositioning_days: 18
+carrier_return_days: 21
+insurance_normalization_days: 28
+inventory_replenishment_days: 45
+equipment_availability_days: 14
+warehouse_recovery_days: 14
+production_restart_days: 21

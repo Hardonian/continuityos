@@ -1,0 +1,21 @@
+apiVersion: continuity.io/v1
+kind: DependencyTrust
+metadata:
+  name: arctic-navigation-trust
+  namespace: arctic-operations
+spec:
+  dependency_ref: nav/gnss_polar
+  dimensions:
+    physical_availability: 0.90
+    cyber_integrity: 0.70
+    legal_availability: 1.0
+    commercial_availability: 0.95
+    insurance_availability: 0.90
+    communications_integrity: 0.85
+    navigation_integrity: 0.75
+    operator_confidence: 0.80
+    information_confidence: 0.80
+  strategy:
+    aggregation: weighted
+  provenance:
+    minimum_independent_sources: 3

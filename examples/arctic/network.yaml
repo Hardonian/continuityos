@@ -1,0 +1,35 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  name: arctic-critical-corridor
+  namespace: arctic-operations
+  labels:
+    theater: arctic
+    classification: critical-infrastructure
+spec:
+  objectives:
+    minimum_continuity: 0.95
+    maximum_critical_shortage_days: 7
+    maximum_recovery_days: 30
+  redundancy:
+    minimum_routes: 2
+    minimum_ports: 2
+    minimum_satcom_providers: 2
+    minimum_navigation_sources: 3
+    minimum_observation_sources: 2
+  inventory:
+    fuel_reserve_days: 45
+    medical_reserve_days: 60
+  dependency_rules:
+    prohibit_single_state_service_dependency: true
+    require_independent_navigation_sources: true
+    require_independent_observation_sources: true
+  failure_tolerance:
+    routes_unavailable: 1
+    ports_unavailable: 1
+    communication_providers_unavailable: 1
+    navigation_sources_untrusted: 2
+  recovery:
+    require_inventory_recovery_model: true
+    require_carrier_return_model: true
+    require_port_backlog_model: true

@@ -1,0 +1,67 @@
+corridor_id: northern-sea-route
+observations:
+  - observation_id: 11111111-1111-1111-1111-111111111111
+    source_id: noaa-polar-satellite
+    source_trust: authoritative_public
+    assertion_class: ice
+    metric: sea_ice_concentration
+    value: 28.5
+    unit: percent
+    observed_at: "2026-08-17T12:00:00Z"
+    confidence: 0.95
+    provenance:
+      uri: "https://noaa.gov/polar/ice/daily/20260817"
+      content_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      licence: "public-domain"
+  - observation_id: 22222222-2222-2222-2222-222222222222
+    source_id: dwd-polar-met
+    source_trust: authoritative_public
+    assertion_class: weather
+    metric: wind_severity
+    value: 0.25
+    unit: ratio
+    observed_at: "2026-08-17T12:00:00Z"
+    confidence: 0.92
+    provenance:
+      uri: "https://dwd.de/polar/wind/20260817"
+      content_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      licence: "cc-by-4.0"
+  - observation_id: 33333333-3333-3333-3333-333333333333
+    source_id: kirkenes-port-authority
+    source_trust: authenticated_operator
+    assertion_class: live_availability
+    metric: port_availability
+    value: 0.95
+    unit: ratio
+    observed_at: "2026-08-17T12:00:00Z"
+    confidence: 0.98
+    provenance:
+      uri: "port://kirkenes/status"
+      content_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      licence: "proprietary-internal"
+  - observation_id: 44444444-4444-4444-4444-444444444444
+    source_id: iridium-noc
+    source_trust: authenticated_operator
+    assertion_class: live_availability
+    metric: satcom_availability
+    value: 0.98
+    unit: ratio
+    observed_at: "2026-08-17T12:00:00Z"
+    confidence: 0.95
+    provenance:
+      uri: "satcom://iridium/telemetry"
+      content_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      licence: "proprietary-internal"
+  - observation_id: 55555555-5555-5555-5555-555555555555
+    source_id: lloyds-underwriting
+    source_trust: authenticated_operator
+    assertion_class: insurance_access
+    metric: insurance_availability
+    value: 0.90
+    unit: ratio
+    observed_at: "2026-08-17T12:00:00Z"
+    confidence: 0.90
+    provenance:
+      uri: "insurance://lloyds/market"
+      content_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      licence: "proprietary-internal"

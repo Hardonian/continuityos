@@ -1,0 +1,13 @@
+resource_id: arctic-fuel-reserve
+name: Heavy Fuel Oil Strategic Terminal Reserve
+starting_quantity: 50000.0
+unit: metric_tons
+normal_consumption_per_day: 1000.0
+degraded_consumption_per_day: 1400.0
+replenishment_per_day: 1200.0
+replenishment_delay_days: 14
+route_capacity_factor: 0.5
+substitution_factor: 0.15
+minimum_reserve: 15000.0
+critical_threshold: 8000.0
+warning_threshold: 20000.0

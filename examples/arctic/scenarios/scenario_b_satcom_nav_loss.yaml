@@ -1,0 +1,15 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: scenario-b-satcom-nav-loss
+  namespace: arctic-operations
+spec:
+  events:
+    - target: satcom_iridium
+      state: functionally_closed
+      description: Solar flare / geomagnetic storm causes high-latitude polar SATCOM blackout
+    - target: satcom_starlink
+      state: open_degraded
+      description: Intermittent polar orbital shell degradation
+  duration_days: 14
+  description: Polar communications degradation combined with GNSS spoofing along Kara Sea

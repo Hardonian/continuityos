@@ -32,6 +32,7 @@ dev = [
 ]
 
 [project.scripts]
+continuity = "continuityos.cli:main"
 continuityos = "continuityos.cli:main"
 
 [tool.setuptools.packages.find]

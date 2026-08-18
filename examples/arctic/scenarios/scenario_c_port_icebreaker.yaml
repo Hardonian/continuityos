@@ -1,0 +1,15 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: scenario-c-port-icebreaker
+  namespace: arctic-operations
+spec:
+  events:
+    - target: port_murmansk
+      state: physically_closed
+      description: Port of Murmansk crane mechanical breakdown and harbor ice congestion
+    - target: icebreaker_50let
+      state: functionally_closed
+      description: Nuclear icebreaker reactor maintenance unscheduled drydock
+  duration_days: 21
+  description: Severe port outage in Western Arctic combined with lack of heavy icebreaker escort capacity

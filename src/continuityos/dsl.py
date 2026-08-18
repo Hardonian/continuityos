@@ -170,7 +170,7 @@ class ScenarioEvent(BaseModel):
 
 
 class ScenarioSpec(BaseModel):
-    events: list[ScenarioEvent] = Field(min_length=1, max_length=200)
+    events: list[ScenarioEvent] = Field(default_factory=list, min_length=0, max_length=200)
     duration_days: int = Field(default=30, ge=1, le=3650)
     description: str | None = None
 

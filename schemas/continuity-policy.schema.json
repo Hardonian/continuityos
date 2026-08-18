@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "PolicyAssertion": {
+      "properties": {
+        "maximum_single_dependency_concentration": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum Single Dependency Concentration"
+        },
+        "minimum_continuity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Continuity"
+        },
+        "minimum_independent_routes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Independent Routes"
+        },
+        "minimum_providers": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Providers"
+        },
+        "minimum_reserve_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Reserve Days"
+        },
+        "minimum_trust_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Trust Score"
+        }
+      },
+      "title": "PolicyAssertion",
+      "type": "object"
+    },
+    "PolicyRule": {
+      "properties": {
+        "assertion": {
+          "$ref": "#/$defs/PolicyAssertion"
+        },
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "rule_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Rule Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "description",
+        "assertion"
+      ],
+      "title": "PolicyRule",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/PolicyRule"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "title": "Rules",
+      "type": "array"
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "title": "ContinuityPolicySpec",
+  "type": "object"
+}

@@ -1,0 +1,119 @@
+{
+  "$defs": {
+    "ResourceKind": {
+      "enum": [
+        "SupplyNetwork",
+        "Corridor",
+        "Route",
+        "Port",
+        "Terminal",
+        "Carrier",
+        "VesselClass",
+        "IcebreakerService",
+        "Inventory",
+        "Supplier",
+        "Facility",
+        "CommunicationProvider",
+        "NavigationSource",
+        "ObservationSource",
+        "Dependency",
+        "DependencyTrust",
+        "ContinuityPolicy",
+        "Scenario",
+        "RecoveryObjective",
+        "Evidence",
+        "Observation",
+        "Remediation"
+      ],
+      "title": "ResourceKind",
+      "type": "string"
+    },
+    "ResourceMetadata": {
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations",
+          "type": "object"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "namespace": {
+          "default": "default",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Namespace",
+          "type": "string"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ResourceMetadata",
+      "type": "object"
+    }
+  },
+  "description": "Top-level resource envelope for Continuity-as-Code YAML specifications.",
+  "properties": {
+    "apiVersion": {
+      "default": "continuity.io/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/ResourceKind"
+    },
+    "metadata": {
+      "$ref": "#/$defs/ResourceMetadata"
+    },
+    "spec": {
+      "additionalProperties": true,
+      "title": "Spec",
+      "type": "object"
+    }
+  },
+  "required": [
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "Resource",
+  "type": "object"
+}
