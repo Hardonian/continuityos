@@ -41,6 +41,9 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --disable-warnings"
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+]
 testpaths = ["tests"]
 
 [tool.ruff]
