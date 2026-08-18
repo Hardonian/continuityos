@@ -596,7 +596,7 @@ def command_tactical_scan(args: argparse.Namespace) -> None:
 
 
 def command_edge_package(args: argparse.Namespace) -> None:
-    """Generate C header, partition table, and TinyMoE hardware configuration for target microcontroller."""
+    """Generate C header and TinyMoE hardware config for target microcontroller."""
     from continuityos.embedded import (
         EmbeddedArchitectureEngine,
         MicroQuantization,
@@ -643,7 +643,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="continuity",
         description=(
-            "Aegis Continuity (Sovereign Edition): Continuity-as-Code compiler, analyzer, and resilience orchestrator."
+            "Aegis Continuity (Sovereign Edition): "
+            "Continuity-as-Code compiler, analyzer, and resilience orchestrator."
         ),
     )
     parser.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")

@@ -288,9 +288,9 @@ class AgenticIntelligenceEngine:
     def _build_prompt(self, packet: DecisionPacket) -> str:
         prompt = (
             "You are the Aegis Continuity Intelligence Engine, an AI advisory system for "
-            "NATO-aligned Ministries of Defense and strategic logistics planners. "
-            "Analyze the following deterministic mitigation plan from the ContinuityOS exact-solver. "
-            "Provide a defense-grade executive summary, strategic implications, and advisory actions.\n\n"
+            "NATO-aligned Ministries of Defense.\n"
+            "Analyze the deterministic mitigation plan from the ContinuityOS exact-solver.\n"
+            "Provide an executive summary, strategic implications, and advisory actions.\n\n"
         )
 
         prompt += f"Corridor Assessed: {packet.assessment.corridor_id}\n"
@@ -314,7 +314,7 @@ class AgenticIntelligenceEngine:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a military intelligence assistant. Always output valid JSON.",
+                    "content": "Military intelligence assistant. Always output valid JSON.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -345,7 +345,7 @@ class AgenticIntelligenceEngine:
         except (httpx.RequestError, KeyError, ValueError) as e:
             self.logger.error(f"Intelligence Engine failed to generate briefing: {e}")
             return SovereignBriefing(
-                executive_summary="ERROR: Air-gapped LLM engine unreachable or returned invalid JSON.",
+                executive_summary="ERROR: Air-gapped LLM engine unreachable.",
                 strategic_implications=str(e),
                 advisory_actions=[],
             )
@@ -438,7 +438,7 @@ class VisualIntelligenceEngine:
                 threat_detected=False,
                 confidence=0.5,
                 detected_objects=[],
-                visual_summary="Visual inference unavailable on local VLM endpoint; optical flow nominal.",
+                visual_summary="Visual inference unavailable on local VLM; optical flow nominal.",
                 corridor_impact_factor="ESCORT",
                 recommended_action="Maintain optical sensor logging.",
             )

@@ -114,7 +114,7 @@ class UAVTacticalEngine:
         # 4. Swarm cohesion & Kinematic envelope
         if abs(frame.pitch_deg) > 45.0 or abs(frame.roll_deg) > 60.0:
             indicators.append(
-                f"Flight envelope near stall (Pitch={frame.pitch_deg:.1f}°, Roll={frame.roll_deg:.1f}°)"
+                f"Flight near stall (Pitch={frame.pitch_deg:.1f}°, Roll={frame.roll_deg:.1f}°)"
             )
             risk_components.append(0.7)
             status = "DEGRADED"
@@ -265,7 +265,7 @@ class CUASAssessment(BaseModel):
 
 
 class CUASDefenseEngine:
-    """Evaluates Counter-UAS (Anti-Drone) RF surveillance, micro-Doppler radar, and swarm threats."""
+    """Evaluates Counter-UAS (Anti-Drone) RF surveillance, radar, and swarm threats."""
 
     def analyze_events(self, sector: str, events: list[CUASDetectionEvent]) -> CUASAssessment:
         if not events:
@@ -292,9 +292,9 @@ class CUASDefenseEngine:
         ew_active = any(e.interdiction_active for e in events)
 
         for event in events:
-            sig_name = event.protocol_fingerprint
+            sig = event.protocol_fingerprint
             indicators.append(
-                f"Target {event.detected_target_id} [{sig_name}]: {event.estimated_distance_m:.0f}m, "
+                f"Target {event.detected_target_id} [{sig}]: {event.estimated_distance_m:.0f}m, "
                 f"RCS={event.radar_cross_section_sqm:.3f}m²"
             )
 
@@ -305,7 +305,7 @@ class CUASDefenseEngine:
             else:
                 threat_score += 0.10
 
-            if sig_name in {"CUSTOM_FHSS", "UNKNOWN_DIRECT_SEQUENCE"}:
+            if sig in {"CUSTOM_FHSS", "UNKNOWN_DIRECT_SEQUENCE"}:
                 threat_score += 0.25
                 indicators.append(
                     f"Target {event.detected_target_id} using military FHSS spread spectrum"

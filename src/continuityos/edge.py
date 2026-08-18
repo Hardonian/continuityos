@@ -114,11 +114,11 @@ class EdgeNode:
 
     async def stop(self) -> None:
         """Stop the background gossip loop."""
+        import contextlib
+
         self._running = False
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
             self._task = None
