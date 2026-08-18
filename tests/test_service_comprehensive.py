@@ -40,6 +40,7 @@ def app_client():
     settings = get_settings()
     settings.environment = "production"
     settings.outbound_http_enabled = False
+    settings.api_key = "test"
     app = create_app(settings)
     with TestClient(app) as client:
         yield client
