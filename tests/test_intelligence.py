@@ -45,6 +45,7 @@ async def test_intelligence_briefing_generation(monkeypatch: pytest.MonkeyPatch)
                         }
                     ]
                 },
+                request=httpx.Request("POST", url),
             )
 
     import httpx

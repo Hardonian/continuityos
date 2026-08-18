@@ -3,8 +3,8 @@
 Implements:
   1. Google's Per-Layer Embeddings (PLE) technique & Flash/PSRAM hardware memory mapping.
   2. Sparse Mixture of Experts (MoE) with BitNet 1.58b / INT4 / INT8 micro-quantization.
-  3. Compact Binary Telemetry Protocol (MicroProto) for ultra-low-bandwidth tactical links (LoRa, Sat-Burst, ESP-NOW).
-  4. EdgeMicroSolver: Integer-arithmetic resilient decision solver for offline ESP32-S3 / ESP32-C6 / RISC-V microcontrollers.
+  3. Compact Binary Telemetry Protocol (MicroProto) for ultra-low-bandwidth tactical links.
+  4. EdgeMicroSolver: Integer-arithmetic resilient decision solver for offline microcontrollers.
   5. C Header and Flash Partition exporter for ESP-IDF & PlatformIO toolchains.
 """
 
@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 class TargetMicrocontroller(StrEnum):
     ESP32_S3 = "esp32-s3"  # Xtensa Dual-Core 240MHz, 16MB Flash, 8MB Octal PSRAM, 512KB SRAM
-    ESP32_C6 = "esp32-c6"  # RISC-V Single-Core 160MHz, 8MB Flash, Low-Power, Thread/Zigbee/WiFi6
+    ESP32_C6 = "esp32-c6"  # RISC-V Single-Core 160MHz, 8MB Flash, Low-Power, Zigbee/WiFi6
     RISCV_GENERIC = "riscv32"  # 32-bit RISC-V Vector-accelerated SoC
     CORTEX_M55 = "arm-cortex-m55"  # ARMv8.1-M with Helium Vector Extension
 
@@ -124,7 +124,7 @@ class EmbeddedArchitectureEngine:
                     base_address_hex="0x200000",
                     size_bytes=13 * 1024 * 1024,
                     size_mb=13.0,
-                    purpose="Google Per-Layer Embeddings (PLE) table & INT4/BitNet weight matrix (Memory Mapped)",
+                    purpose="Google PLE lookup table & INT4/BitNet weight matrix (XIP)",
                     access_latency_cycles=6,
                 ),
                 MemoryRegion(
@@ -132,7 +132,7 @@ class EmbeddedArchitectureEngine:
                     base_address_hex="0xF00000",
                     size_bytes=1 * 1024 * 1024,
                     size_mb=1.0,
-                    purpose="Non-Volatile Storage (NVS) for Ed25519 private keys and cryptographic credentials",
+                    purpose="NVS for Ed25519 cryptographic keys and credentials",
                     access_latency_cycles=10,
                 ),
                 MemoryRegion(
@@ -140,7 +140,7 @@ class EmbeddedArchitectureEngine:
                     base_address_hex="0x3C000000",
                     size_bytes=6 * 1024 * 1024,
                     size_mb=6.0,
-                    purpose="Transformer KV-cache, sparse MoE activation buffers, and token embeddings",
+                    purpose="KV-cache, sparse MoE activation buffers, and token embeddings",
                     access_latency_cycles=2,
                 ),
                 MemoryRegion(
@@ -156,7 +156,7 @@ class EmbeddedArchitectureEngine:
                     base_address_hex="0x3FC80000",
                     size_bytes=512 * 1024,
                     size_mb=0.5,
-                    purpose="Zero-latency DMA buffers for hardware AES-256/SHA-256 and SPI bus transfers",
+                    purpose="Zero-latency DMA buffers for AES-256/SHA-256 and SPI transfers",
                     access_latency_cycles=1,
                 ),
             ]
@@ -165,7 +165,7 @@ class EmbeddedArchitectureEngine:
 
         elif target == TargetMicrocontroller.ESP32_C6:
             flash_bytes = 8 * 1024 * 1024
-            psram_bytes = 0  # Ultra-low power without PSRAM, relying on 512KB SRAM + Flash XIP
+            psram_bytes = 0  # Low power without PSRAM, relying on 512KB SRAM + Flash XIP
             sram_bytes = 512 * 1024
             regions = [
                 MemoryRegion(
@@ -235,9 +235,9 @@ class EmbeddedArchitectureEngine:
     def generate_c_header(self, layout: HardwareMemoryLayout, moe: TinyMoEConfig) -> str:
         header = f"""/**
  * @file aegis_embedded_config.h
- * @brief Auto-generated hardware partition & TinyMoE configuration for Aegis Continuity.
+ * @brief Auto-generated hardware partition & TinyMoE config for Aegis Continuity.
  * Target: {layout.target.value.upper()}
- * Total Parameters: {moe.total_parameters:,} | Active Parameters: {moe.active_parameters_per_token:,}
+ * Total Params: {moe.total_parameters:,} | Active: {moe.active_parameters_per_token:,}
  * Quantization: {moe.quantization.value}
  */
 
@@ -342,20 +342,8 @@ static inline uint8_t aegis_evaluate_offline_resilience(const aegis_micro_teleme
 class CompactBinaryProtocolCodec:
     """Bit-packed binary encoder and decoder for tactical low-bandwidth channels."""
 
-    # Format:
-    # H = uint16 (node_id)
-    # I = uint32 (sequence_id)
-    # I = uint32 (timestamp_unix)
-    # i = int32  (lat * 1e6)
-    # i = int32  (lon * 1e6)
-    # h = int16  (altitude_m)
-    # B = uint8  (threat_flags)
-    # B = uint8  (risk_score_byte)
-    # b = int8   (rssi_dbm)
-    # B = uint8  (battery_pct)
-    # H = uint16 (crc16)
     PACK_FORMAT = "<HIIiihBBbBH"
-    FRAME_SIZE = struct.calcsize(PACK_FORMAT)  # Exactly 24 bytes!
+    FRAME_SIZE = struct.calcsize(PACK_FORMAT)  # Exactly 26 bytes!
 
     @classmethod
     def _compute_crc16(cls, data: bytes) -> int:
@@ -384,9 +372,9 @@ class CompactBinaryProtocolCodec:
         rssi_dbm: int,
         battery_pct: int,
     ) -> bytes:
-        lat_scaled = int(round(latitude * 1_000_000))
-        lon_scaled = int(round(longitude * 1_000_000))
-        risk_byte = int(round(max(0.0, min(1.0, risk_score)) * 255))
+        lat_scaled = round(latitude * 1_000_000)
+        lon_scaled = round(longitude * 1_000_000)
+        risk_byte = round(max(0.0, min(1.0, risk_score)) * 255)
         battery_byte = max(0, min(100, battery_pct))
 
         header_bytes = struct.pack(

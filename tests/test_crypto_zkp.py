@@ -48,7 +48,8 @@ def test_zkp_reserve_proof_tampered() -> None:
 
     assert tampered_proof.verify(max_capacity=1000) is False
 
-    # Tamper by claiming a higher minimum than what was actually proven (e.g. proof was for 30, claiming 40)
+    # Tamper by claiming a higher minimum than what was actually proven
+    # (e.g. proof was for 30, claiming 40)
     tampered_proof2 = ZKPReserveProof(
         commitment_hash_hex=proof.commitment_hash_hex,
         policy_minimum=40,

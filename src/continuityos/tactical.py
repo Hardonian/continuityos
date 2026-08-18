@@ -1,10 +1,10 @@
 """Tactical Multi-Domain Surveillance & Communication Channels.
 
 Provides:
-  1. UAVTacticalEngine: 3D kinematics, optical flow, EO/IR payload telemetry, and GPS-denied navigation tracking.
-  2. StarlinkTacticalEngine: LEO constellation latency, beam switching Doppler jitter, downlink throughput, and Ku/Ka rain fade attenuation.
-  3. CUASDefenseEngine: Counter-UAS RF spectral sniffing, micro-Doppler radar/acoustic detection, protocol fingerprinting, and interdiction telemetry.
-  4. TacticalFusionBridge: Converts tactical telemetry into standardized Sovereign Observation records.
+  1. UAVTacticalEngine: 3D kinematics, optical flow, EO/IR payload telemetry, and GPS denial.
+  2. StarlinkTacticalEngine: LEO constellation latency, beam switching jitter, and rain fade.
+  3. CUASDefenseEngine: Counter-UAS RF sniffing, micro-Doppler radar, and protocol fingerprinting.
+  4. TacticalFusionBridge: Converts tactical telemetry into standardized Observation records.
 """
 
 from __future__ import annotations
@@ -49,9 +49,7 @@ class UAVSurveillanceAssessment(BaseModel):
     """Evaluated tactical UAV operational status and mission risk."""
 
     drone_id: str
-    airworthiness_status: (
-        str  # "NOMINAL", "DEGRADED", "CRITICAL_RETURN_TO_BASE", "EMERGENCY_LANDING"
-    )
+    airworthiness_status: str  # NOMINAL, DEGRADED, CRITICAL_RETURN_TO_BASE, EMERGENCY_LANDING
     swarm_cohesion_score: float = Field(ge=0.0, le=1.0)
     link_health_score: float = Field(ge=0.0, le=1.0)
     navigation_integrity_score: float = Field(ge=0.0, le=1.0)
@@ -70,7 +68,7 @@ class UAVTacticalEngine:
         # 1. Evaluate RF link margin
         if frame.rf_link_margin_db < 6.0:
             indicators.append(
-                f"Severe RF command/telemetry link degradation ({frame.rf_link_margin_db:.1f} dB margin)"
+                f"Severe RF link degradation ({frame.rf_link_margin_db:.1f} dB margin)"
             )
             link_health = 0.2
             risk_components.append(0.8)
@@ -84,12 +82,10 @@ class UAVTacticalEngine:
 
         # 2. Evaluate GPS denial & Optical Flow / VIO backup
         if frame.is_gps_spoofed_or_denied:
-            indicators.append(
-                "GPS/GNSS PNT signal denied or spoofed; relying on Optical Flow / Visual-Inertial Odometry"
-            )
+            indicators.append("GPS/GNSS denied; relying on Optical Flow / VIO odometry")
             if frame.optical_flow_quality < 0.4:
                 indicators.append(
-                    f"Optical flow quality degraded ({frame.optical_flow_quality:.2f}); drift accumulation critical"
+                    f"Optical flow degraded ({frame.optical_flow_quality:.2f}); drift critical"
                 )
                 nav_integrity = 0.2
                 risk_components.append(0.9)
@@ -105,9 +101,7 @@ class UAVTacticalEngine:
             indicators.append(f"Battery critically low ({frame.battery_state_of_charge:.1%})")
             risk_components.append(0.95)
             status = "CRITICAL_RETURN_TO_BASE"
-            advisory = (
-                "Initiate immediate automated Return-to-Base (RTB) on secondary INS waypoint vector"
-            )
+            advisory = "Initiate immediate automated Return-to-Base (RTB) on secondary INS vector"
         elif frame.battery_state_of_charge < 0.25:
             indicators.append(f"Battery reserve caution ({frame.battery_state_of_charge:.1%})")
             risk_components.append(0.4)
@@ -120,7 +114,7 @@ class UAVTacticalEngine:
         # 4. Swarm cohesion & Kinematic envelope
         if abs(frame.pitch_deg) > 45.0 or abs(frame.roll_deg) > 60.0:
             indicators.append(
-                f"Kinematic flight envelope near stall limit (Pitch={frame.pitch_deg:.1f}°, Roll={frame.roll_deg:.1f}°)"
+                f"Flight envelope near stall (Pitch={frame.pitch_deg:.1f}°, Roll={frame.roll_deg:.1f}°)"
             )
             risk_components.append(0.7)
             status = "DEGRADED"
@@ -162,7 +156,7 @@ class StarlinkAssessment(BaseModel):
     """Evaluated Starlink SATCOM channel reliability and corridor availability."""
 
     terminal_id: str
-    channel_state: str  # "OPTIMAL", "DEGRADED_LATENCY", "RAIN_FADE_ATTENUATED", "BEAM_STEERING_DENIED", "OFFLINE"
+    channel_state: str  # OPTIMAL, DEGRADED_LATENCY, RAIN_FADE_ATTENUATED, OFFLINE
     availability_score: float = Field(ge=0.0, le=1.0)
     effective_bandwidth_score: float = Field(ge=0.0, le=1.0)
     latency_threat_score: float = Field(ge=0.0, le=1.0)
@@ -180,7 +174,7 @@ class StarlinkTacticalEngine:
         # 1. Latency & Jitter
         if telemetry.round_trip_latency_ms > 120.0:
             indicators.append(
-                f"High LEO RTT latency ({telemetry.round_trip_latency_ms:.1f} ms) exceeds tactical SLA"
+                f"High LEO RTT latency ({telemetry.round_trip_latency_ms:.1f} ms) exceeds SLA"
             )
             risk += 0.35
         elif telemetry.round_trip_latency_ms > 65.0:
@@ -196,13 +190,13 @@ class StarlinkTacticalEngine:
         # 2. Rain fade / Ku/Ka band attenuation & Obstructions
         if telemetry.rain_fade_attenuation_db > 8.0:
             indicators.append(
-                f"Severe atmospheric rain fade attenuation ({telemetry.rain_fade_attenuation_db:.1f} dB)"
+                f"Severe atmospheric rain fade ({telemetry.rain_fade_attenuation_db:.1f} dB)"
             )
             risk += 0.3
 
         if telemetry.obstruction_fraction > 0.10:
             indicators.append(
-                f"Sky view obstruction ({telemetry.obstruction_fraction:.1%}) causing intermittent dropouts"
+                f"Sky view obstruction ({telemetry.obstruction_fraction:.1%}) causing dropouts"
             )
             risk += 0.4
 
@@ -220,7 +214,7 @@ class StarlinkTacticalEngine:
             advisory = "Failover tactical comms to secondary Iridium Certus / terrestrial HF mesh"
         elif telemetry.rain_fade_attenuation_db > 8.0:
             state = "RAIN_FADE_ATTENUATED"
-            advisory = "Enable adaptive coding and modulation (ACM) & prioritize telemetry over video feeds"
+            advisory = "Enable adaptive coding (ACM) & prioritize telemetry over video feeds"
         elif telemetry.round_trip_latency_ms > 100.0:
             state = "DEGRADED_LATENCY"
             advisory = "Buffer telemetry frames; suppress non-critical drone payload streams"
@@ -245,7 +239,7 @@ class CUASDetectionEvent(BaseModel):
     sensor_id: str
     detected_target_id: str
     frequency_mhz: float
-    protocol_fingerprint: str  # "DJI_OCUSYNC", "EXPRESS_LRS", "TBS_CROSSFIRE", "CUSTOM_FHSS", "UNKNOWN_DIRECT_SEQUENCE"
+    protocol_fingerprint: str  # DJI_OCUSYNC, EXPRESS_LRS, TBS_CROSSFIRE, CUSTOM_FHSS
     rf_signal_strength_dbm: float
     bearing_azimuth_deg: float = Field(ge=0.0, le=360.0)
     elevation_deg: float = Field(ge=-90.0, le=90.0, default=15.0)
@@ -254,9 +248,7 @@ class CUASDetectionEvent(BaseModel):
     micro_doppler_blade_count: int = Field(ge=0, default=4)
     is_swarm_formation: bool = False
     interdiction_active: bool = False
-    interdiction_type: str = (
-        "NONE"  # "NONE", "RF_JAMMING_ACTIVE", "GNSS_SPOOF_ACTIVE", "KINETIC_INTERCEPT"
-    )
+    interdiction_type: str = "NONE"
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -283,9 +275,7 @@ class CUASDefenseEngine:
                     level="NOMINAL",
                     score=0.05,
                     confidence=0.95,
-                    indicators=[
-                        "Airspace clear; no unauthorized RF or radar drone signatures detected"
-                    ],
+                    indicators=["Airspace clear; no unauthorized RF or radar drone signatures"],
                     remediation_recommendation="",
                 ),
                 detected_drones_count=0,
@@ -304,11 +294,10 @@ class CUASDefenseEngine:
         for event in events:
             sig_name = event.protocol_fingerprint
             indicators.append(
-                f"Target {event.detected_target_id} [{sig_name}]: Distance={event.estimated_distance_m:.0f}m, "
-                f"RCS={event.radar_cross_section_sqm:.3f}m², Signal={event.rf_signal_strength_dbm:.1f}dBm"
+                f"Target {event.detected_target_id} [{sig_name}]: {event.estimated_distance_m:.0f}m, "
+                f"RCS={event.radar_cross_section_sqm:.3f}m²"
             )
 
-            # Weight by distance and protocol
             if event.estimated_distance_m < 500.0:
                 threat_score += 0.40
             elif event.estimated_distance_m < 2000.0:
@@ -319,14 +308,12 @@ class CUASDefenseEngine:
             if sig_name in {"CUSTOM_FHSS", "UNKNOWN_DIRECT_SEQUENCE"}:
                 threat_score += 0.25
                 indicators.append(
-                    f"Target {event.detected_target_id} using military-grade frequency-hopping spread spectrum"
+                    f"Target {event.detected_target_id} using military FHSS spread spectrum"
                 )
 
         if is_swarm:
             threat_score += 0.35
-            indicators.append(
-                f"Swarm attack pattern recognized: {swarm_count} coordinated targets in sector"
-            )
+            indicators.append(f"Swarm attack pattern: {swarm_count} coordinated targets in sector")
 
         threat_score = min(1.0, threat_score)
         level = (
@@ -334,16 +321,16 @@ class CUASDefenseEngine:
         )
 
         if threat_score >= 0.75:
-            remed = "Authorize directional C-UAS RF barrage jamming on 2.4/5.8GHz and 868/915MHz bands; prepare kinetic net countermeasures"
+            remed = "Authorize directional C-UAS RF barrage jamming; prepare kinetic net intercept"
         elif threat_score >= 0.45:
-            remed = "Activate targeted RF protocol disruption; focus PTZ EO/IR tracking cameras on bearing"
+            remed = "Activate targeted RF protocol disruption; focus PTZ EO/IR cameras on bearing"
         else:
             remed = "Track target trajectory and log RF signature"
 
         summary = (
             f"C-UAS Threat Level {level} in {sector}: {swarm_count} active targets. "
-            f"Swarm pattern: {'CONFIRMED' if is_swarm else 'UNLIKELY'}. "
-            f"Interdiction state: {'ACTIVE' if ew_active else 'STANDBY'}."
+            f"Swarm: {'CONFIRMED' if is_swarm else 'UNLIKELY'}. "
+            f"Interdiction: {'ACTIVE' if ew_active else 'STANDBY'}."
         )
 
         return CUASAssessment(

@@ -580,13 +580,17 @@ def command_tactical_scan(args: argparse.Namespace) -> None:
 
     if "starlink" in raw:
         tel = StarlinkTelemetry.model_validate(raw["starlink"])
-        results["starlink_assessment"] = StarlinkTacticalEngine().evaluate_channel(tel).model_dump(mode="json")
+        results["starlink_assessment"] = (
+            StarlinkTacticalEngine().evaluate_channel(tel).model_dump(mode="json")
+        )
 
     if "cuas" in raw:
         cuas_data = raw["cuas"]
         sector = str(cuas_data.get("sector", "SECTOR-ALPHA"))
         events = [CUASDetectionEvent.model_validate(e) for e in cuas_data.get("events", [])]
-        results["cuas_assessment"] = CUASDefenseEngine().analyze_events(sector, events).model_dump(mode="json")
+        results["cuas_assessment"] = (
+            CUASDefenseEngine().analyze_events(sector, events).model_dump(mode="json")
+        )
 
     _output(results, args)
 
