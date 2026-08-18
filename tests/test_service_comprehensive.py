@@ -51,7 +51,7 @@ def test_idempotency_conflict(app_client):
         "corridor_id": "test-corridor",
         "observations": []
     }
-    app_client.app.state.persistent_state.save_idempotent = MagicMock(side_effect=IdempotencyConflict("conflict"))
+    app_client.app.state.persistent_state.get_idempotent = MagicMock(side_effect=IdempotencyConflict("conflict"))
     response = app_client.post("/v1/assess", json=request_data, headers={"idempotency-key": "conflict-key", "x-continuity-api-key": "test"})
     assert response.status_code == 409
 
@@ -74,7 +74,7 @@ def test_public_snapshot_fetch_key_error(app_client):
 
 
 def test_public_indicators_runtime_error(app_client):
-    with patch("continuityos.service.ECCCGeoMetAdapter.fetch", side_effect=RuntimeError("timeout")):
+    with patch("continuityos.public_data.ECCCGeoMetAdapter.fetch", side_effect=RuntimeError("timeout")):
         response = app_client.post("/v1/public-data/indicators", json={"source_id": "eccc-geomet-alerts"}, headers={"x-continuity-api-key": "test"})
         assert response.status_code == 503
 
@@ -90,7 +90,7 @@ def test_public_indicators_invalid_source(app_client):
 
 
 def test_assess_source_policy_error(app_client):
-    with patch("continuityos.service.fusion.assess", side_effect=ValueError("invalid")):
+    with patch("continuityos.fusion.FusionEngine.assess", side_effect=ValueError("invalid")):
         response = app_client.post("/v1/assess", json={"corridor_id": "a", "observations": []}, headers={"x-continuity-api-key": "test"})
         assert response.status_code == 422
 
@@ -102,13 +102,13 @@ def test_regression_value_error(app_client):
 
 
 def test_analyze_graph_value_error(app_client):
-    with patch("continuityos.service.dependency_engine.analyze", side_effect=ValueError("invalid")):
+    with patch("continuityos.graph.DependencyEngine.analyze", side_effect=ValueError("invalid")):
         response = app_client.post("/v1/graph/analyze", params={"failed_nodes": ["a"]}, json={"graph_id": "a", "nodes": [], "edges": []}, headers={"x-continuity-api-key": "test"})
         assert response.status_code == 422
 
 
 def test_compile_plan_value_error(app_client):
-    with patch("continuityos.service.compiler.compile", side_effect=ValueError("invalid")):
+    with patch("continuityos.compiler.ContinuityCompiler.compile", side_effect=ValueError("invalid")):
         response = app_client.post("/v1/compile", json={"network": {"id": "a", "nodes": []}, "policy": {"id": "a", "rules": []}}, headers={"x-continuity-api-key": "test"})
         assert response.status_code == 422
 
