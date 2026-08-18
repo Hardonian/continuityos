@@ -19,6 +19,51 @@ class EdgeManifest(BaseModel):
     snapshot_ids: list[str]
 
 
+class ModelPayload(BaseModel):
+    """Schema for MoE quantized LLM tables deployed to ESP32."""
+    model_id: str
+    version: str
+    layer_embeddings_hex: str
+    vocabulary_hex: str
+    target_architecture: str = "esp32-s3"
+
+
+class IoTMeshNode:
+    """
+    Manages fleets of ESP32 devices over degraded Starlink links.
+    Handles delta-compression sync and over-the-air (OTA) MoE deployments.
+    """
+    def __init__(self, fleet_id: str):
+        self.fleet_id = fleet_id
+        self.devices: set[str] = set()
+        self.active_deployments: dict[str, ModelPayload] = {}
+
+    def register_device(self, device_id: str) -> None:
+        self.devices.add(device_id)
+        logger.info(f"IoT Mesh {self.fleet_id} registered device: {device_id}")
+
+    def deploy_model(self, payload: ModelPayload) -> None:
+        """Stage a quantized MoE model for OTA distribution to the fleet."""
+        self.active_deployments[payload.model_id] = payload
+        logger.info(f"Staged model {payload.model_id} for fleet {self.fleet_id}")
+
+    def get_delta_sync(self, device_id: str, last_sync_hash: str) -> dict[str, Any]:
+        """Delta-compression synchronization for constrained bandwidth (Starlink)."""
+        # In a real implementation, this computes a binary patch. 
+        # Here we mock the synchronization payload.
+        if device_id not in self.devices:
+            raise ValueError("Unknown device")
+        
+        return {
+            "type": "delta_sync",
+            "device_id": device_id,
+            "base_hash": last_sync_hash,
+            "patches": [],
+            "models_available": list(self.active_deployments.keys())
+        }
+
+
+
 class EdgeNode:
     """
     P2P Gossip Cache protocol node for Sovereign Air-Gapped environments.
