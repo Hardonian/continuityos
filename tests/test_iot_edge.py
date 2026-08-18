@@ -113,3 +113,62 @@ def test_detect_anomalies_gps_spoofing():
 def test_detect_anomalies_empty():
     threats = TelemetryParser.detect_anomalies([])
     assert len(threats) == 0
+
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+from continuityos.edge import EdgeNode, EdgeManifest
+
+def test_edge_node_add_peer():
+    node = EdgeNode("node1", MagicMock())
+    node.add_peer("http://peer1/")
+    assert "http://peer1" in node.peers
+
+def test_edge_node_get_manifest(tmp_path):
+    cache_mock = MagicMock()
+    cache_mock.root = tmp_path
+    
+    # Create fake metadata.json
+    d = tmp_path / "a" / "b" / "c"
+    d.mkdir(parents=True)
+    (d / "metadata.json").write_text('{"snapshot_id": "snap1"}')
+    
+    node = EdgeNode("node1", cache_mock)
+    manifest = node.get_manifest()
+    assert manifest.peer_id == "node1"
+    assert "snap1" in manifest.snapshot_ids
+
+@pytest.mark.anyio
+async def test_edge_node_sync_with_peer_success():
+    cache_mock = MagicMock()
+    node = EdgeNode("node1", cache_mock)
+    
+    mock_response_manifest = MagicMock()
+    mock_response_manifest.status_code = 200
+    mock_response_manifest.json.return_value = {"peer_id": "peer1", "snapshot_ids": ["snap1"]}
+    
+    mock_response_sync = MagicMock()
+    mock_response_sync.status_code = 200
+    mock_response_sync.json.return_value = {
+        "metadata": {"source_id": "src1", "url": "url1", "content_type": "text/plain"},
+        "payload": "payload_data"
+    }
+    
+    async def mock_get(url):
+        if url.endswith("/manifest"):
+            return mock_response_manifest
+        return mock_response_sync
+
+    with patch("httpx.AsyncClient.get", side_effect=mock_get):
+        await node._sync_with_peer("http://peer1")
+        cache_mock.store.assert_called_once()
+
+@pytest.mark.anyio
+async def test_edge_node_loop_start_stop():
+    node = EdgeNode("node1", MagicMock(), gossip_interval=0.01)
+    node.start()
+    assert node._running is True
+    assert node._task is not None
+    await asyncio.sleep(0.02)
+    await node.stop()
+    assert node._running is False
+    assert node._task is None
