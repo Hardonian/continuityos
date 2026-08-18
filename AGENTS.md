@@ -1,8 +1,8 @@
-# ContinuityOS — Agent Engineering Guide & System Specifications
+# Aegis Continuity (Sovereign Edition) — Agent Engineering Guide & System Specifications
 
-Welcome to **ContinuityOS**, the open-core **Continuity-as-Code / Resilience-as-Code** engine for critical trade corridors and physical-digital supply networks.
+Welcome to **Aegis Continuity** (built upon the ContinuityOS open-core engine). This is the premier **Continuity-as-Code / Resilience-as-Code** platform designed for NATO-aligned Sovereign Governments, Ministries of Defense, and Tier-1 Defense Primes. 
 
-This document serves as the authoritative guide for AI coding agents and human contributors working on this repository.
+This document serves as the authoritative guide for AI coding agents and human contributors working on this repository, ensuring strict adherence to MIL-SPEC resilience, air-gapped security, and deterministic exact-solvers.
 
 ---
 
@@ -14,7 +14,7 @@ Traditional Infrastructure-as-Code answers:
 Kubernetes answers:
 > *Is my application operating in its desired state?*
 
-**ContinuityOS answers:**
+**Aegis Continuity answers:**
 > *Will my supply chain, logistics network, or critical mission corridor function through degradation, denial, and cascade failure — and what exact, explainable, bounded actions restore continuity?*
 
 Resilience is **not binary** (OPEN vs. CLOSED). Infrastructure can remain physically open while becoming operationally or commercially unusable:
@@ -27,13 +27,13 @@ Resilience is **not binary** (OPEN vs. CLOSED). Infrastructure can remain physic
 
 ---
 
-## 2. Defensive-Only Safety Boundary
+## 2. Defensive-Only Safety Boundary & Rules of Engagement (ROE)
 
-ContinuityOS is strictly engineered for **defensive resilience planning, business continuity, critical infrastructure protection, disaster recovery, and logistics assurance**.
+Aegis Continuity is strictly engineered for **defensive resilience planning, business continuity, critical infrastructure protection, disaster recovery, and logistics assurance**.
 
 - **NEVER** implement offensive cyber operations, adversary targeting, weapon payload routing, or interdiction features.
-- **NEVER** implement autonomous dispatch or automatic execution of consequential actions.
-- **ALWAYS** enforce the human approval boundary: plan compilation, remediation options, and recovery timelines are strictly **advisory**.
+- **NEVER** implement autonomous dispatch or automatic execution of consequential kinetic or cyber actions.
+- **ALWAYS** enforce the human-in-the-loop approval boundary: plan compilation, remediation options, and recovery timelines are strictly **advisory**.
 
 ---
 
@@ -73,7 +73,7 @@ src/continuityos/
 
 ## 4. Declarative DSL Specification (`continuity.io/v1`)
 
-ContinuityOS resources are declared as YAML documents:
+Aegis Continuity resources are declared as YAML documents:
 
 ### Resource Kinds
 

@@ -580,7 +580,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="continuity",
         description=(
-            "ContinuityOS: Continuity-as-Code compiler, analyzer, and resilience orchestrator."
+            "Aegis Continuity (Sovereign Edition): Continuity-as-Code compiler, analyzer, and resilience orchestrator."
         ),
     )
     parser.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")

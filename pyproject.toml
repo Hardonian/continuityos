@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "continuityos-reference"
 version = "0.1.0"
-description = "Cyber-physical continuity assurance reference implementation for critical trade corridors"
+description = "Sovereign Resilience-as-Code & Cyber-Physical Corridor Assurance Engine"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"

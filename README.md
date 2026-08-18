@@ -1,17 +1,18 @@
-# ContinuityOS Reference Implementation
+# Aegis Continuity (Sovereign Edition)
+*(Powered by the ContinuityOS Open-Core Engine)*
 
-Cyber-physical continuity assurance for critical maritime, Arctic, port, satellite, and supply-corridor dependencies.
+Sovereign Resilience-as-Code and cyber-physical continuity assurance for critical maritime corridors, NATO logistics, Arctic operations, and defense supply chains.
 
-This repository is an executable reference architecture, not a military command system and not an autonomous controller. It ingests bounded observations, enforces source-assertion policy, estimates corridor operability, maps cyber failures to physical supply consequences, compiles a cost-constrained continuity plan, and writes tamper-evident decision evidence.
+Aegis Continuity is a deterministic, air-gapped Reference Architecture designed for Ministries of Defense and Tier-1 Defense Primes. It is **not** an autonomous controller or a kinetic command system. It ingests bounded observations, enforces source-assertion policy, estimates corridor operability, maps cyber failures to physical supply consequences, compiles a cost-constrained continuity plan, and writes tamper-evident decision evidence to a post-quantum secure ledger.
 
 ## What is implemented
 
-- **Source assertion policy:** source, metric, and assertion-class combinations are enforced; public orbital, port, imagery, climate, and traffic data cannot assert live cyber health, service availability, capacity, or insurance access.
-- **Immutable open-data snapshots:** content-addressed cache with hashes, retrieval metadata, and atomic writes.
-- **Deterministic fusion engine:** explicit replay time, factor-level risk, confidence, freshness decay, missing-data penalties, context-only exclusions, and explicit caveats.
+- **Sovereign assertion policy:** source, metric, and assertion-class combinations are strictly enforced (e.g., commercial orbiters cannot assert SCIF availability).
+- **Air-gapped open-data snapshots:** content-addressed cache with hashes and atomic writes for offline SCIF operations.
+- **Deterministic fusion engine:** explicit replay time, factor-level risk, confidence, freshness decay, missing-data penalties, and explicit NATO APP-6D caveats.
 - **Functional closure classification:** open, degraded, functionally closed, or physically closed.
 - **Cyber-physical dependency graph:** downstream blast radius, provider concentration, substitution attenuation, and single-point-of-failure detection.
-- **Continuity compiler:** exact bounded deterministic action selection under budget, prerequisites, incompatibilities, and human-approval controls.
+- **Continuity compiler:** exact bounded deterministic action selection under budget, prerequisites, incompatibilities, and human-in-the-loop approvals.
 - **Evidence ledger:** append-only SHA-256 chain with optional Ed25519 signing and verification.
 - **Authenticated telemetry:** HMAC-SHA256 canonical webhook for operator assertions.
 - **FastAPI service and CLI:** documented endpoints, health checks, source registry, assessment, graph analysis, plan compilation, evidence verification, snapshot import, and key generation.
@@ -32,16 +33,15 @@ source-qualified observation
 
 The reference implementation makes that chain testable and deterministic. The defensible product moat would come from validated customer dependency graphs, operator telemetry integrations, decision-outcome history, policy packs, and accreditation—not from public datasets alone.
 
-## Safety and authority boundary
+## Safety, Authority, and ROE Boundary
 
-ContinuityOS does **not**:
+Aegis Continuity acts strictly as an advisory intelligence overlay. It does **not**:
 
-- control vessels, ports, operational technology, drones, weapons, or security assets;
-- generate targeting, interdiction, or offensive cyber plans;
-- treat public satellite catalogues as proof of communications availability;
-- infer current port capacity from static geospatial records;
-- claim state intent from public events;
-- execute consequential mitigations without accountable human approval.
+- execute autonomous kinetic actions, weapons targeting, or interdiction operations;
+- control operational technology (OT), port SCADA, or maritime uncrewed surface vessels (USVs);
+- treat public satellite catalogues as proof of secure communications availability;
+- infer current strategic port capacity from static geospatial intelligence (GEOINT);
+- execute any consequential mitigations without explicit, accountable human-in-the-loop authorization.
 
 ## Quick start
 
@@ -148,7 +148,7 @@ Production requires a secret of at least 32 characters and Ed25519 evidence keys
 
 ### National-security posture
 
-The project is positioned as a Canadian-oriented, unclassified continuity evidence and decision-support layer for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. It does not claim NORAD/NATO/Five Eyes endorsement, classified readiness, government procurement, or authority over operational systems. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md), [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md), [`docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md`](docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md), and [`docs/PLATFORM_POSITIONING_RESEARCH_2026.md`](docs/PLATFORM_POSITIONING_RESEARCH_2026.md).
+The Aegis Continuity Sovereign Edition is designed as an embedded Commercial-Off-The-Shelf (COTS) engine for Defense System Integrators (SIs) and "Shadow Prime" contracts. It provides unclassified continuity evidence and decision-support for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. While engineered to MIL-SPEC resilience standards, the base open-core does not claim active classified readiness or autonomous authority over operational systems until deployed in a customer SCIF. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md), [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md), [`docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md`](docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md), and [`docs/PLATFORM_POSITIONING_RESEARCH_2026.md`](docs/PLATFORM_POSITIONING_RESEARCH_2026.md).
 ### Operational endpoints
 
 - `GET /livez` is a cheap process liveness check for a supervisor.

@@ -185,11 +185,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     dependency_engine = DependencyEngine()
 
     app = FastAPI(
-        title="ContinuityOS Reference API",
+        title="Aegis Continuity (Sovereign Edition) API",
         version="0.1.0",
         description=(
-            "Cyber-physical continuity assurance reference implementation "
-            "for critical trade corridors."
+            "Sovereign Resilience-as-Code & Cyber-Physical Corridor Assurance Engine "
+            "for Ministries of Defense and critical trade corridors."
         ),
         contact={
             "name": "ContinuityOS",
