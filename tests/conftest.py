@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import warnings
 from datetime import UTC, datetime
 
 import pytest
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="starlette.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="fastapi.*")
+warnings.filterwarnings("ignore", message=".*httpx.*")
 
 from continuityos.domain import (
     AssertionClass,

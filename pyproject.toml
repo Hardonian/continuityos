@@ -40,9 +40,9 @@ continuityos = "continuityos.cli:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-q --strict-markers --disable-warnings"
+addopts = "-q --strict-markers"
 filterwarnings = [
-    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
 ]
 testpaths = ["tests"]
 
