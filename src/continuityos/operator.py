@@ -10,8 +10,8 @@ import logging
 import os
 from typing import Any
 
-from kubernetes import client, config, watch
-from kubernetes.client.rest import ApiException
+from kubernetes import client, config, watch  # type: ignore[import-untyped]
+from kubernetes.client.rest import ApiException  # type: ignore[import-untyped]
 
 from continuityos.compiler import ContinuityCompiler
 

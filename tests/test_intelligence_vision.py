@@ -36,7 +36,7 @@ async def test_visual_intelligence_engine_success(monkeypatch: pytest.MonkeyPatc
                                 "content": (
                                     '{"threat_detected": true, "confidence": 0.92, '
                                     '"detected_objects": ["quadcopter", "jammer"], '
-                                    '"visual_summary": "Hostile drone observed hovering over perimeter.", '
+                                    '"visual_summary": "Hostile drone observed.", '
                                     '"corridor_impact_factor": "ESCORT", '
                                     '"recommended_action": "Deploy C-UAS directional jammer."}'
                                 )
