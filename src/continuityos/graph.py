@@ -234,8 +234,8 @@ class DependencyEngine:
         self, graph: DependencyGraph, failed_nodes: set[str]
     ) -> dict[str, float]:
         """Calculate the blast radius as a map of node_id → impact probability."""
-        assessment = self.analyze(graph, failed_nodes)
-        return {node.node_id: node.impact_probability for node in assessment.impacted_nodes}
+        impacted = self.analyze_without_spof(graph, failed_nodes)
+        return {node.node_id: node.impact_probability for node in impacted}
 
 
 def detect_cycles(graph: DependencyGraph) -> list[list[str]]:
