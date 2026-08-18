@@ -69,9 +69,7 @@ def test_embedded_endpoints(tmp_path) -> None:
     client = TestClient(app)
 
     # 1. Compile Package for ESP32-S3
-    resp = client.post(
-        "/v1/embedded/compile-package?target=esp32-s3&quantization=bitnet_1_58b"
-    )
+    resp = client.post("/v1/embedded/compile-package?target=esp32-s3&quantization=bitnet_1_58b")
     assert resp.status_code == 200
     pkg = resp.json()
     assert pkg["target"] == "esp32-s3"
