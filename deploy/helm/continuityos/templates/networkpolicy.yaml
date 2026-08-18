@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "continuityos.fullname" . }}-default-deny
+  labels:
+    app: {{ include "continuityos.name" . }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ include "continuityos.name" . }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080

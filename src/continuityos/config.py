@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     compiler_max_actions: int = Field(default=24, ge=1, le=64)
     max_request_bytes: int = Field(default=1_048_576, ge=16_384, le=10_485_760)
     rate_limit_per_minute: int = Field(default=60, ge=1, le=10_000)
+    cors_origins: list[str] = Field(default_factory=lambda: ["*"])
 
     @model_validator(mode="after")
     def validate_production_controls(self) -> Settings:

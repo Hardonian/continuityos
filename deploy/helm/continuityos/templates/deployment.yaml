@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "continuityos.fullname" . }}
+  labels:
+    app: {{ include "continuityos.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "continuityos.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "continuityos.name" . }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: CONTINUITYOS_ENVIRONMENT
+              value: {{ .Values.env.CONTINUITYOS_ENVIRONMENT | quote }}
+            - name: CONTINUITYOS_OUTBOUND_HTTP_ENABLED
+              value: {{ .Values.env.CONTINUITYOS_OUTBOUND_HTTP_ENABLED | quote }}
+            - name: CONTINUITYOS_OPERATOR_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuityos.fullname" . }}-secrets
+                  key: operatorWebhookSecret
+            - name: CONTINUITYOS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuityos.fullname" . }}-secrets
+                  key: apiKey
+            - name: CONTINUITYOS_EVIDENCE_PRIVATE_KEY_PATH
+              value: /etc/continuityos/secrets/evidence-private.pem
+            - name: CONTINUITYOS_EVIDENCE_PUBLIC_KEY_PATH
+              value: /etc/continuityos/secrets/evidence-public.pem
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/continuityos
+            - name: run
+              mountPath: /run/continuityos
+            - name: tmp
+              mountPath: /tmp
+            - name: secrets
+              mountPath: /etc/continuityos/secrets
+              readOnly: true
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: secrets
+          secret:
+            secretName: {{ include "continuityos.fullname" . }}-secrets

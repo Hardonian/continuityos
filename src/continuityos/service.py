@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
@@ -14,6 +13,8 @@ from uuid import uuid4
 
 import orjson
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -178,10 +179,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="ContinuityOS Reference API",
         version="0.1.0",
+        description=(
+            "Cyber-physical continuity assurance reference implementation "
+            "for critical trade corridors."
+        ),
+        contact={
+            "name": "ContinuityOS",
+            "url": "https://continuityos.io",
+        },
+        license_info={
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+        },
         default_response_class=JSONResponse,
         docs_url="/docs" if configured.environment != "production" else None,
         openapi_url="/openapi.json" if configured.environment != "production" else None,
         redoc_url=None,
+    )
+    
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=configured.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     app.state.settings = configured
     app.state.ledger = ledger
@@ -264,11 +286,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
         )
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-site"
         response.headers["Cache-Control"] = "no-store"
         if request.headers.get("x-forwarded-proto", request.url.scheme) == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         logger.info(
-            json.dumps(
+            orjson.dumps(
                 {
                     "event": "request",
                     "request_id": request_id,
@@ -277,8 +302,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "status": response.status_code,
                     "duration_ms": round((perf_counter() - started) * 1000, 3),
                 },
-                sort_keys=True,
-            )
+                option=orjson.OPT_SORT_KEYS,
+            ).decode("utf-8")
         )
         return response
 
@@ -719,7 +744,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if isinstance(latest, dict):
                     report_id = str(latest.get("report_id"))
                     if report_id != sent_report_id:
-                        payload = json.dumps(latest, separators=(",", ":"))
+                        payload = orjson.dumps(latest).decode("utf-8")
                         yield f"event: strategic\ndata: {payload}\n\n"
                         sent_report_id = report_id
                 yield ": heartbeat\n\n"
