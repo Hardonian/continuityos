@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "ScenarioEvent": {
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "state": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "State",
+          "type": "string"
+        },
+        "target": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "state"
+      ],
+      "title": "ScenarioEvent",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "duration_days": {
+      "default": 30,
+      "maximum": 3650,
+      "minimum": 1,
+      "title": "Duration Days",
+      "type": "integer"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/ScenarioEvent"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Events",
+      "type": "array"
+    }
+  },
+  "required": [
+    "events"
+  ],
+  "title": "ScenarioSpec",
+  "type": "object"
+}

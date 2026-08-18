@@ -1,0 +1,27 @@
+apiVersion: continuity.io/v1
+kind: ContinuityPolicy
+metadata:
+  name: arctic-continuity-policy
+  namespace: arctic-operations
+spec:
+  rules:
+    - rule_id: ARCTIC-SAT-001
+      description: Must maintain at least 2 independent SATCOM providers
+      assertion:
+        minimum_providers: 2
+    - rule_id: ARCTIC-INV-001
+      description: Fuel reserves must meet or exceed 45 days
+      assertion:
+        minimum_reserve_days: 45
+    - rule_id: ARCTIC-RTE-001
+      description: Must have at least 2 independent navigable routes
+      assertion:
+        minimum_independent_routes: 2
+    - rule_id: ARCTIC-CONT-001
+      description: Overall supply chain continuity must be >= 95%
+      assertion:
+        minimum_continuity: 0.95
+    - rule_id: ARCTIC-TRST-001
+      description: Navigation trust score must be >= 0.70
+      assertion:
+        minimum_trust_score: 0.70

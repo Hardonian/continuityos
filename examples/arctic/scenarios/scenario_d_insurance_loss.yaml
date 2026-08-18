@@ -1,0 +1,12 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: scenario-d-insurance-loss
+  namespace: arctic-operations
+spec:
+  events:
+    - target: route_nsr
+      state: open_but_uninsurable
+      description: Lloyd's and London maritime underwriters withdraw polar navigation coverage due to geopolitical sanctions
+  duration_days: 60
+  description: Physical route remains clear but commercial marine insurance is cancelled, rendering vessels unable to transit

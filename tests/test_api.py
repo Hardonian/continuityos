@@ -284,3 +284,111 @@ def test_assess_validation_errors_do_not_hard_500(tmp_path) -> None:
     )
     assert response.status_code == 422
     assert "at least one observation" in response.json()["detail"]
+
+
+def test_sovereign_and_simulation_api_endpoints(tmp_path) -> None:
+    client = TestClient(create_app(Settings(environment="test", data_dir=tmp_path, api_key=None)))
+
+    # 1. Sovereign Audit
+    audit_res = client.post("/v1/sovereign/audit")
+    assert audit_res.status_code == 200
+    assert audit_res.json()["compliant"] is True
+
+    # 2. Readiness Endpoint
+    readiness_res = client.post(
+        "/v1/readiness",
+        json={
+            "theater_id": "theatre-arctic",
+            "overall_continuity": 0.96,
+            "inventory_reserve_days": 35.0,
+            "corridor_state": "open",
+        },
+    )
+    assert readiness_res.status_code == 200
+    assert readiness_res.json()["c_rating"] == "C-1_fully_capable"
+
+    # 3. Inventory Simulation Endpoint
+    inv_res = client.post(
+        "/v1/inventory/simulate",
+        json={
+            "profile": {
+                "resource_id": "fuel-depot",
+                "name": "Strategic Fuel",
+                "starting_quantity": 50000.0,
+                "unit": "MT",
+                "normal_consumption_per_day": 1000.0,
+                "degraded_consumption_per_day": 1500.0,
+                "replenishment_per_day": 1000.0,
+                "replenishment_delay_days": 10,
+                "minimum_reserve": 10000.0,
+                "critical_threshold": 5000.0,
+                "warning_threshold": 15000.0,
+            },
+            "simulation_days": 30,
+            "degraded": True,
+        },
+    )
+    assert inv_res.status_code == 200
+    assert len(inv_res.json()["daily_log"]) == 30
+    assert inv_res.json()["resource_id"] == "fuel-depot"
+
+    # 4. Recovery Lag Modeling Endpoint
+    recov_res = client.post(
+        "/v1/recovery/model",
+        json={
+            "profile": {
+                "resource_ref": "port/kirkenes",
+                "incident_description": "Ice storm",
+                "physical_reopening_days": 3,
+                "port_backlog_days": 7,
+                "carrier_return_days": 10,
+                "vessel_repositioning_days": 14,
+                "inventory_replenishment_days": 21,
+            },
+            "days_since_incident": 4,
+        },
+    )
+    assert recov_res.status_code == 200
+    assert recov_res.json()["current_phase"] == "T1_physical_reopening"
+
+    # 5. Threat Scan Endpoint
+    threat_res = client.post(
+        "/v1/threats/scan",
+        json={
+            "resource_ref": "corridor/arctic-chokepoint",
+            "gnss_residuals": [18.0, 22.0, 31.0],
+            "clock_drift_ppm": 9.5,
+        },
+    )
+    assert threat_res.status_code == 200
+    assert threat_res.json()["gnss_threat"]["is_spoofed"] is True
+
+    # 6. Intelligence Forecast Endpoint
+    forecast_res = client.post(
+        "/v1/intelligence/forecast",
+        json={
+            "graph": {
+                "graph_id": "test-ai-graph",
+                "nodes": [
+                    {"node_id": "n1", "name": "N1", "node_type": "supplier", "criticality": 0.8},
+                    {"node_id": "n2", "name": "N2", "node_type": "corridor", "criticality": 0.9},
+                ],
+                "edges": [{"source": "n1", "target": "n2", "dependency_strength": 0.9}],
+            },
+            "target_node": "n2",
+            "observed_degradations": {"n1": 0.8},
+        },
+    )
+    assert forecast_res.status_code == 200
+    assert forecast_res.json()["failure_probability"] > 0.50
+
+    # 7. Crypto Merkle Verify Endpoint
+    import hashlib
+
+    from continuityos.crypto import MerkleTree
+
+    tree = MerkleTree([hashlib.sha256(f"leaf_{i}".encode()).hexdigest() for i in range(4)])
+    proof = tree.generate_inclusion_proof(1)
+    mkl_res = client.post("/v1/crypto/merkle-verify", json=proof.model_dump(mode="json"))
+    assert mkl_res.status_code == 200
+    assert mkl_res.json()["valid"] is True

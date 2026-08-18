@@ -1,0 +1,79 @@
+graph_id: arctic-maritime-network
+nodes:
+  - node_id: port_kirkenes
+    name: Port of Kirkenes
+    node_type: port
+    criticality: 0.85
+    location:
+      latitude: 69.727
+      longitude: 30.045
+    provider_id: norwegian_ports
+  - node_id: port_murmansk
+    name: Port of Murmansk
+    node_type: port
+    criticality: 0.90
+    location:
+      latitude: 68.958
+      longitude: 33.082
+    provider_id: rosatom_ports
+  - node_id: route_nsr
+    name: Northern Sea Route
+    node_type: corridor
+    criticality: 0.95
+    provider_id: nsr_administration
+  - node_id: route_northwest_passage
+    name: Northwest Passage Alternate
+    node_type: corridor
+    criticality: 0.70
+    provider_id: canadian_coast_guard
+  - node_id: facility_yamal_lng
+    name: Yamal LNG Terminal
+    node_type: facility
+    criticality: 0.95
+    location:
+      latitude: 71.27
+      longitude: 72.07
+    provider_id: novatek
+  - node_id: satcom_iridium
+    name: Iridium Polar SATCOM
+    node_type: satcom
+    criticality: 0.80
+    provider_id: iridium_satellite
+  - node_id: satcom_starlink
+    name: Starlink High Latitude
+    node_type: satcom
+    criticality: 0.75
+    provider_id: spacex
+  - node_id: icebreaker_50let
+    name: Nuclear Icebreaker 50 Let Pobedy
+    node_type: icebreaker
+    criticality: 0.85
+    provider_id: rosatomflot
+
+edges:
+  - source: satcom_iridium
+    target: route_nsr
+    dependency_strength: 0.85
+    substitutable: true
+    substitute_group: polar_comms
+  - source: satcom_starlink
+    target: route_nsr
+    dependency_strength: 0.75
+    substitutable: true
+    substitute_group: polar_comms
+  - source: icebreaker_50let
+    target: route_nsr
+    dependency_strength: 0.90
+  - source: port_kirkenes
+    target: route_nsr
+    dependency_strength: 0.85
+    substitutable: true
+    substitute_group: western_hub
+  - source: port_murmansk
+    target: route_nsr
+    dependency_strength: 0.90
+    substitutable: true
+    substitute_group: western_hub
+  - source: route_nsr
+    target: facility_yamal_lng
+    dependency_strength: 0.95

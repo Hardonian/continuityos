@@ -37,6 +37,9 @@ class AssertionClass(StrEnum):
     INSURANCE_ACCESS = "insurance_access"
     HUMAN_INTELLIGENCE = "human_intelligence"
     DISASTER_RESPONSE = "disaster_response"
+    TACTICAL_SURVEILLANCE = "tactical_surveillance"
+    COUNTER_UAS = "counter_uas"
+    LEO_SATCOM = "leo_satcom"
 
 
 class MetricName(StrEnum):
@@ -65,6 +68,13 @@ class MetricName(StrEnum):
     EVACUATION_COUNT = "evacuation_count"
     UTILITY_IMPACT_COUNT = "utility_impact_count"
     WATER_LEVEL = "water_level"
+    UAV_LINK_MARGIN = "uav_link_margin"
+    UAV_SWARM_COHESION = "uav_swarm_cohesion"
+    STARLINK_LATENCY_MS = "starlink_latency_ms"
+    STARLINK_DOWNLINK_MBPS = "starlink_downlink_mbps"
+    STARLINK_OBSTRUCTION_RATE = "starlink_obstruction_rate"
+    CUAS_THREAT_DENSITY = "cuas_threat_density"
+    CUAS_JAMMING_ACTIVE = "cuas_jamming_active"
 
 
 class GeoPoint(BaseModel):
@@ -122,6 +132,10 @@ class Observation(BaseModel):
             MetricName.INSURANCE_AVAILABILITY,
             MetricName.GEOPOLITICAL_PRESSURE,
             MetricName.ESCORT_CAPACITY,
+            MetricName.UAV_SWARM_COHESION,
+            MetricName.STARLINK_OBSTRUCTION_RATE,
+            MetricName.CUAS_THREAT_DENSITY,
+            MetricName.CUAS_JAMMING_ACTIVE,
         }
         if self.metric in ratio_metrics and not 0.0 <= self.value <= 1.0:
             raise ValueError(f"{self.metric} must be normalized to [0, 1]")
@@ -137,6 +151,9 @@ class Observation(BaseModel):
                 MetricName.SATELLITE_GEOMETRY_DENSITY,
                 MetricName.EARTH_OBSERVATION_COVERAGE,
                 MetricName.PORT_GEOMETRY,
+                MetricName.UAV_LINK_MARGIN,
+                MetricName.STARLINK_LATENCY_MS,
+                MetricName.STARLINK_DOWNLINK_MBPS,
             }
             and self.value < 0
         ):
@@ -170,9 +187,32 @@ class FactorAssessment(BaseModel):
 
 class CorridorState(StrEnum):
     OPEN = "open"
-    DEGRADED = "degraded"
+    OPEN_DEGRADED = "open_degraded"
+    OPEN_CAPACITY_CONSTRAINED = "open_capacity_constrained"
+    OPEN_BUT_UNINSURABLE = "open_but_uninsurable"
+    OPEN_BUT_NO_CARRIER_CAPACITY = "open_but_no_carrier_capacity"
+    OPEN_BUT_NAVIGATION_UNTRUSTED = "open_but_navigation_untrusted"
+    OPEN_BUT_COMMUNICATIONS_DEGRADED = "open_but_communications_degraded"
+    OPEN_BUT_SERVICE_DEPENDENT = "open_but_service_dependent"
+    RECOVERY_BACKLOGGED = "recovery_backlogged"
     FUNCTIONALLY_CLOSED = "functionally_closed"
     PHYSICALLY_CLOSED = "physically_closed"
+    UNKNOWN = "unknown"
+    # Legacy alias for backward compatibility with existing fusion tests
+    DEGRADED = "open_degraded"
+
+    @classmethod
+    def from_str(cls, val: str | CorridorState) -> CorridorState:
+        """Parse or normalize a string or CorridorState instance."""
+        if isinstance(val, cls):
+            return val
+        s = str(val).lower()
+        if s == "degraded":
+            return cls.OPEN_DEGRADED
+        for item in cls:
+            if item.value == s:
+                return item
+        return cls.UNKNOWN
 
 
 class CorridorAssessment(BaseModel):
@@ -225,3 +265,39 @@ class CompiledPlan(BaseModel):
     deterministic_solver: str
     approval_required: bool
     rejected_reason: str | None = None
+
+
+class DataClassification(StrEnum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    UNCLASSIFIED = "unclassified"
+    RESTRICTED = "restricted"
+    CONFIDENTIAL = "confidential"
+    SECRET = "secret"
+    TOP_SECRET = "top_secret"
+    COSMIC_TOP_SECRET = "cosmic_top_secret"
+
+    @property
+    def level(self) -> int:
+        """Numeric clearance level for comparison."""
+        levels = {
+            self.PUBLIC: 0,
+            self.UNCLASSIFIED: 0,
+            self.INTERNAL: 1,
+            self.RESTRICTED: 2,
+            self.CONFIDENTIAL: 3,
+            self.SECRET: 4,
+            self.TOP_SECRET: 5,
+            self.COSMIC_TOP_SECRET: 6,
+        }
+        return levels.get(self, 0)
+
+
+class RecoveryObjective(BaseModel):
+    """Recovery time/point objectives for a resource or supply network."""
+
+    recovery_time_hours: int = Field(ge=0, le=8760)
+    recovery_point_hours: int = Field(ge=0, le=8760)
+    minimum_service_level: Score = 0.5
+    maximum_data_loss_hours: int = Field(default=24, ge=0, le=8760)
+    priority: int = Field(default=1, ge=1, le=5)

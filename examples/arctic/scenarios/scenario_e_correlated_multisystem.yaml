@@ -1,0 +1,18 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: scenario-e-correlated-multisystem
+  namespace: arctic-operations
+spec:
+  events:
+    - target: satcom_iridium
+      state: functionally_closed
+      description: Targeted cyber incident on satellite ground station relay
+    - target: port_murmansk
+      state: functionally_closed
+      description: Port OT ransomware attack disrupting cargo crane control networks
+    - target: icebreaker_50let
+      state: functionally_closed
+      description: Escort diverted for emergency search and rescue operation
+  duration_days: 45
+  description: Correlated multi-system cyber-physical disruption across navigation, communications, and port infrastructure

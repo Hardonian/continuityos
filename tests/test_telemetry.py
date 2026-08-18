@@ -79,3 +79,21 @@ def test_operator_requires_scope_and_sequence() -> None:
     body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
     with pytest.raises(ValueError, match="tenant_id"):
         normalized_operator_observation(payload, body)
+
+    payload["tenant_id"] = "t1"
+    body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
+    with pytest.raises(ValueError, match="asset_id"):
+        normalized_operator_observation(payload, body)
+
+    payload["asset_id"] = "a1"
+    payload["sequence"] = -1
+    body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
+    with pytest.raises(ValueError, match="sequence"):
+        normalized_operator_observation(payload, body)
+
+    payload["sequence"] = 1
+    payload["observed_at"] = "2026-07-23T12:00:00"  # Missing timezone
+    body = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
+    # The datetime should be converted to UTC if timezone is missing
+    observation = normalized_operator_observation(payload, body)
+    assert observation.observed_at.tzinfo is not None

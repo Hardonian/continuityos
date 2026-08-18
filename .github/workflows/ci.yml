@@ -27,6 +27,8 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy src
       - run: uv run pytest --cov=continuityos --cov-report=xml --cov-fail-under=85
+      - run: uv run python scripts/threat_stress_harness.py
+      - run: uv run continuity sovereign-audit
       - run: uv build
       - run: PYTHONPATH=src uv run python scripts/demo.py > demo.json
       - run: python -m json.tool demo.json >/dev/null

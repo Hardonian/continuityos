@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import logging
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -14,14 +14,18 @@ from uuid import uuid4
 
 import orjson
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
+from continuityos.crypto import ZKPReserveProof
 from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
+from continuityos.edge import EdgeNode
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.exchange import (
     GeoJSONFeatureCollection,
@@ -32,6 +36,7 @@ from continuityos.exchange import (
 )
 from continuityos.fusion import FusionEngine
 from continuityos.graph import DependencyEngine, DependencyGraph, GraphAssessment
+from continuityos.intelligence import AgenticIntelligenceEngine
 from continuityos.interoperability import (
     SUPPORTED_CLOUD_EVENT_TYPES,
     CAPAlert,
@@ -77,6 +82,13 @@ class AssessmentRequest(BaseModel):
     corridor_id: str
     observations: list[Observation]
     as_of: datetime | None = None
+
+
+class VerifyReserveResponse(BaseModel):
+    valid: bool
+    policy_minimum: int
+    commitment_hash_hex: str
+    message: str
 
 
 class TelemetryResponse(BaseModel):
@@ -175,13 +187,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     compiler = ContinuityCompiler(configured.compiler_max_actions)
     dependency_engine = DependencyEngine()
 
+    @asynccontextmanager
+    async def app_lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
+        if configured.edge_enabled:
+            app_instance.state.edge_node.start()
+        yield
+        if configured.edge_enabled:
+            await app_instance.state.edge_node.stop()
+
     app = FastAPI(
-        title="ContinuityOS Reference API",
+        lifespan=app_lifespan,
+        title="Aegis Continuity (Sovereign Edition) API",
         version="0.1.0",
+        description=(
+            "Sovereign Resilience-as-Code & Cyber-Physical Corridor Assurance Engine "
+            "for Ministries of Defense and critical trade corridors."
+        ),
+        contact={
+            "name": "ContinuityOS",
+            "url": "https://continuityos.io",
+        },
+        license_info={
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+        },
         default_response_class=JSONResponse,
         docs_url="/docs" if configured.environment != "production" else None,
         openapi_url="/openapi.json" if configured.environment != "production" else None,
         redoc_url=None,
+    )
+
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=configured.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     app.state.settings = configured
     app.state.ledger = ledger
@@ -192,6 +234,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         SnapshotCache(configured.data_dir / "public-snapshots"),
         outbound_enabled=configured.outbound_http_enabled,
         timeout_seconds=configured.outbound_timeout_seconds,
+    )
+
+    app.state.intelligence_engine = AgenticIntelligenceEngine(
+        llm_endpoint=configured.llm_endpoint,
+        model=configured.llm_model,
+    )
+
+    app.state.edge_node = EdgeNode(
+        node_id=str(uuid4())[:8],
+        cache=app.state.public_data.cache,
+        gossip_interval=configured.edge_gossip_interval_seconds,
     )
 
     async def idempotency_context(
@@ -264,11 +317,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
         )
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-site"
         response.headers["Cache-Control"] = "no-store"
         if request.headers.get("x-forwarded-proto", request.url.scheme) == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         logger.info(
-            json.dumps(
+            orjson.dumps(
                 {
                     "event": "request",
                     "request_id": request_id,
@@ -277,8 +333,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "status": response.status_code,
                     "duration_ms": round((perf_counter() - started) * 1000, 3),
                 },
-                sort_keys=True,
-            )
+                option=orjson.OPT_SORT_KEYS,
+            ).decode("utf-8")
         )
         return response
 
@@ -557,6 +613,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return plan
 
     @app.post(
+        "/v1/crypto/verify-reserve-proof",
+        response_model=VerifyReserveResponse,
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def verify_reserve_proof(
+        request: Request, proof: ZKPReserveProof
+    ) -> VerifyReserveResponse:
+        key, fingerprint, cached = await idempotency_context(request, "verify-reserve")
+        if cached is not None:
+            return VerifyReserveResponse.model_validate_json(cached)
+
+        is_valid = proof.verify()
+        response = VerifyReserveResponse(
+            valid=is_valid,
+            policy_minimum=proof.policy_minimum,
+            commitment_hash_hex=proof.commitment_hash_hex,
+            message="Zero-Knowledge Proof mathematically verified."
+            if is_valid
+            else "Zero-Knowledge Proof verification failed.",
+        )
+        ledger.append(
+            "zkp_reserve_verification", proof.commitment_hash_hex, response.model_dump(mode="json")
+        )
+        save_idempotency("verify-reserve", key, fingerprint, response)
+
+        if not is_valid:
+            raise HTTPException(status_code=400, detail="ZKP Reserve Proof verification failed.")
+
+        return response
+
+    @app.post(
         "/v1/decision-packets",
         response_model=DecisionPacket,
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
@@ -719,7 +806,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if isinstance(latest, dict):
                     report_id = str(latest.get("report_id"))
                     if report_id != sent_report_id:
-                        payload = json.dumps(latest, separators=(",", ":"))
+                        payload = orjson.dumps(latest).decode("utf-8")
                         yield f"event: strategic\ndata: {payload}\n\n"
                         sent_report_id = report_id
                 yield ": heartbeat\n\n"
@@ -964,6 +1051,325 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return []
         lines = path.read_text().splitlines()[offset : offset + limit]
         return [EvidenceRecord.model_validate_json(line) for line in lines]
+
+    @app.post(
+        "/v1/sovereign/audit",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def sovereign_audit() -> dict[str, Any]:
+        from continuityos.sovereign import AirGapAuditor
+
+        report = AirGapAuditor().audit(Path("."))
+        return report.model_dump(mode="json")
+
+    @app.post(
+        "/v1/readiness",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evaluate_readiness_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.domain import CorridorState
+        from continuityos.readiness import ReadinessEngine
+
+        theater_id = str(payload.get("theater_id", "theater-1"))
+        overall_continuity = float(payload.get("overall_continuity", 0.95))
+        inventory_reserve_days = float(payload.get("inventory_reserve_days", 30.0))
+        corridor_state = CorridorState.from_str(str(payload.get("corridor_state", "open")))
+        res = ReadinessEngine().evaluate_readiness(
+            theater_id,
+            overall_continuity=overall_continuity,
+            inventory_reserve_days=inventory_reserve_days,
+            corridor_state=corridor_state,
+        )
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/cop/export",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def export_cop_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.cop import export_cop_feature, export_cop_feature_collection
+        from continuityos.domain import CorridorAssessment
+
+        assessment = CorridorAssessment.model_validate(payload.get("assessment", payload))
+        corridor_id = str(payload.get("corridor_id", "corridor-1"))
+        banner = str(payload.get("security_banner", "UNCLASSIFIED"))
+        coords = payload.get("coordinates")
+        feature = export_cop_feature(
+            corridor_id, assessment, coordinates=coords, security_banner=banner
+        )
+        return export_cop_feature_collection([feature])
+
+    @app.post(
+        "/v1/inventory/simulate",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def simulate_inventory_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.inventory import InventoryProfile, simulate_inventory
+
+        profile = InventoryProfile.model_validate(payload.get("profile", payload))
+        days = int(payload.get("simulation_days", 90))
+        degraded = bool(payload.get("degraded", False))
+        disrupted = bool(payload.get("disrupted_replenishment", False))
+        res = simulate_inventory(
+            profile,
+            simulation_days=days,
+            degraded=degraded,
+            disrupted_replenishment=disrupted,
+        )
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/recovery/model",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def model_recovery_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.recovery import RecoveryProfile, model_recovery
+
+        profile = RecoveryProfile.model_validate(payload.get("profile", payload))
+        days_since = int(payload.get("days_since_incident", 0))
+        res = model_recovery(profile, days_since_incident=days_since)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/scenarios/simulate",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def simulate_scenario_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.graph import DependencyGraph
+        from continuityos.scenario import Scenario, simulate_scenario
+
+        scenario = Scenario.model_validate(payload["scenario"])
+        graph = DependencyGraph.model_validate(payload["graph"])
+        res = simulate_scenario(scenario, graph)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/threats/scan",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def threat_scan_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.threat import ThreatDetectionEngine
+
+        engine = ThreatDetectionEngine()
+        scan = engine.run_full_scan(
+            resource_ref=str(payload.get("resource_ref", "corridor-target")),
+            gnss_residuals=payload.get("gnss_residuals"),
+            cno_ratios=payload.get("cno_ratios"),
+            clock_drift_ppm=float(payload.get("clock_drift_ppm", 0.0)),
+            scada_cmd_rate=float(payload.get("scada_cmd_rate", 5.0)),
+            unauthorized_fc=payload.get("unauthorized_fc"),
+            untrusted_ips=int(payload.get("untrusted_ips", 0)),
+            plc_hashes=payload.get("plc_hashes"),
+            expected_plc_hash=str(payload.get("expected_plc_hash", "a1b2c3d4e5f6")),
+            ais_coords=tuple(payload["ais_coords"]) if "ais_coords" in payload else None,
+        )
+        return scan.model_dump(mode="json")
+
+    @app.post(
+        "/v1/intelligence/forecast",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_forecast_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.graph import DependencyGraph
+        from continuityos.intelligence import BayesianCascadeForecaster
+
+        graph = DependencyGraph.model_validate(payload["graph"])
+        target_node = str(payload.get("target_node", graph.nodes[0].node_id))
+        degradations = {
+            str(k): float(v) for k, v in payload.get("observed_degradations", {}).items()
+        }
+        res = BayesianCascadeForecaster().forecast(graph, target_node, degradations)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/intelligence/xai",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_xai_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.domain import CorridorAssessment
+        from continuityos.intelligence import XAIRiskExplainer
+
+        assessment = CorridorAssessment.model_validate(payload.get("assessment", payload))
+        res = XAIRiskExplainer().explain(assessment)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/crypto/merkle-verify",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def crypto_merkle_verify_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.crypto import MerkleInclusionProof
+
+        proof = MerkleInclusionProof.model_validate(payload)
+        is_valid = proof.verify()
+        return {"valid": is_valid, "root_hash": proof.root_hash, "leaf_hash": proof.leaf_hash}
+
+    @app.post(
+        "/v1/intelligence/briefing",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_briefing_endpoint(
+        payload: dict[str, Any], request: Request
+    ) -> dict[str, Any]:
+        packet = DecisionPacket.model_validate(payload)
+        engine: AgenticIntelligenceEngine = request.app.state.intelligence_engine
+        briefing = await engine.generate_briefing(packet)
+        return briefing.model_dump(mode="json")
+
+    @app.get("/v1/edge/manifest")
+    async def edge_manifest_endpoint(request: Request) -> dict[str, Any]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+        node: EdgeNode = request.app.state.edge_node
+        return node.get_manifest().model_dump(mode="json")
+
+    @app.get("/v1/edge/sync/{snapshot_id}")
+    async def edge_sync_endpoint(request: Request, snapshot_id: str) -> dict[str, Any]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+
+        # In a real app we'd fetch the exact snapshot payload and metadata from SnapshotCache.
+        # Here we just look through the cache directories for simplicity.
+        cache = request.app.state.public_data.cache
+        for metadata_path in cache.root.glob("*/*/*/metadata.json"):
+            import json
+
+            try:
+                data = json.loads(metadata_path.read_text())
+                if data["snapshot_id"] == snapshot_id:
+                    payload_path = metadata_path.parent / "payload.bin"
+                    body = payload_path.read_bytes()
+                    return {"metadata": data, "payload": body.hex()}
+            except (json.JSONDecodeError, KeyError, FileNotFoundError):
+                continue
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    @app.post("/v1/edge/peers")
+    async def edge_add_peer_endpoint(request: Request, payload: dict[str, str]) -> dict[str, str]:
+        if not request.app.state.settings.edge_enabled:
+            raise HTTPException(status_code=403, detail="Edge protocol disabled")
+
+        peer_url = payload.get("url")
+        if not peer_url:
+            raise HTTPException(status_code=400, detail="Missing peer url")
+
+        node: EdgeNode = request.app.state.edge_node
+        node.add_peer(peer_url)
+        return {"status": "ok", "message": f"Added peer {peer_url}"}
+
+    @app.post(
+        "/v1/tactical/uav/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_uav_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import TacticalFusionBridge, UAVTacticalEngine, UAVTelemetryFrame
+
+        frame = UAVTelemetryFrame.model_validate(payload)
+        assessment = UAVTacticalEngine().analyze_frame(frame)
+        observations = TacticalFusionBridge.uav_to_observations(assessment, frame)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/tactical/starlink/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_starlink_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import (
+            StarlinkTacticalEngine,
+            StarlinkTelemetry,
+            TacticalFusionBridge,
+        )
+
+        telemetry = StarlinkTelemetry.model_validate(payload)
+        assessment = StarlinkTacticalEngine().evaluate_channel(telemetry)
+        observations = TacticalFusionBridge.starlink_to_observations(assessment, telemetry)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/tactical/cuas/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def tactical_cuas_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.tactical import (
+            CUASDefenseEngine,
+            CUASDetectionEvent,
+            TacticalFusionBridge,
+        )
+
+        sector = str(payload.get("sector", "SECTOR-ALPHA"))
+        raw_events = payload.get("events", [])
+        events = [CUASDetectionEvent.model_validate(e) for e in raw_events]
+        assessment = CUASDefenseEngine().analyze_events(sector, events)
+        observations = TacticalFusionBridge.cuas_to_observations(assessment, sector)
+        return {
+            "assessment": assessment.model_dump(mode="json"),
+            "observations": [o.model_dump(mode="json") for o in observations],
+        }
+
+    @app.post(
+        "/v1/embedded/compile-package",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_compile_package_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.embedded import (
+            EmbeddedArchitectureEngine,
+            TargetMicrocontroller,
+            TinyMoEConfig,
+        )
+
+        target_str = payload.get("target", "esp32-s3")
+        target = TargetMicrocontroller(target_str)
+        moe_dict = payload.get("moe_config")
+        moe_config = TinyMoEConfig.model_validate(moe_dict) if moe_dict else None
+
+        pkg = EmbeddedArchitectureEngine().compile_package(target, moe_config)
+        return pkg.model_dump(mode="json")
+
+    @app.post(
+        "/v1/embedded/micro-telemetry/encode",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_micro_encode_endpoint(payload: dict[str, Any]) -> dict[str, str]:
+        from continuityos.embedded import CompactBinaryProtocolCodec
+
+        frame_bytes = CompactBinaryProtocolCodec.encode(
+            node_id=int(payload.get("node_id", 1)),
+            sequence_id=int(payload.get("sequence_id", 0)),
+            timestamp_unix=int(payload.get("timestamp_unix", 1700000000)),
+            latitude=float(payload.get("latitude", 0.0)),
+            longitude=float(payload.get("longitude", 0.0)),
+            altitude_m=int(payload.get("altitude_m", 0)),
+            threat_flags=int(payload.get("threat_flags", 0)),
+            risk_score=float(payload.get("risk_score", 0.0)),
+            rssi_dbm=int(payload.get("rssi_dbm", -70)),
+            battery_pct=int(payload.get("battery_pct", 100)),
+        )
+        return {"frame_hex": frame_bytes.hex(), "size_bytes": str(len(frame_bytes))}
+
+    @app.post(
+        "/v1/embedded/micro-telemetry/decode",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def embedded_micro_decode_endpoint(payload: dict[str, str]) -> dict[str, Any]:
+        from continuityos.embedded import CompactBinaryProtocolCodec
+
+        frame_hex = payload.get("frame_hex", "")
+        frame_bytes = bytes.fromhex(frame_hex)
+        packet = CompactBinaryProtocolCodec.decode(frame_bytes)
+        return packet.model_dump(mode="json")
+
+    ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
+    if ui_index.exists():
+
+        @app.get("/ui", response_class=PlainTextResponse)
+        async def ui_dashboard() -> Response:
+            return Response(content=ui_index.read_text(encoding="utf-8"), media_type="text/html")
 
     return app
 

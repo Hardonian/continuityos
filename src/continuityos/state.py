@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import fcntl
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -30,11 +30,23 @@ class PersistentState:
     @contextmanager
     def _lock(self) -> Iterator[None]:
         with self.lock_path.open("a+", encoding="utf-8") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            if sys.platform == "win32":
+                import msvcrt
+
+                msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                try:
+                    yield
+                finally:
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
     def _read_unlocked(self) -> dict[str, Any]:
         if not self.path.exists():
@@ -55,11 +67,12 @@ class PersistentState:
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(temporary, self.path)
-            directory_fd = os.open(self.path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
+            if sys.platform != "win32":
+                directory_fd = os.open(self.path.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
         finally:
             if os.path.exists(temporary):
                 os.unlink(temporary)

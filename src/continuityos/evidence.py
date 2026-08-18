@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import base64
-import fcntl
 import hashlib
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -178,8 +178,20 @@ class EvidenceLedger:
     @contextmanager
     def _exclusive_lock(self) -> Iterator[None]:
         with self.lock_path.open("a+") as lock_handle:
-            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+            if sys.platform == "win32":
+                import msvcrt
+
+                msvcrt.locking(lock_handle.fileno(), msvcrt.LK_LOCK, 1)
+                try:
+                    yield
+                finally:
+                    lock_handle.seek(0)
+                    msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
