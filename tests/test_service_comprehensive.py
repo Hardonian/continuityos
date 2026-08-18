@@ -141,7 +141,7 @@ def test_unacknowledge_strategic_alert_invalid(app_client):
 
 def test_verify_reserve_proof_failed(app_client):
     with patch("continuityos.crypto.ZKPReserveProof.verify", return_value=False):
-        response = app_client.post("/v1/crypto/verify-reserve-proof", json={"commitment_hash_hex": "abcd", "policy_minimum": 10, "reserve_amount": 10, "nonce": "1234"}, headers={"x-continuity-api-key": "test"})
+        response = app_client.post("/v1/crypto/verify-reserve-proof", json={"commitment_hash_hex": "abcd", "policy_minimum": 10, "proof_hash_hex": "1234"}, headers={"x-continuity-api-key": "test"})
         assert response.status_code == 400
 
 
