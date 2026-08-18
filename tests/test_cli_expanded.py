@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from continuityos.cli import (
     build_parser,
-    command_assess,
     command_doctor,
     command_explain,
     command_generate_keys,
@@ -18,7 +17,6 @@ from continuityos.cli import (
     command_init,
     command_inventory,
     command_observe,
-    command_reconcile,
     command_recovery,
     command_remediate,
     command_simulate,
@@ -30,13 +28,32 @@ class TestCLIExpanded:
     def test_parser_subcommands_registered(self) -> None:
         parser = build_parser()
         commands = [
-            "init", "validate", "graph", "observe", "assess", "compile", "plan",
-            "reconcile", "drift", "simulate", "inventory", "recovery", "remediate",
-            "explain", "doctor", "import-snapshot", "verify-ledger", "generate-evidence-keys",
+            "init",
+            "validate",
+            "graph",
+            "observe",
+            "assess",
+            "compile",
+            "plan",
+            "reconcile",
+            "drift",
+            "simulate",
+            "inventory",
+            "recovery",
+            "remediate",
+            "explain",
+            "doctor",
+            "import-snapshot",
+            "verify-ledger",
+            "generate-evidence-keys",
         ]
-        subparsers_action = next(a for a in parser._actions if isinstance(a, parser._subparsers.__class__))  # type: ignore
+        subparsers_actions = [
+            a for a in parser._actions if isinstance(a, argparse._SubParsersAction)
+        ]
+        assert len(subparsers_actions) > 0
+        choices = subparsers_actions[0].choices
         for cmd in commands:
-            assert cmd in subparsers_action.choices
+            assert cmd in choices
 
     def test_init_command(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         parser = build_parser()
@@ -57,11 +74,18 @@ class TestCLIExpanded:
 
     def test_graph_command(self, capsys: pytest.CaptureFixture[str]) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "graph", "examples/arctic/graph.yaml",
-            "--from-node", "port_kirkenes", "--to-node", "facility_yamal_lng",
-            "--blast-radius", "satcom_iridium",
-        ])
+        args = parser.parse_args(
+            [
+                "graph",
+                "examples/arctic/graph.yaml",
+                "--from-node",
+                "port_kirkenes",
+                "--to-node",
+                "facility_yamal_lng",
+                "--blast-radius",
+                "satcom_iridium",
+            ]
+        )
         command_graph(args)
         out = capsys.readouterr().out
         data = json.loads(out)
@@ -87,22 +111,29 @@ class TestCLIExpanded:
         assert data["status"] in {"HEALTHY", "DEGRADED"}
         assert data["passed"] >= 3
 
-    def test_generate_keys_command(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_generate_keys_command(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         parser = build_parser()
         args = parser.parse_args(["generate-evidence-keys", str(tmp_path / "keys")])
         command_generate_keys(args)
         out = capsys.readouterr().out
         data = json.loads(out)
+        assert "private_key" in data
         assert (tmp_path / "keys" / "evidence-private.pem").exists()
         assert (tmp_path / "keys" / "evidence-public.pem").exists()
 
     def test_simulate_command(self, capsys: pytest.CaptureFixture[str]) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "simulate",
-            "--scenario", "examples/arctic/scenarios/scenario_c_port_icebreaker.yaml",
-            "--graph", "examples/arctic/graph.yaml",
-        ])
+        args = parser.parse_args(
+            [
+                "simulate",
+                "--scenario",
+                "examples/arctic/scenarios/scenario_c_port_icebreaker.yaml",
+                "--graph",
+                "examples/arctic/graph.yaml",
+            ]
+        )
         command_simulate(args)
         out = capsys.readouterr().out
         data = json.loads(out)
@@ -112,10 +143,14 @@ class TestCLIExpanded:
 
     def test_inventory_command(self, capsys: pytest.CaptureFixture[str]) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "inventory", "examples/arctic/scenarios/scenario_f_fuel_depletion.yaml",
-            "--days", "30",
-        ])
+        args = parser.parse_args(
+            [
+                "inventory",
+                "examples/arctic/scenarios/scenario_f_fuel_depletion.yaml",
+                "--days",
+                "30",
+            ]
+        )
         command_inventory(args)
         out = capsys.readouterr().out
         data = json.loads(out)
@@ -124,10 +159,14 @@ class TestCLIExpanded:
 
     def test_recovery_command(self, capsys: pytest.CaptureFixture[str]) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "recovery", "examples/arctic/scenarios/scenario_g_recovery_lag.yaml",
-            "--days-since", "15",
-        ])
+        args = parser.parse_args(
+            [
+                "recovery",
+                "examples/arctic/scenarios/scenario_g_recovery_lag.yaml",
+                "--days-since",
+                "15",
+            ]
+        )
         command_recovery(args)
         out = capsys.readouterr().out
         data = json.loads(out)

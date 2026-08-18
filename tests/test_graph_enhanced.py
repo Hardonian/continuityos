@@ -61,7 +61,9 @@ class TestEnhancedGraph:
         assert ["port_a", "route_2", "port_b"] in paths
 
         # Fail route_1
-        paths_with_failure = engine.find_alternative_paths(graph, "port_a", "port_b", failed={"route_1"})
+        paths_with_failure = engine.find_alternative_paths(
+            graph, "port_a", "port_b", failed={"route_1"}
+        )
         assert len(paths_with_failure) == 1
         assert paths_with_failure[0] == ["port_a", "route_2", "port_b"]
 

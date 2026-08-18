@@ -50,7 +50,10 @@ _REMEDIATION_TEMPLATES: dict[str, list[dict[str, object]]] = {
     "SATCOM_PROVIDER_COUNT": [
         {
             "name": "Add second SATCOM provider",
-            "description": "Contract an independent satellite communications provider to eliminate single-provider dependency",
+            "description": (
+                "Contract an independent satellite communications provider "
+                "to eliminate single-provider dependency"
+            ),
             "improvement": 0.15,
             "priority": 1,
         },
@@ -154,9 +157,7 @@ def generate_remediation(
 
     summary_parts = [f"{len(options)} remediation options generated"]
     if options:
-        summary_parts.append(
-            f"estimated total improvement: {total_improvement:.1%}"
-        )
+        summary_parts.append(f"estimated total improvement: {total_improvement:.1%}")
     failed = [c for c in reconciliation.checks if c.status == ReconciliationStatus.FAIL]
     if failed:
         summary_parts.append(f"{len(failed)} critical failures addressed")
@@ -174,23 +175,31 @@ def _generate_options_for_check(check: ReconciliationCheck) -> list[RemediationO
 
     if not templates:
         # Generate a generic option for unknown check types
-        return [RemediationOption(
-            name=f"Address {check.check_id}",
-            description=f"Remediate: {check.description}. {check.deficit or ''}".strip(),
-            addresses_check=check.check_id,
-            estimated_continuity_improvement=0.05,
-            confidence=0.3,
-            priority=3,
-        )]
+        return [
+            RemediationOption(
+                name=f"Address {check.check_id}",
+                description=f"Remediate: {check.description}. {check.deficit or ''}".strip(),
+                addresses_check=check.check_id,
+                estimated_continuity_improvement=0.05,
+                confidence=0.3,
+                priority=3,
+            )
+        ]
 
     options: list[RemediationOption] = []
     for template in templates:
-        options.append(RemediationOption(
-            name=str(template["name"]),
-            description=str(template["description"]),
-            addresses_check=check.check_id,
-            estimated_continuity_improvement=float(template.get("improvement", 0.05)),
-            confidence=0.5,
-            priority=int(template.get("priority", 2)),
-        ))
+        imp_val = template.get("improvement", 0.05)
+        prio_val = template.get("priority", 2)
+        improvement = float(imp_val) if isinstance(imp_val, (int, float, str)) else 0.05
+        priority = int(prio_val) if isinstance(prio_val, (int, float, str)) else 2
+        options.append(
+            RemediationOption(
+                name=str(template["name"]),
+                description=str(template["description"]),
+                addresses_check=check.check_id,
+                estimated_continuity_improvement=improvement,
+                confidence=0.5,
+                priority=priority,
+            )
+        )
     return options

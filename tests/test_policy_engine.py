@@ -81,8 +81,8 @@ class TestPolicyEngine:
         )
         state = ObservedState(
             provider_counts={"satcom": 1},  # Violated (1 < 2)
-            reserve_days={"fuel": 20.0},     # Violated (20 < 30)
-            independent_route_count=2,       # Violated (2 < 3)
+            reserve_days={"fuel": 20.0},  # Violated (20 < 30)
+            independent_route_count=2,  # Violated (2 < 3)
             overall_continuity=0.75,
         )
         evaluation = evaluate_policy(policy, state)

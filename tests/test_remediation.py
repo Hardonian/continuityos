@@ -21,8 +21,8 @@ class TestRemediationEngine:
         )
         actual = ActualState(
             satcom_provider_count=1,  # Fails
-            fuel_reserve_days=15.0,   # Fails
-            route_count=1,            # Fails
+            fuel_reserve_days=15.0,  # Fails
+            route_count=1,  # Fails
         )
         recon_result = reconcile(desired, actual)
         remediation_plan = generate_remediation(recon_result)

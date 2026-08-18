@@ -53,6 +53,8 @@ def export_all_schemas(output_dir: Path) -> dict[str, Path]:
     paths: dict[str, Path] = {}
     for filename, schema_dict in schemas.items():
         out_path = output_dir / filename
-        out_path.write_text(json.dumps(schema_dict, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        out_path.write_text(
+            json.dumps(schema_dict, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         paths[filename] = out_path
     return paths

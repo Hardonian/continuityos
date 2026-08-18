@@ -15,8 +15,12 @@ def _sample_graph() -> DependencyGraph:
     nodes = [
         DependencyNode(node_id="port_murmansk", name="Murmansk", node_type="port", criticality=0.9),
         DependencyNode(node_id="route_nsr", name="NSR", node_type="corridor", criticality=0.9),
-        DependencyNode(node_id="facility_yamal", name="Yamal LNG", node_type="facility", criticality=0.95),
-        DependencyNode(node_id="satcom_iridium", name="Iridium", node_type="satcom", criticality=0.8),
+        DependencyNode(
+            node_id="facility_yamal", name="Yamal LNG", node_type="facility", criticality=0.95
+        ),
+        DependencyNode(
+            node_id="satcom_iridium", name="Iridium", node_type="satcom", criticality=0.8
+        ),
     ]
     edges = [
         DependencyEdge(source="satcom_iridium", target="route_nsr", dependency_strength=0.85),

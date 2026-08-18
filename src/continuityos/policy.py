@@ -127,27 +127,33 @@ def _check_rule(rule: PolicyRule, state: ObservedState) -> PolicyViolation | Non
                     deficit=f"{assertion.minimum_reserve_days - days:.1f} days short",
                 )
 
-    if assertion.minimum_independent_routes is not None:
-        if state.independent_route_count < assertion.minimum_independent_routes:
-            return PolicyViolation(
-                rule_id=rule.rule_id,
-                description=rule.description,
-                severity=rule.severity,
-                expected=f">= {assertion.minimum_independent_routes} independent routes",
-                observed=f"{state.independent_route_count} routes",
-                deficit=f"{assertion.minimum_independent_routes - state.independent_route_count} additional required",
-            )
+    if (
+        assertion.minimum_independent_routes is not None
+        and state.independent_route_count < assertion.minimum_independent_routes
+    ):
+        deficit_routes = assertion.minimum_independent_routes - state.independent_route_count
+        return PolicyViolation(
+            rule_id=rule.rule_id,
+            description=rule.description,
+            severity=rule.severity,
+            expected=f">= {assertion.minimum_independent_routes} independent routes",
+            observed=f"{state.independent_route_count} routes",
+            deficit=f"{deficit_routes} additional required",
+        )
 
-    if assertion.minimum_continuity is not None:
-        if state.overall_continuity < assertion.minimum_continuity:
-            return PolicyViolation(
-                rule_id=rule.rule_id,
-                description=rule.description,
-                severity=rule.severity,
-                expected=f">= {assertion.minimum_continuity:.1%} continuity",
-                observed=f"{state.overall_continuity:.1%}",
-                deficit=f"{assertion.minimum_continuity - state.overall_continuity:.1%} below target",
-            )
+    if (
+        assertion.minimum_continuity is not None
+        and state.overall_continuity < assertion.minimum_continuity
+    ):
+        deficit_pct = assertion.minimum_continuity - state.overall_continuity
+        return PolicyViolation(
+            rule_id=rule.rule_id,
+            description=rule.description,
+            severity=rule.severity,
+            expected=f">= {assertion.minimum_continuity:.1%} continuity",
+            observed=f"{state.overall_continuity:.1%}",
+            deficit=f"{deficit_pct:.1%} below target",
+        )
 
     if assertion.minimum_trust_score is not None:
         for dep, score in state.trust_scores.items():

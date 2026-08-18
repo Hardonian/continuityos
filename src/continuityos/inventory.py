@@ -97,10 +97,7 @@ def simulate_inventory(
             and day >= profile.replenishment_delay_days
             and profile.replenishment_per_day > 0
         ):
-            replenishment = (
-                profile.replenishment_per_day
-                * profile.route_capacity_factor
-            )
+            replenishment = profile.replenishment_per_day * profile.route_capacity_factor
 
         # Apply substitution (reduces effective consumption)
         effective_consumption = consumption_rate * (1.0 - profile.substitution_factor)
@@ -119,13 +116,15 @@ def simulate_inventory(
         else:
             status = "normal"
 
-        daily_log.append(InventoryDay(
-            day=day,
-            quantity=round(quantity, 2),
-            consumption=round(effective_consumption, 2),
-            replenishment=round(replenishment, 2),
-            status=status,
-        ))
+        daily_log.append(
+            InventoryDay(
+                day=day,
+                quantity=round(quantity, 2),
+                consumption=round(effective_consumption, 2),
+                replenishment=round(replenishment, 2),
+                status=status,
+            )
+        )
 
         # Track threshold crossings (first occurrence only)
         if days_to_warning is None and quantity <= warning_threshold:
@@ -135,8 +134,10 @@ def simulate_inventory(
         if days_to_exhaustion is None and quantity <= 0:
             days_to_exhaustion = day
 
-    final = daily_log[-1] if daily_log else InventoryDay(
-        day=0, quantity=quantity, consumption=0, replenishment=0, status="normal"
+    final = (
+        daily_log[-1]
+        if daily_log
+        else InventoryDay(day=0, quantity=quantity, consumption=0, replenishment=0, status="normal")
     )
 
     # Build summary

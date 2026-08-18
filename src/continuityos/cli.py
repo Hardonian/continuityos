@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.compiler import ContinuityCompiler
 from continuityos.domain import CompileRequest, Observation
-from continuityos.dsl import ResourceKind, load_resource, load_resources, validate_resource
+from continuityos.dsl import load_resource, load_resources, validate_resource
 from continuityos.evidence import EvidenceLedger
 from continuityos.fusion import FusionEngine
 from continuityos.graph import (
@@ -29,18 +29,12 @@ from continuityos.graph import (
     detect_cycles,
 )
 from continuityos.inventory import InventoryProfile, simulate_inventory
-from continuityos.policy import (
-    ContinuityPolicy,
-    ObservedState,
-    evaluate_policy,
-)
 from continuityos.providers.mock import MockProvider
 from continuityos.reconcile import ActualState, DesiredState, ReconciliationStatus, reconcile
 from continuityos.recovery import RecoveryProfile, model_recovery
 from continuityos.remediation import generate_remediation
 from continuityos.scenario import Scenario, simulate_scenario
 from continuityos.sources.cache import SnapshotCache
-from continuityos.trust import DependencyTrust, evaluate_trust
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -126,9 +120,20 @@ def command_init(args: argparse.Namespace) -> None:
         },
     }
 
-    (target_dir / "network.yaml").write_text(yaml.safe_dump(network_spec, sort_keys=False), encoding="utf-8")
-    (target_dir / "policy.yaml").write_text(yaml.safe_dump(policy_spec, sort_keys=False), encoding="utf-8")
-    _output({"status": "scaffolded", "directory": str(target_dir), "files": ["network.yaml", "policy.yaml"]}, args)
+    (target_dir / "network.yaml").write_text(
+        yaml.safe_dump(network_spec, sort_keys=False), encoding="utf-8"
+    )
+    (target_dir / "policy.yaml").write_text(
+        yaml.safe_dump(policy_spec, sort_keys=False), encoding="utf-8"
+    )
+    _output(
+        {
+            "status": "scaffolded",
+            "directory": str(target_dir),
+            "files": ["network.yaml", "policy.yaml"],
+        },
+        args,
+    )
 
 
 def command_validate(args: argparse.Namespace) -> None:
@@ -137,7 +142,11 @@ def command_validate(args: argparse.Namespace) -> None:
     try:
         resources = load_resources(path) if args.all else [load_resource(path)]
     except Exception as exc:
-        print(json.dumps({"valid": False, "errors": [{"path": str(path), "message": str(exc)}]}, indent=2))
+        print(
+            json.dumps(
+                {"valid": False, "errors": [{"path": str(path), "message": str(exc)}]}, indent=2
+            )
+        )
         sys.exit(1)
 
     all_errors: list[dict[str, Any]] = []
@@ -173,7 +182,9 @@ def command_graph(args: argparse.Namespace) -> None:
 
     if args.from_node and args.to_node:
         failed_set = set(args.fail_nodes.split(",")) if args.fail_nodes else set()
-        paths = engine.find_alternative_paths(graph, args.from_node, args.to_node, failed=failed_set)
+        paths = engine.find_alternative_paths(
+            graph, args.from_node, args.to_node, failed=failed_set
+        )
         res["alternative_paths"] = paths
         res["path_count"] = len(paths)
 
@@ -195,11 +206,14 @@ def command_observe(args: argparse.Namespace) -> None:
     payload = _load(args.file)
     obs_list = payload.get("observations", [payload]) if isinstance(payload, dict) else payload
     observations = [Observation.model_validate(item) for item in obs_list]
-    _output({
-        "observations_count": len(observations),
-        "sources": sorted({o.source_id for o in observations}),
-        "metrics": sorted({str(o.metric) for o in observations}),
-    }, args)
+    _output(
+        {
+            "observations_count": len(observations),
+            "sources": sorted({o.source_id for o in observations}),
+            "metrics": sorted({str(o.metric) for o in observations}),
+        },
+        args,
+    )
 
 
 def command_assess(args: argparse.Namespace) -> None:
@@ -293,17 +307,21 @@ def command_doctor(args: argparse.Namespace) -> None:
 
     # 1. Python version check
     py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    checks.append({
-        "check": "PYTHON_RUNTIME",
-        "status": "PASS" if sys.version_info >= (3, 12) else "WARN",
-        "details": f"Python {py_ver}",
-    })
+    checks.append(
+        {
+            "check": "PYTHON_RUNTIME",
+            "status": "PASS" if sys.version_info >= (3, 12) else "WARN",
+            "details": f"Python {py_ver}",
+        }
+    )
 
     # 2. Cryptography check
     try:
         key = Ed25519PrivateKey.generate()
         key.public_key()
-        checks.append({"check": "CRYPTOGRAPHY_ED25519", "status": "PASS", "details": "Ed25519 functional"})
+        checks.append(
+            {"check": "CRYPTOGRAPHY_ED25519", "status": "PASS", "details": "Ed25519 functional"}
+        )
     except Exception as exc:
         checks.append({"check": "CRYPTOGRAPHY_ED25519", "status": "FAIL", "details": str(exc)})
 
@@ -311,11 +329,13 @@ def command_doctor(args: argparse.Namespace) -> None:
     try:
         mock = MockProvider()
         obs = mock.fetch()
-        checks.append({
-            "check": "OFFLINE_MOCK_PROVIDER",
-            "status": "PASS",
-            "details": f"{len(obs)} synthetic observations generated",
-        })
+        checks.append(
+            {
+                "check": "OFFLINE_MOCK_PROVIDER",
+                "status": "PASS",
+                "details": f"{len(obs)} synthetic observations generated",
+            }
+        )
     except Exception as exc:
         checks.append({"check": "OFFLINE_MOCK_PROVIDER", "status": "FAIL", "details": str(exc)})
 
@@ -324,24 +344,29 @@ def command_doctor(args: argparse.Namespace) -> None:
         from continuityos.schemas import get_resource_schema
 
         schema = get_resource_schema()
-        checks.append({
-            "check": "JSON_SCHEMA_VALIDATOR",
-            "status": "PASS" if schema else "FAIL",
-            "details": f"{len(schema.get('properties', {}))} resource properties loaded",
-        })
+        checks.append(
+            {
+                "check": "JSON_SCHEMA_VALIDATOR",
+                "status": "PASS" if schema else "FAIL",
+                "details": f"{len(schema.get('properties', {}))} resource properties loaded",
+            }
+        )
     except Exception as exc:
         checks.append({"check": "JSON_SCHEMA_VALIDATOR", "status": "FAIL", "details": str(exc)})
 
     passed = sum(1 for c in checks if c["status"] == "PASS")
     overall = "HEALTHY" if passed == len(checks) else "DEGRADED"
 
-    _output({
-        "status": overall,
-        "timestamp": datetime.now(UTC).isoformat(),
-        "passed": passed,
-        "total": len(checks),
-        "checks": checks,
-    }, args)
+    _output(
+        {
+            "status": overall,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "passed": passed,
+            "total": len(checks),
+            "checks": checks,
+        },
+        args,
+    )
 
 
 def command_import_snapshot(args: argparse.Namespace) -> None:
@@ -386,7 +411,9 @@ def command_generate_keys(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="continuity",
-        description="ContinuityOS: Continuity-as-Code compiler, analyzer, and resilience orchestrator.",
+        description=(
+            "ContinuityOS: Continuity-as-Code compiler, analyzer, and resilience orchestrator."
+        ),
     )
     parser.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -400,11 +427,15 @@ def build_parser() -> argparse.ArgumentParser:
     # validate
     p_val = subparsers.add_parser("validate", help="Validate YAML DSL files against JSON Schema")
     p_val.add_argument("file", type=Path, help="File to validate")
-    p_val.add_argument("--all", action="store_true", help="Validate all documents in multi-doc YAML")
+    p_val.add_argument(
+        "--all", action="store_true", help="Validate all documents in multi-doc YAML"
+    )
     p_val.set_defaults(func=command_validate)
 
     # graph
-    p_graph = subparsers.add_parser("graph", help="Analyze dependency graph, cycles, alternative paths")
+    p_graph = subparsers.add_parser(
+        "graph", help="Analyze dependency graph, cycles, alternative paths"
+    )
     p_graph.add_argument("file", type=Path, help="Graph JSON/YAML file")
     p_graph.add_argument("--from-node", help="Source node for alternative paths")
     p_graph.add_argument("--to-node", help="Target node for alternative paths")
@@ -455,7 +486,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_inv.add_argument("file", type=Path, help="Inventory profile JSON/YAML")
     p_inv.add_argument("--days", type=int, default=90, help="Simulation duration in days")
     p_inv.add_argument("--degraded", action="store_true", help="Use degraded consumption rate")
-    p_inv.add_argument("--disrupted-replenishment", action="store_true", help="Disable replenishment")
+    p_inv.add_argument(
+        "--disrupted-replenishment", action="store_true", help="Disable replenishment"
+    )
     p_inv.set_defaults(func=command_inventory)
 
     # recovery
@@ -470,7 +503,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_rem.set_defaults(func=command_remediate)
 
     # explain
-    p_exp = subparsers.add_parser("explain", help="Explain functional closure and degradation causes")
+    p_exp = subparsers.add_parser(
+        "explain", help="Explain functional closure and degradation causes"
+    )
     p_exp.add_argument("file", type=Path, help="Closure input JSON/YAML")
     p_exp.set_defaults(func=command_explain)
 

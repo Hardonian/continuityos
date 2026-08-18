@@ -11,7 +11,6 @@ and logistics planning.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -104,11 +103,13 @@ def simulate_scenario(
         assessment = dep_engine.analyze(graph, failed_nodes)
         for impact in assessment.impacted_nodes:
             if impact.node_id not in failed_nodes:
-                affected.append(AffectedFacility(
-                    node_id=impact.node_id,
-                    impact_probability=impact.impact_probability,
-                    reason=f"cascade from {' → '.join(impact.path)}",
-                ))
+                affected.append(
+                    AffectedFacility(
+                        node_id=impact.node_id,
+                        impact_probability=impact.impact_probability,
+                        reason=f"cascade from {' → '.join(impact.path)}",
+                    )
+                )
 
     # Calculate remaining viable paths and capacity loss
     total_nodes = len(graph.nodes)
@@ -120,18 +121,23 @@ def simulate_scenario(
     violations: list[PolicyViolation] = []
     if assessment:
         if assessment.single_points_of_failure:
-            violations.append(PolicyViolation(
-                check_id="SPOF_DETECTED",
-                description=f"Single points of failure exposed: {', '.join(assessment.single_points_of_failure)}",
-                severity="error",
-            ))
+            spof_list = ", ".join(assessment.single_points_of_failure)
+            violations.append(
+                PolicyViolation(
+                    check_id="SPOF_DETECTED",
+                    description=f"Single points of failure exposed: {spof_list}",
+                    severity="error",
+                )
+            )
         concentrated = {k: v for k, v in assessment.provider_concentration.items() if v >= 3}
         if concentrated:
-            violations.append(PolicyViolation(
-                check_id="PROVIDER_CONCENTRATION",
-                description=f"Provider concentration risk: {concentrated}",
-                severity="warning",
-            ))
+            violations.append(
+                PolicyViolation(
+                    check_id="PROVIDER_CONCENTRATION",
+                    description=f"Provider concentration risk: {concentrated}",
+                    severity="warning",
+                )
+            )
 
     recovery_required = capacity_loss > 0.1 or len(violations) > 0
 

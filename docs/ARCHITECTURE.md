@@ -1,77 +1,108 @@
-# Architecture
+# ContinuityOS Architecture
 
-## System boundary
+## 1. System Boundary
 
-ContinuityOS is a decision-support control plane. It observes and recommends; it does not directly operate cyber-physical assets.
+ContinuityOS is a decision-support and resilience control plane for critical corridors, logistics networks, and cyber-physical supply chains. It observes, compiles, reconciles, and recommends; it does not directly dispatch or operate physical assets.
 
 ```text
-Authoritative public data       Authenticated operator data
-Climate, ice, weather,          Capacity, availability, cyber health,
-imagery, traffic, trade         inventory, insurance, escort windows
-             \                  /
-              Source policy gate
-                      |
-              Immutable snapshots
-                      |
-            Normalized observations
-                      |
-       +--------------+---------------+
-       |                              |
-Dependency graph                Fusion engine
-Cyber → physical impact         Risk + confidence + caveats
-       |                              |
-       +---------------+--------------+
-                       |
-              Continuity compiler
-              Budget + constraints
-                       |
-              Human approval gate
-                       |
-              Signed evidence ledger
+Authoritative Public Data         Authenticated Telemetry          Provider SDK / Mocks
+(Ice, weather, climate, AIS)     (Operator telemetry, OT health)  (Satcom, PNT, port status)
+             \                               |                              /
+              +------------------------------+-----------------------------+
+                                             |
+                                   Source Policy Gate
+                                             |
+                                   Immutable Snapshots
+                                             |
+                                  Normalized Observations
+                                             |
+           +---------------------------------+---------------------------------+
+           |                                 |                                 |
+   Dependency Graph                 Functional Closure               Multi-Dimensional
+  (Cycles, SPOFs, Blast)         (Physical, Ops, Comm, Trust)         DependencyTrust
+           |                                 |                                 |
+           +---------------------------------+---------------------------------+
+                                             |
+                           Continuity Policy & Reconciliation
+                           (Desired vs. Actual State Diffing)
+                                             |
+                +----------------------------+----------------------------+
+                |                            |                            |
+       Scenario Simulator           Inventory Depletion          Recovery Lag Engine
+     (Correlated Disruption)       (Day-by-Day Forecast)           (T0 -> T5 Timeline)
+                |                            |                            |
+                +----------------------------+----------------------------+
+                                             |
+                                 Advisory Remediation &
+                                   Continuity Compiler
+                                             |
+                                    Human Approval Gate
+                                             |
+                                   Signed Evidence Ledger
+                                  (SHA-256 / Ed25519 Chain)
 ```
 
-## Trust classes
+---
 
-1. **Authoritative public:** government or intergovernmental data that may support bounded factual claims.
-2. **Open context:** useful public data that supports context but not live operational assertions.
-3. **Authenticated operator:** customer-controlled telemetry permitted to assert live state within its scope.
-4. **Analyst assessment:** structured judgments that must distinguish evidence, confidence, and scenario assumptions.
+## 2. Core Resilience Engines
 
-## Fail-closed rules
+### 2.1 Enriched 12-State Operational Model
+Resilience is not binary. The system distinguishes:
+- `OPEN` — fully operational and compliant
+- `OPEN_DEGRADED` — operational with elevated factor risk
+- `OPEN_CAPACITY_CONSTRAINED` — physical throughput bottlenecked
+- `OPEN_BUT_UNINSURABLE` — route navigable, but insurance underwriters withdraw coverage
+- `OPEN_BUT_NO_CARRIER_CAPACITY` — ports open, but carriers divert vessels
+- `OPEN_BUT_NAVIGATION_UNTRUSTED` — GNSS spoofing / PNT loss makes transit unsafe
+- `OPEN_BUT_COMMUNICATIONS_DEGRADED` — high-latitude geomagnetic / SATCOM outage
+- `OPEN_BUT_SERVICE_DEPENDENT` — reliant on sole-source icebreaker or towing service
+- `RECOVERY_BACKLOGGED` — route reopened, but port congestion and repositioning lag
+- `FUNCTIONALLY_CLOSED` — multi-layer failure rendering infrastructure unusable
+- `PHYSICALLY_CLOSED` — physical destruction or impassable ice barrier
+- `UNKNOWN` — unobserved / insufficient data trust
 
-- Unknown sources are rejected.
-- Source trust mismatches are rejected.
-- Assertions outside a source's allow-list are rejected.
-- Metric-to-assertion mismatches are rejected even when the source is otherwise trusted.
-- Public context-only metrics cannot lower live operability risk or inflate live confidence.
-- Analyst judgments require explicit epistemic status and an evidence basis.
-- Expired observations are excluded.
-- Missing required metrics reduce confidence and increase risk conservatively.
-- Outbound HTTP is disabled by default.
-- Production startup fails without evidence keys and operator webhook secret.
-- The compiler rejects action sets above its exact bounded limit.
-- Consequential actions retain a human-approval requirement.
+### 2.2 Functional Closure Engine (`closure.py`)
+Decomposes infrastructure into four independent layers:
+1. **Physical Layer**: Physical accessibility and capacity.
+2. **Operational Layer**: Navigation integrity, communications availability, weather safety.
+3. **Commercial Layer**: Marine insurance coverage, carrier capacity, economic viability.
+4. **Trust Layer**: Data integrity, observation confidence, source diversity.
 
-## Determinism
+### 2.3 Dependency Trust Engine (`trust.py`)
+Evaluates 9 independent trust dimensions (`physical_availability`, `cyber_integrity`, `legal_availability`, `commercial_availability`, `insurance_availability`, `communications_integrity`, `navigation_integrity`, `operator_confidence`, `information_confidence`) with configurable aggregation (`minimum`, `weighted`, `mean`) and provenance enforcement.
 
-Given the same normalized observations, explicit `as_of` time, graph, actions, and configuration, the risk and plan outputs are deterministic. External data is first captured as an immutable snapshot so a decision can be replayed later.
+### 2.4 Policy-as-Code & Reconciliation (`policy.py`, `reconcile.py`)
+Evaluates declared resilience assertions (`minimum_providers`, `minimum_reserve_days`, `minimum_independent_routes`, `minimum_continuity`, `minimum_trust_score`) against real-world state, producing structured reconciliation statuses: `COMPLIANT`, `DRIFT`, `DEGRADED`, `FAIL`, or `UNKNOWN`.
 
-## Data model
+### 2.5 Correlated Failure Scenarios (`scenario.py`)
+Propagates multi-event cyber-physical disruptions through the dependency graph, calculating capacity loss, cascade paths, single points of failure (SPOFs), and policy violations.
 
-- `Observation`: typed metric, assertion class, source trust, time, confidence, location, and hashed provenance.
-- `CorridorAssessment`: factor risk, overall risk, state, confidence, missing data, and caveats.
-- `DependencyGraph`: nodes and directed dependency edges from prerequisite to dependent.
-- `GraphAssessment`: downstream impact probability, weighted impact, provider concentration, and SPOFs.
-- `MitigationAction`: cost, gains, factor reductions, prerequisites, incompatibilities, lead time, and approval requirement.
-- `CompiledPlan`: selected actions, projected continuity, cost, residual risk, and evidence of solver method.
+### 2.6 Inventory Depletion Engine (`inventory.py`)
+Simulates day-by-day depletion of strategic commodities under normal, degraded, and severed replenishment conditions with substitution mitigation.
 
-## Scaling path
+### 2.7 Recovery Lag Engine (`recovery.py`)
+Models the full recovery lifecycle:
+- **T0**: Incident occurrence
+- **T1**: Physical reopening
+- **T2**: Commercial normalization (insurance & carrier return)
+- **T3**: Logistics normalization (port backlog clearance & vessel repositioning)
+- **T4**: Inventory replenishment (rebuilding reserves)
+- **T5**: Full resilience restoration
 
-The reference exact compiler enumerates action subsets and is intentionally bounded. Production scale should use a mixed-integer solver adapter while retaining:
+### 2.8 Advisory Remediation (`remediation.py`)
+Generates prioritized, cost-aware remediation options for reconciliation failures. All outputs are strictly advisory and require human approval.
 
-- deterministic input normalization;
-- explicit constraints;
-- reproducible solver version and seed;
-- infeasibility explanation;
-- evidence ledger output;
-- human approval.
+---
+
+## 3. Trust Classes & Fail-Closed Rules
+
+1. **Authoritative Public**: Government and intergovernmental agencies (NOAA, DWD, NSIDC, Copernicus).
+2. **Authenticated Operator**: Customer-controlled telemetry authenticated via HMAC-SHA256 or mTLS.
+3. **Open Context**: General public context; cannot lower live operational risk or inflate confidence.
+4. **Fail-Closed Gate**: Unknown sources, mismatched assertions, or expired observations are rejected at the policy boundary.
+
+---
+
+## 4. Cryptographic Provenance & Evidence
+
+Every assessment, decision packet, and observation is hashed into an append-only SHA-256 hash chain with Ed25519 cryptographic signatures for sovereign auditability.

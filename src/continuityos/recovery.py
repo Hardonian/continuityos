@@ -87,35 +87,41 @@ def model_recovery(
     milestones: list[RecoveryMilestone] = []
 
     # T0: Incident
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T0_INCIDENT,
-        description=profile.incident_description,
-        estimated_days=0,
-        confidence=1.0,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T0_INCIDENT,
+            description=profile.incident_description,
+            estimated_days=0,
+            confidence=1.0,
+        )
+    )
 
     # T1: Physical reopening
     t1_days = profile.physical_reopening_days
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T1_PHYSICAL_REOPENING,
-        description="Physical infrastructure reopened or restored",
-        estimated_days=t1_days,
-        dependencies=["physical_access", "safety_clearance"],
-        confidence=0.8,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T1_PHYSICAL_REOPENING,
+            description="Physical infrastructure reopened or restored",
+            estimated_days=t1_days,
+            dependencies=["physical_access", "safety_clearance"],
+            confidence=0.8,
+        )
+    )
 
     # T2: Commercial normalization
     t2_days = t1_days + max(
         profile.insurance_normalization_days,
         profile.carrier_return_days,
     )
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T2_COMMERCIAL_NORMALIZATION,
-        description="Insurance coverage restored, carriers return to service",
-        estimated_days=t2_days,
-        dependencies=["insurance_underwriting", "carrier_contracts", "market_confidence"],
-        confidence=0.6,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T2_COMMERCIAL_NORMALIZATION,
+            description="Insurance coverage restored, carriers return to service",
+            estimated_days=t2_days,
+            dependencies=["insurance_underwriting", "carrier_contracts", "market_confidence"],
+            confidence=0.6,
+        )
+    )
 
     # T3: Logistics normalization
     t3_days = t2_days + max(
@@ -123,16 +129,20 @@ def model_recovery(
         profile.port_backlog_days,
         profile.equipment_availability_days,
     )
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T3_LOGISTICS_NORMALIZATION,
-        description="Vessels repositioned, port backlog cleared, schedules resume",
-        estimated_days=t3_days,
-        dependencies=[
-            "vessel_repositioning", "port_backlog_clearance",
-            "schedule_normalization", "equipment_restoration",
-        ],
-        confidence=0.5,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T3_LOGISTICS_NORMALIZATION,
+            description="Vessels repositioned, port backlog cleared, schedules resume",
+            estimated_days=t3_days,
+            dependencies=[
+                "vessel_repositioning",
+                "port_backlog_clearance",
+                "schedule_normalization",
+                "equipment_restoration",
+            ],
+            confidence=0.5,
+        )
+    )
 
     # T4: Inventory replenishment
     t4_days = t3_days + max(
@@ -140,23 +150,27 @@ def model_recovery(
         profile.warehouse_recovery_days,
         profile.production_restart_days,
     )
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T4_INVENTORY_REPLENISHMENT,
-        description="Strategic reserves rebuilt to policy-required levels",
-        estimated_days=t4_days,
-        dependencies=["supply_flow", "warehouse_capacity", "production_capacity"],
-        confidence=0.4,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T4_INVENTORY_REPLENISHMENT,
+            description="Strategic reserves rebuilt to policy-required levels",
+            estimated_days=t4_days,
+            dependencies=["supply_flow", "warehouse_capacity", "production_capacity"],
+            confidence=0.4,
+        )
+    )
 
     # T5: Full restoration
     t5_days = t4_days + 7  # Buffer for verification and confidence building
-    milestones.append(RecoveryMilestone(
-        phase=RecoveryPhase.T5_FULL_RESTORATION,
-        description="All resilience policies met, full operational confidence restored",
-        estimated_days=t5_days,
-        dependencies=["policy_compliance", "operational_confidence"],
-        confidence=0.35,
-    ))
+    milestones.append(
+        RecoveryMilestone(
+            phase=RecoveryPhase.T5_FULL_RESTORATION,
+            description="All resilience policies met, full operational confidence restored",
+            estimated_days=t5_days,
+            dependencies=["policy_compliance", "operational_confidence"],
+            confidence=0.35,
+        )
+    )
 
     total_days = t5_days
 

@@ -84,80 +84,89 @@ def reconcile(desired: DesiredState, actual: ActualState) -> ReconciliationResul
     checks: list[ReconciliationCheck] = []
 
     if desired.satcom_provider_count is not None:
-        observed = actual.satcom_provider_count
-        checks.append(_compare_int(
-            "SATCOM_PROVIDER_COUNT",
-            "SATCOM providers must meet redundancy requirement",
-            desired.satcom_provider_count,
-            observed,
-        ))
+        checks.append(
+            _compare_int(
+                "SATCOM_PROVIDER_COUNT",
+                "SATCOM providers must meet redundancy requirement",
+                desired.satcom_provider_count,
+                actual.satcom_provider_count,
+            )
+        )
 
     if desired.fuel_reserve_days is not None:
-        observed = actual.fuel_reserve_days
-        checks.append(_compare_float(
-            "FUEL_RESERVE",
-            "Fuel reserve must meet minimum days",
-            desired.fuel_reserve_days,
-            observed,
-            unit="days",
-        ))
+        checks.append(
+            _compare_float(
+                "FUEL_RESERVE",
+                "Fuel reserve must meet minimum days",
+                desired.fuel_reserve_days,
+                actual.fuel_reserve_days,
+                unit="days",
+            )
+        )
 
     if desired.medical_reserve_days is not None:
-        observed = actual.medical_reserve_days
-        checks.append(_compare_float(
-            "MEDICAL_RESERVE",
-            "Medical reserve must meet minimum days",
-            desired.medical_reserve_days,
-            observed,
-            unit="days",
-        ))
+        checks.append(
+            _compare_float(
+                "MEDICAL_RESERVE",
+                "Medical reserve must meet minimum days",
+                desired.medical_reserve_days,
+                actual.medical_reserve_days,
+                unit="days",
+            )
+        )
 
     if desired.minimum_routes is not None:
-        observed = actual.route_count
-        checks.append(_compare_int(
-            "ROUTE_COUNT",
-            "Independent routes must meet minimum",
-            desired.minimum_routes,
-            observed,
-        ))
+        checks.append(
+            _compare_int(
+                "ROUTE_COUNT",
+                "Independent routes must meet minimum",
+                desired.minimum_routes,
+                actual.route_count,
+            )
+        )
 
     if desired.minimum_continuity is not None:
-        observed = actual.overall_continuity
-        checks.append(_compare_float(
-            "OVERALL_CONTINUITY",
-            "Overall continuity must meet target",
-            desired.minimum_continuity,
-            observed,
-            unit="ratio",
-        ))
+        checks.append(
+            _compare_float(
+                "OVERALL_CONTINUITY",
+                "Overall continuity must meet target",
+                desired.minimum_continuity,
+                actual.overall_continuity,
+                unit="ratio",
+            )
+        )
 
     if desired.navigation_source_count is not None:
-        observed = actual.navigation_source_count
-        checks.append(_compare_int(
-            "NAVIGATION_SOURCE_COUNT",
-            "Navigation sources must meet minimum",
-            desired.navigation_source_count,
-            observed,
-        ))
+        checks.append(
+            _compare_int(
+                "NAVIGATION_SOURCE_COUNT",
+                "Navigation sources must meet minimum",
+                desired.navigation_source_count,
+                actual.navigation_source_count,
+            )
+        )
 
     if desired.observation_source_count is not None:
-        observed = actual.observation_source_count
-        checks.append(_compare_int(
-            "OBSERVATION_SOURCE_COUNT",
-            "Observation sources must meet minimum",
-            desired.observation_source_count,
-            observed,
-        ))
+        checks.append(
+            _compare_int(
+                "OBSERVATION_SOURCE_COUNT",
+                "Observation sources must meet minimum",
+                desired.observation_source_count,
+                actual.observation_source_count,
+            )
+        )
 
     for key, desired_value in desired.custom_checks.items():
         observed_value = actual.custom_values.get(key)
-        checks.append(_compare_float(
-            key,
-            f"Custom check: {key}",
-            desired_value,
-            observed_value,
-            unit="",
-        ))
+        checks.append(
+            _compare_float(
+                key,
+                f"Custom check: {key}",
+                desired_value,
+                observed_value,
+                unit="",
+            )
+        )
 
     # Determine overall status
     statuses = [check.status for check in checks]
@@ -196,7 +205,10 @@ def reconcile(desired: DesiredState, actual: ActualState) -> ReconciliationResul
 
 
 def _compare_int(
-    check_id: str, description: str, desired: int, observed: int | None,
+    check_id: str,
+    description: str,
+    desired: int,
+    observed: int | None,
 ) -> ReconciliationCheck:
     if observed is None:
         return ReconciliationCheck(
@@ -232,8 +244,12 @@ def _compare_int(
 
 
 def _compare_float(
-    check_id: str, description: str, desired: float, observed: float | None,
-    *, unit: str = "",
+    check_id: str,
+    description: str,
+    desired: float,
+    observed: float | None,
+    *,
+    unit: str = "",
 ) -> ReconciliationCheck:
     if observed is None:
         return ReconciliationCheck(

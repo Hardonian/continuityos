@@ -99,7 +99,10 @@ class DependencyTrust(BaseModel):
 
     def provenance_met(self) -> bool:
         """Check whether minimum independent sources requirement is satisfied."""
-        return self.provenance.actual_independent_sources >= self.provenance.minimum_independent_sources
+        return (
+            self.provenance.actual_independent_sources
+            >= self.provenance.minimum_independent_sources
+        )
 
     def weakest_dimension(self) -> tuple[str, float]:
         """Return the name and value of the weakest trust dimension."""

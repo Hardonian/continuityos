@@ -106,8 +106,10 @@ def assess_closure(inp: ClosureInput) -> ClosureAssessment:
         + trust.supporting_evidence
     )
     confidences = [
-        physical.confidence, operational.confidence,
-        commercial.confidence, trust.confidence,
+        physical.confidence,
+        operational.confidence,
+        commercial.confidence,
+        trust.confidence,
     ]
     overall_confidence = min(confidences) if confidences else 0.0
 
@@ -136,12 +138,16 @@ def _assess_physical(inp: ClosureInput) -> ClosureLayer:
     if inp.physical_capacity_ratio <= 0.2:
         reasons.append("physical_capacity_severely_constrained")
         return ClosureLayer(
-            layer="physical", state=LayerState.DEGRADED,
-            confidence=0.85, reason_codes=reasons,
+            layer="physical",
+            state=LayerState.DEGRADED,
+            confidence=0.85,
+            reason_codes=reasons,
         )
     return ClosureLayer(
-        layer="physical", state=LayerState.AVAILABLE,
-        confidence=0.9, reason_codes=[],
+        layer="physical",
+        state=LayerState.AVAILABLE,
+        confidence=0.9,
+        reason_codes=[],
     )
 
 
@@ -162,17 +168,23 @@ def _assess_operational(inp: ClosureInput) -> ClosureLayer:
 
     if not inp.navigation_available or not inp.communications_available:
         return ClosureLayer(
-            layer="operational", state=LayerState.UNAVAILABLE,
-            confidence=0.9, reason_codes=reasons,
+            layer="operational",
+            state=LayerState.UNAVAILABLE,
+            confidence=0.9,
+            reason_codes=reasons,
         )
     if reasons:
         return ClosureLayer(
-            layer="operational", state=LayerState.DEGRADED,
-            confidence=0.8, reason_codes=reasons,
+            layer="operational",
+            state=LayerState.DEGRADED,
+            confidence=0.8,
+            reason_codes=reasons,
         )
     return ClosureLayer(
-        layer="operational", state=LayerState.AVAILABLE,
-        confidence=0.9, reason_codes=[],
+        layer="operational",
+        state=LayerState.AVAILABLE,
+        confidence=0.9,
+        reason_codes=[],
     )
 
 
@@ -187,17 +199,23 @@ def _assess_commercial(inp: ClosureInput) -> ClosureLayer:
 
     if "uninsurable" in reasons and "no_carrier_capacity" in reasons:
         return ClosureLayer(
-            layer="commercial", state=LayerState.UNAVAILABLE,
-            confidence=0.85, reason_codes=reasons,
+            layer="commercial",
+            state=LayerState.UNAVAILABLE,
+            confidence=0.85,
+            reason_codes=reasons,
         )
     if reasons:
         return ClosureLayer(
-            layer="commercial", state=LayerState.DEGRADED,
-            confidence=0.8, reason_codes=reasons,
+            layer="commercial",
+            state=LayerState.DEGRADED,
+            confidence=0.8,
+            reason_codes=reasons,
         )
     return ClosureLayer(
-        layer="commercial", state=LayerState.AVAILABLE,
-        confidence=0.85, reason_codes=[],
+        layer="commercial",
+        state=LayerState.AVAILABLE,
+        confidence=0.85,
+        reason_codes=[],
     )
 
 
@@ -212,17 +230,23 @@ def _assess_trust(inp: ClosureInput) -> ClosureLayer:
 
     if inp.data_integrity < 0.3 or inp.observation_confidence < 0.3:
         return ClosureLayer(
-            layer="trust", state=LayerState.UNAVAILABLE,
-            confidence=0.7, reason_codes=reasons,
+            layer="trust",
+            state=LayerState.UNAVAILABLE,
+            confidence=0.7,
+            reason_codes=reasons,
         )
     if reasons:
         return ClosureLayer(
-            layer="trust", state=LayerState.DEGRADED,
-            confidence=0.75, reason_codes=reasons,
+            layer="trust",
+            state=LayerState.DEGRADED,
+            confidence=0.75,
+            reason_codes=reasons,
         )
     return ClosureLayer(
-        layer="trust", state=LayerState.AVAILABLE,
-        confidence=0.85, reason_codes=[],
+        layer="trust",
+        state=LayerState.AVAILABLE,
+        confidence=0.85,
+        reason_codes=[],
     )
 
 
@@ -236,9 +260,8 @@ def _derive_effective_state(
     if physical.state == LayerState.UNAVAILABLE:
         return CorridorState.PHYSICALLY_CLOSED
 
-    if (
-        operational.state == LayerState.UNAVAILABLE
-        or (commercial.state == LayerState.UNAVAILABLE and trust.state == LayerState.UNAVAILABLE)
+    if operational.state == LayerState.UNAVAILABLE or (
+        commercial.state == LayerState.UNAVAILABLE and trust.state == LayerState.UNAVAILABLE
     ):
         return CorridorState.FUNCTIONALLY_CLOSED
 

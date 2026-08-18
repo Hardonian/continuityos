@@ -227,7 +227,7 @@ class DependencyEngine:
                 continue
             for edge in outgoing.get(current, []):
                 if edge.target not in visited and edge.target not in failed:
-                    stack.append((edge.target, path + [edge.target], visited | {edge.target}))
+                    stack.append((edge.target, [*path, edge.target], visited | {edge.target}))
         return sorted(paths, key=len)
 
     def calculate_blast_radius(
@@ -235,10 +235,7 @@ class DependencyEngine:
     ) -> dict[str, float]:
         """Calculate the blast radius as a map of node_id → impact probability."""
         assessment = self.analyze(graph, failed_nodes)
-        return {
-            node.node_id: node.impact_probability
-            for node in assessment.impacted_nodes
-        }
+        return {node.node_id: node.impact_probability for node in assessment.impacted_nodes}
 
 
 def detect_cycles(graph: DependencyGraph) -> list[list[str]]:
@@ -280,4 +277,3 @@ def detect_cycles(graph: DependencyGraph) -> list[list[str]]:
             _dfs(node)
 
     return cycles
-

@@ -10,12 +10,10 @@ import pytest
 from continuityos.dsl import (
     Resource,
     ResourceKind,
-    ValidationError,
     load_resource,
     load_resources,
     validate_resource,
 )
-
 
 VALID_SUPPLY_NETWORK_YAML = """\
 apiVersion: continuity.io/v1
@@ -158,21 +156,25 @@ class TestResourceValidation:
         assert errors == []
 
     def test_invalid_api_version(self) -> None:
-        resource = Resource.model_validate({
-            "apiVersion": "wrong/v99",
-            "kind": "SupplyNetwork",
-            "metadata": {"name": "test"},
-            "spec": {},
-        })
+        resource = Resource.model_validate(
+            {
+                "apiVersion": "wrong/v99",
+                "kind": "SupplyNetwork",
+                "metadata": {"name": "test"},
+                "spec": {},
+            }
+        )
         errors = validate_resource(resource)
         assert any("unsupported API version" in e.message for e in errors)
 
     def test_wrong_kind_accessor(self) -> None:
-        resource = Resource.model_validate({
-            "apiVersion": "continuity.io/v1",
-            "kind": "Scenario",
-            "metadata": {"name": "test"},
-            "spec": {"events": [{"target": "x", "state": "open"}]},
-        })
+        resource = Resource.model_validate(
+            {
+                "apiVersion": "continuity.io/v1",
+                "kind": "Scenario",
+                "metadata": {"name": "test"},
+                "spec": {"events": [{"target": "x", "state": "open"}]},
+            }
+        )
         with pytest.raises(ValueError, match="expected SupplyNetwork"):
             resource.supply_network_spec()

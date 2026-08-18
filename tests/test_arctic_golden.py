@@ -20,14 +20,13 @@ import yaml
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.domain import CorridorState
 from continuityos.dsl import load_resource, validate_resource
-from continuityos.graph import DependencyEngine, DependencyGraph, detect_cycles
+from continuityos.graph import DependencyGraph, detect_cycles
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.policy import ContinuityPolicy, ObservedState, evaluate_policy
 from continuityos.reconcile import ActualState, DesiredState, ReconciliationStatus, reconcile
 from continuityos.recovery import RecoveryPhase, RecoveryProfile, model_recovery
 from continuityos.remediation import generate_remediation
 from continuityos.scenario import Scenario, simulate_scenario
-from continuityos.trust import DependencyTrust, evaluate_trust
 
 
 class TestArcticGoldenScenarios:
@@ -60,7 +59,9 @@ class TestArcticGoldenScenarios:
         """Scenario A: Baseline conditions maintain full continuity."""
         raw_graph = yaml.safe_load(Path("examples/arctic/graph.yaml").read_text(encoding="utf-8"))
         graph = DependencyGraph.model_validate(raw_graph)
-        raw_scen = yaml.safe_load(Path("examples/arctic/scenarios/scenario_a_baseline.yaml").read_text(encoding="utf-8"))
+        raw_scen = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_a_baseline.yaml").read_text(encoding="utf-8")
+        )
         scenario = Scenario(
             scenario_id="scenario-a",
             name="Baseline",
@@ -77,7 +78,11 @@ class TestArcticGoldenScenarios:
         """Scenario B: Satcom loss attenuates routes via substitute group."""
         raw_graph = yaml.safe_load(Path("examples/arctic/graph.yaml").read_text(encoding="utf-8"))
         graph = DependencyGraph.model_validate(raw_graph)
-        raw_scen = yaml.safe_load(Path("examples/arctic/scenarios/scenario_b_satcom_nav_loss.yaml").read_text(encoding="utf-8"))
+        raw_scen = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_b_satcom_nav_loss.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
         scenario = Scenario(
             scenario_id="scenario-b",
             name="Satcom Nav Loss",
@@ -92,7 +97,11 @@ class TestArcticGoldenScenarios:
         """Scenario C: Port outage and icebreaker escort failure."""
         raw_graph = yaml.safe_load(Path("examples/arctic/graph.yaml").read_text(encoding="utf-8"))
         graph = DependencyGraph.model_validate(raw_graph)
-        raw_scen = yaml.safe_load(Path("examples/arctic/scenarios/scenario_c_port_icebreaker.yaml").read_text(encoding="utf-8"))
+        raw_scen = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_c_port_icebreaker.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
         scenario = Scenario(
             scenario_id="scenario-c",
             name="Port Icebreaker Failure",
@@ -123,7 +132,11 @@ class TestArcticGoldenScenarios:
         """Scenario E: Correlated failure cascade across all layers."""
         raw_graph = yaml.safe_load(Path("examples/arctic/graph.yaml").read_text(encoding="utf-8"))
         graph = DependencyGraph.model_validate(raw_graph)
-        raw_scen = yaml.safe_load(Path("examples/arctic/scenarios/scenario_e_correlated_multisystem.yaml").read_text(encoding="utf-8"))
+        raw_scen = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_e_correlated_multisystem.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
         scenario = Scenario(
             scenario_id="scenario-e",
             name="Correlated Multi-System",
@@ -137,7 +150,11 @@ class TestArcticGoldenScenarios:
 
     def test_scenario_f_fuel_depletion(self) -> None:
         """Scenario F: Fuel inventory depletion with replenishment delay."""
-        raw_f = yaml.safe_load(Path("examples/arctic/scenarios/scenario_f_fuel_depletion.yaml").read_text(encoding="utf-8"))
+        raw_f = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_f_fuel_depletion.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
         profile = InventoryProfile.model_validate(raw_f)
         res = simulate_inventory(profile, simulation_days=60, degraded=True)
         assert res.starting_quantity == 50000.0
@@ -146,7 +163,11 @@ class TestArcticGoldenScenarios:
 
     def test_scenario_g_recovery_lag(self) -> None:
         """Scenario G: Recovery lag timeline modeling T0 through T5."""
-        raw_g = yaml.safe_load(Path("examples/arctic/scenarios/scenario_g_recovery_lag.yaml").read_text(encoding="utf-8"))
+        raw_g = yaml.safe_load(
+            Path("examples/arctic/scenarios/scenario_g_recovery_lag.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
         profile = RecoveryProfile.model_validate(raw_g)
         timeline = model_recovery(profile, days_since_incident=10)
         assert timeline.total_recovery_days > profile.physical_reopening_days
@@ -187,7 +208,10 @@ class TestArcticGoldenScenarios:
             overall_continuity=0.78,
         )
         recon_result = reconcile(desired, actual)
-        assert recon_result.overall_status in {ReconciliationStatus.FAIL, ReconciliationStatus.DEGRADED}
+        assert recon_result.overall_status in {
+            ReconciliationStatus.FAIL,
+            ReconciliationStatus.DEGRADED,
+        }
 
         # Generate advisory remediation
         remediation_plan = generate_remediation(recon_result)
