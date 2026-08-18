@@ -172,3 +172,88 @@ async def test_edge_node_loop_start_stop():
     await node.stop()
     assert node._running is False
     assert node._task is None
+
+@pytest.mark.anyio
+async def test_edge_node_sync_manifest_error():
+    cache_mock = MagicMock()
+    node = EdgeNode("node1", cache_mock)
+    
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    
+    async def mock_get(url):
+        return mock_response
+
+    with patch("httpx.AsyncClient.get", side_effect=mock_get):
+        await node._sync_with_peer("http://peer1")
+        # should return without storing
+
+@pytest.mark.anyio
+async def test_edge_node_sync_request_error():
+    import httpx
+    cache_mock = MagicMock()
+    node = EdgeNode("node1", cache_mock)
+    
+    with patch("httpx.AsyncClient.get", side_effect=httpx.RequestError("err")):
+        await node._sync_with_peer("http://peer1")
+        # should catch error and continue
+
+def test_edge_node_get_manifest_invalid_json(tmp_path):
+    cache_mock = MagicMock()
+    cache_mock.root = tmp_path
+    d = tmp_path / "a" / "b" / "c"
+    d.mkdir(parents=True)
+    (d / "metadata.json").write_text('{invalid_json}')
+    node = EdgeNode("node1", cache_mock)
+    manifest = node.get_manifest()
+    assert len(manifest.snapshot_ids) == 0
+
+from continuityos.intelligence import (
+    BayesianCascadeForecaster,
+    TelemetryAnomalyForecaster,
+    XAIRiskExplainer,
+)
+from continuityos.domain import CorridorAssessment, Observation, SourceTrust, AssertionClass, MetricName
+from continuityos.graph import DependencyGraph, DependencyNode, NodeType
+
+def test_bayesian_cascade_forecaster():
+    forecaster = BayesianCascadeForecaster()
+    graph = DependencyGraph(
+        corridor_id="a",
+        nodes=[DependencyNode(node_id="n1", type=NodeType.PORT, criticality=0.8, status="up"), DependencyNode(node_id="n2", type=NodeType.PORT, criticality=0.5, status="up")],
+        edges=[]
+    )
+    res = forecaster.forecast(graph, "n2", {"n1": 0.5})
+    assert res.target_node_id == "n2"
+
+def test_telemetry_anomaly_forecaster():
+    forecaster = TelemetryAnomalyForecaster()
+    obs = Observation(
+        source_id="s1",
+        source_trust=SourceTrust.AUTHORITATIVE_GOVERNMENT,
+        assertion_class=AssertionClass.LIVE_CAPACITY,
+        metric=MetricName.PORT_CAPACITY,
+        value=10.0,
+        unit="test",
+        observed_at=datetime.now(UTC),
+        confidence=1.0,
+        provenance=None,
+        metadata={}
+    )
+    res = forecaster.analyze_stream("metric1", [obs])
+    assert len(res) == 0
+
+def test_explainable_ai_attribution():
+    explainer = XAIRiskExplainer()
+    graph = DependencyGraph(corridor_id="a", nodes=[], edges=[])
+    assessment = CorridorAssessment(
+        corridor_id="a",
+        timestamp=datetime.now(UTC),
+        overall_health_score=0.5,
+        factors=[],
+        anomalies=[],
+        explanations=[],
+        metadata={}
+    )
+    exp = explainer.explain_assessment(graph, assessment)
+    assert exp is not None
