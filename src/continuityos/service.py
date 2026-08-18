@@ -1056,6 +1056,67 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         res = simulate_scenario(scenario, graph)
         return res.model_dump(mode="json")
 
+    @app.post(
+        "/v1/threats/scan",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def threat_scan_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.threat import ThreatDetectionEngine
+
+        engine = ThreatDetectionEngine()
+        scan = engine.run_full_scan(
+            resource_ref=str(payload.get("resource_ref", "corridor-target")),
+            gnss_residuals=payload.get("gnss_residuals"),
+            cno_ratios=payload.get("cno_ratios"),
+            clock_drift_ppm=float(payload.get("clock_drift_ppm", 0.0)),
+            scada_cmd_rate=float(payload.get("scada_cmd_rate", 5.0)),
+            unauthorized_fc=payload.get("unauthorized_fc"),
+            untrusted_ips=int(payload.get("untrusted_ips", 0)),
+            plc_hashes=payload.get("plc_hashes"),
+            expected_plc_hash=str(payload.get("expected_plc_hash", "a1b2c3d4e5f6")),
+            ais_coords=tuple(payload["ais_coords"]) if "ais_coords" in payload else None,
+        )
+        return scan.model_dump(mode="json")
+
+    @app.post(
+        "/v1/intelligence/forecast",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_forecast_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.graph import DependencyGraph
+        from continuityos.intelligence import BayesianCascadeForecaster
+
+        graph = DependencyGraph.model_validate(payload["graph"])
+        target_node = str(payload.get("target_node", graph.nodes[0].node_id))
+        degradations = {
+            str(k): float(v) for k, v in payload.get("observed_degradations", {}).items()
+        }
+        res = BayesianCascadeForecaster().forecast(graph, target_node, degradations)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/intelligence/xai",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def intelligence_xai_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.domain import CorridorAssessment
+        from continuityos.intelligence import XAIRiskExplainer
+
+        assessment = CorridorAssessment.model_validate(payload.get("assessment", payload))
+        res = XAIRiskExplainer().explain(assessment)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/crypto/merkle-verify",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def crypto_merkle_verify_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.crypto import MerkleInclusionProof
+
+        proof = MerkleInclusionProof.model_validate(payload)
+        is_valid = proof.verify()
+        return {"valid": is_valid, "root_hash": proof.root_hash, "leaf_hash": proof.leaf_hash}
+
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():
 

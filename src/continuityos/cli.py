@@ -479,6 +479,82 @@ def command_cross_domain_filter(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def command_threat_scan(args: argparse.Namespace) -> None:
+    """Run cyber-physical threat scanning (GNSS spoofing, Port SCADA, AIS kinematics)."""
+    from continuityos.threat import ThreatDetectionEngine
+
+    raw = _load(args.file)
+    engine = ThreatDetectionEngine()
+    scan = engine.run_full_scan(
+        resource_ref=raw.get("resource_ref", "corridor-target"),
+        gnss_residuals=raw.get("gnss_residuals"),
+        cno_ratios=raw.get("cno_ratios"),
+        clock_drift_ppm=float(raw.get("clock_drift_ppm", 0.0)),
+        scada_cmd_rate=float(raw.get("scada_cmd_rate", 5.0)),
+        unauthorized_fc=raw.get("unauthorized_fc"),
+        untrusted_ips=int(raw.get("untrusted_ips", 0)),
+        plc_hashes=raw.get("plc_hashes"),
+        expected_plc_hash=raw.get("expected_plc_hash", "a1b2c3d4e5f6"),
+        ais_coords=tuple(raw["ais_coords"]) if "ais_coords" in raw else None,
+    )
+    _output(scan, args)
+
+
+def command_ai_forecast(args: argparse.Namespace) -> None:
+    """Run Bayesian cascade failure probability forecasting across supply graph."""
+    from continuityos.graph import DependencyGraph
+    from continuityos.intelligence import BayesianCascadeForecaster
+
+    graph_raw = _load(args.graph)
+    graph = DependencyGraph.model_validate(graph_raw.get("graph", graph_raw))
+    obs_raw = _load(args.degradations) if args.degradations else {}
+    degradations = {str(k): float(v) for k, v in obs_raw.get("degradations", obs_raw).items()}
+
+    forecaster = BayesianCascadeForecaster()
+    target_node = args.target or graph.nodes[0].node_id
+    res = forecaster.forecast(graph, target_node, degradations)
+    _output(res, args)
+
+
+def command_xai_explain(args: argparse.Namespace) -> None:
+    """Explain corridor risk breakdown using Shapley factor attribution (XAI)."""
+    from continuityos.domain import CorridorAssessment
+    from continuityos.intelligence import XAIRiskExplainer
+
+    raw = _load(args.file)
+    assessment = CorridorAssessment.model_validate(raw.get("assessment", raw))
+    explainer = XAIRiskExplainer()
+    explanation = explainer.explain(assessment)
+    _output(explanation, args)
+
+
+def command_merkle_proof(args: argparse.Namespace) -> None:
+    """Generate and verify zero-knowledge Merkle inclusion proof for a ledger record."""
+    from continuityos.crypto import MerkleTree
+    from continuityos.evidence import EvidenceLedger
+
+    ledger = EvidenceLedger(args.ledger)
+    records = ledger.records(0, 10000)
+    if not records:
+        print(json.dumps({"error": "Ledger is empty"}))
+        sys.exit(1)
+
+    hashes = [r.record_hash for r in records]
+    tree = MerkleTree(hashes)
+    idx = min(args.index, len(records) - 1)
+    proof = tree.generate_inclusion_proof(idx)
+    verified = proof.verify()
+
+    result = {
+        "merkle_root_hash": tree.root_hash,
+        "record_index": idx,
+        "leaf_hash": proof.leaf_hash,
+        "inclusion_proof_valid": verified,
+        "audit_path_depth": len(proof.audit_path),
+    }
+    _output(result, args)
+
+
 # --- Parser builder ---
 
 
@@ -645,6 +721,37 @@ def build_parser() -> argparse.ArgumentParser:
     p_xdom.add_argument("--controls", help="Comma-separated dissemination controls (e.g. NOFORN)")
     p_xdom.add_argument("--compartments", help="Comma-separated target compartments")
     p_xdom.set_defaults(func=command_cross_domain_filter)
+
+    # threat-scan
+    p_threat = subparsers.add_parser(
+        "threat-scan", help="Scan telemetry for cyber-physical threats (GNSS EW, SCADA, AIS)"
+    )
+    p_threat.add_argument("file", type=Path, help="Threat telemetry JSON/YAML")
+    p_threat.set_defaults(func=command_threat_scan)
+
+    # ai-forecast
+    p_aif = subparsers.add_parser(
+        "ai-forecast", help="Bayesian cascade failure probability forecasting across supply graph"
+    )
+    p_aif.add_argument("--graph", required=True, type=Path, help="Dependency graph JSON/YAML")
+    p_aif.add_argument("--degradations", type=Path, help="Observed node degradations JSON/YAML")
+    p_aif.add_argument("--target", help="Target node ID to forecast")
+    p_aif.set_defaults(func=command_ai_forecast)
+
+    # xai-explain
+    p_xai = subparsers.add_parser(
+        "xai-explain", help="Explain corridor risk with Shapley factor attribution (XAI)"
+    )
+    p_xai.add_argument("file", type=Path, help="Corridor assessment JSON/YAML")
+    p_xai.set_defaults(func=command_xai_explain)
+
+    # merkle-proof
+    p_mkl = subparsers.add_parser(
+        "merkle-proof", help="Generate zero-knowledge Merkle inclusion proof for ledger record"
+    )
+    p_mkl.add_argument("ledger", type=Path, help="Evidence ledger file")
+    p_mkl.add_argument("--index", type=int, default=0, help="Record index to prove")
+    p_mkl.set_defaults(func=command_merkle_proof)
 
     return parser
 

@@ -350,3 +350,45 @@ def test_sovereign_and_simulation_api_endpoints(tmp_path) -> None:
     )
     assert recov_res.status_code == 200
     assert recov_res.json()["current_phase"] == "T1_physical_reopening"
+
+    # 5. Threat Scan Endpoint
+    threat_res = client.post(
+        "/v1/threats/scan",
+        json={
+            "resource_ref": "corridor/arctic-chokepoint",
+            "gnss_residuals": [18.0, 22.0, 31.0],
+            "clock_drift_ppm": 9.5,
+        },
+    )
+    assert threat_res.status_code == 200
+    assert threat_res.json()["gnss_threat"]["is_spoofed"] is True
+
+    # 6. Intelligence Forecast Endpoint
+    forecast_res = client.post(
+        "/v1/intelligence/forecast",
+        json={
+            "graph": {
+                "graph_id": "test-ai-graph",
+                "nodes": [
+                    {"node_id": "n1", "name": "N1", "node_type": "supplier", "criticality": 0.8},
+                    {"node_id": "n2", "name": "N2", "node_type": "corridor", "criticality": 0.9},
+                ],
+                "edges": [{"source": "n1", "target": "n2", "dependency_strength": 0.9}],
+            },
+            "target_node": "n2",
+            "observed_degradations": {"n1": 0.8},
+        },
+    )
+    assert forecast_res.status_code == 200
+    assert forecast_res.json()["failure_probability"] > 0.50
+
+    # 7. Crypto Merkle Verify Endpoint
+    import hashlib
+
+    from continuityos.crypto import MerkleTree
+
+    tree = MerkleTree([hashlib.sha256(f"leaf_{i}".encode()).hexdigest() for i in range(4)])
+    proof = tree.generate_inclusion_proof(1)
+    mkl_res = client.post("/v1/crypto/merkle-verify", json=proof.model_dump(mode="json"))
+    assert mkl_res.status_code == 200
+    assert mkl_res.json()["valid"] is True
