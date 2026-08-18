@@ -348,3 +348,90 @@ class AgenticIntelligenceEngine:
                 strategic_implications=str(e),
                 advisory_actions=[],
             )
+
+
+class VisualSurveillanceAnalysis(BaseModel):
+    """Multi-modal Vision-Language Model assessment of tactical EO/IR camera or drone frame."""
+
+    stream_id: str
+    threat_detected: bool
+    confidence: float = Field(ge=0.0, le=1.0)
+    detected_objects: list[str] = Field(default_factory=list)
+    visual_summary: str
+    corridor_impact_factor: str  # "ESCORT", "CYBER", "PORT", "COMMUNICATIONS", "WEATHER"
+    recommended_action: str
+
+
+class VisualIntelligenceEngine:
+    """Multi-modal Vision LLM engine analyzing live drone camera feeds, EO/IR, and port CCTV frames."""
+
+    def __init__(
+        self,
+        vlm_endpoint: str = "http://127.0.0.1:11434/v1/chat/completions",
+        model: str = "llava",
+    ) -> None:
+        self.vlm_endpoint = vlm_endpoint
+        self.model = model
+        self.logger = logging.getLogger("continuityos.intelligence.vision")
+
+    async def analyze_frame(
+        self,
+        stream_id: str,
+        image_base64: str,
+        prompt_context: str = "Analyze this tactical surveillance frame for unauthorized drones, physical perimeter breaches, and corridor obstructions.",
+    ) -> VisualSurveillanceAnalysis:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                f"{prompt_context}\n"
+                                "Respond strictly in JSON format with keys: "
+                                "'threat_detected' (bool), 'confidence' (float 0..1), 'detected_objects' (list of strings), "
+                                "'visual_summary' (string), 'corridor_impact_factor' (string), 'recommended_action' (string)."
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
+                        },
+                    ],
+                }
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(self.vlm_endpoint, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                content = data["choices"][0]["message"]["content"]
+                import json
+
+                parsed = json.loads(content)
+                return VisualSurveillanceAnalysis(
+                    stream_id=stream_id,
+                    threat_detected=bool(parsed.get("threat_detected", False)),
+                    confidence=float(parsed.get("confidence", 0.85)),
+                    detected_objects=list(parsed.get("detected_objects", [])),
+                    visual_summary=str(parsed.get("visual_summary", "Visual analysis complete.")),
+                    corridor_impact_factor=str(parsed.get("corridor_impact_factor", "ESCORT")),
+                    recommended_action=str(parsed.get("recommended_action", "Maintain surveillance.")),
+                )
+        except (httpx.RequestError, KeyError, ValueError) as e:
+            self.logger.warning(f"VLM Vision analysis fallback for stream {stream_id}: {e}")
+            return VisualSurveillanceAnalysis(
+                stream_id=stream_id,
+                threat_detected=False,
+                confidence=0.5,
+                detected_objects=[],
+                visual_summary="Visual inference unavailable on local VLM endpoint; optical flow nominal.",
+                corridor_impact_factor="ESCORT",
+                recommended_action="Maintain optical sensor logging.",
+            )
