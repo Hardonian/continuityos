@@ -79,7 +79,7 @@ def main() -> int:
     )
     if not isinstance(catchall, dict):
         raise RuntimeError("host route catchall not found (no match-less subroute)")
-    # The catchall has structure: {"group": "group9", "handle": [{"handler": "subroute", "routes": [...]}]}
+    # Catchall structure: {"group": "group9", "handle": [{"handler": "subroute", "routes": [...]}]}
     catchall_handle = catchall.get("handle", [])
     if not isinstance(catchall_handle, list) or not catchall_handle:
         raise RuntimeError("catchall has no handle")
@@ -116,8 +116,7 @@ def main() -> int:
     for idx, route in enumerate(catchall_routes):
         if isinstance(route, dict) and "handle" in route:
             handle = route["handle"]
-            if isinstance(handle, list) and handle:
-                if handle[0].get("handler") == "reverse_proxy":
+            if isinstance(handle, list) and handle and handle[0].get("handler") == "reverse_proxy":
                     fallback_idx = idx
                     break
     if fallback_idx is None:
