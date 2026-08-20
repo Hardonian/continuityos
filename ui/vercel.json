@@ -2,6 +2,7 @@
   "buildCommand": "npm install && npm run build",
   "outputDirectory": "out",
   "framework": null,
+  "cleanUrls": true,
   "build": {
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096 --no-warnings",
