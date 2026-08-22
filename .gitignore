@@ -21,3 +21,8 @@ node_modules/
 .vscode/
 *.pyc
 *.log
+.vercel
+
+# Generated build artifacts (regenerated every deploy — never tracked)
+ui/.next/
+ui/out/

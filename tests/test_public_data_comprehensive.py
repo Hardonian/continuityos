@@ -1,14 +1,12 @@
-import json
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
+
 from continuityos.public_data import (
-    CanadianDisasterDatabaseAdapter,
     DFOIWLSAdapter,
     ECCCGeoMetAdapter,
     PublicDataPlane,
-    PublicSourceSpec,
 )
 from continuityos.sources.cache import SnapshotCache
 

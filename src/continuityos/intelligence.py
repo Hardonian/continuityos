@@ -20,6 +20,7 @@ from continuityos.domain import CorridorAssessment, CorridorFactor
 from continuityos.edge import ModelPayload
 from continuityos.graph import DependencyGraph
 
+
 class DistillationResult(BaseModel):
     """Result of LLM distillation for an edge MoE target."""
     model_id: str

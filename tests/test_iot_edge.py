@@ -1,10 +1,10 @@
-from datetime import UTC, datetime
 import struct
+from datetime import UTC, datetime
 
 import pytest
 
 from continuityos.edge import IoTMeshNode, ModelPayload
-from continuityos.intelligence import ModelDistiller, DistillationResult
+from continuityos.intelligence import DistillationResult, ModelDistiller
 from continuityos.telemetry import (
     DroneKinematics,
     TelemetryParser,
@@ -115,8 +115,10 @@ def test_detect_anomalies_empty():
     assert len(threats) == 0
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from continuityos.edge import EdgeNode, EdgeManifest
+from unittest.mock import MagicMock, patch
+
+from continuityos.edge import EdgeNode
+
 
 def test_edge_node_add_peer():
     node = EdgeNode("node1", MagicMock())
@@ -208,19 +210,28 @@ def test_edge_node_get_manifest_invalid_json(tmp_path):
     manifest = node.get_manifest()
     assert len(manifest.snapshot_ids) == 0
 
+from continuityos.domain import (
+    AssertionClass,
+    CorridorAssessment,
+    CorridorState,
+    MetricName,
+    Observation,
+    Provenance,
+    SourceTrust,
+)
+from continuityos.graph import DependencyGraph, DependencyNode, NodeType
 from continuityos.intelligence import (
     BayesianCascadeForecaster,
     TelemetryAnomalyForecaster,
     XAIRiskExplainer,
 )
-from continuityos.domain import CorridorAssessment, Observation, SourceTrust, AssertionClass, MetricName
-from continuityos.graph import DependencyGraph, DependencyNode, NodeType
+
 
 def test_bayesian_cascade_forecaster():
     forecaster = BayesianCascadeForecaster()
     graph = DependencyGraph(
-        corridor_id="a",
-        nodes=[DependencyNode(node_id="n1", type=NodeType.PORT, criticality=0.8, status="up"), DependencyNode(node_id="n2", type=NodeType.PORT, criticality=0.5, status="up")],
+        graph_id="a",
+        nodes=[DependencyNode(node_id="n1", name="n1", node_type=NodeType.PORT, criticality=0.8), DependencyNode(node_id="n2", name="n2", node_type=NodeType.PORT, criticality=0.5)],
         edges=[]
     )
     res = forecaster.forecast(graph, "n2", {"n1": 0.5})
@@ -228,32 +239,33 @@ def test_bayesian_cascade_forecaster():
 
 def test_telemetry_anomaly_forecaster():
     forecaster = TelemetryAnomalyForecaster()
-    obs = Observation(
+    Observation(
         source_id="s1",
-        source_trust=SourceTrust.AUTHORITATIVE_GOVERNMENT,
+        source_trust=SourceTrust.AUTHENTICATED_OPERATOR,
         assertion_class=AssertionClass.LIVE_CAPACITY,
         metric=MetricName.PORT_CAPACITY,
-        value=10.0,
+        value=0.9,
         unit="test",
         observed_at=datetime.now(UTC),
         confidence=1.0,
-        provenance=None,
+        provenance=Provenance(uri="mock://test", content_sha256="0" * 64),
         metadata={}
     )
-    res = forecaster.analyze_stream("metric1", [obs])
-    assert len(res) == 0
+    res = forecaster.analyze_stream("metric1", [0.8, 0.85, 0.9], 0.9)
+    assert res.metric_name == "metric1"
 
 def test_explainable_ai_attribution():
     explainer = XAIRiskExplainer()
-    graph = DependencyGraph(corridor_id="a", nodes=[], edges=[])
+    DependencyGraph(graph_id="a", nodes=[], edges=[])
     assessment = CorridorAssessment(
         corridor_id="a",
-        timestamp=datetime.now(UTC),
-        overall_health_score=0.5,
+        generated_at=datetime.now(UTC),
+        overall_risk=0.5,
+        confidence=0.5,
+        state=CorridorState.OPEN,
         factors=[],
-        anomalies=[],
-        explanations=[],
-        metadata={}
+        missing_required_metrics=[],
+        caveats=[]
     )
-    exp = explainer.explain_assessment(graph, assessment)
+    exp = explainer.explain(assessment)
     assert exp is not None

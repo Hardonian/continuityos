@@ -5,7 +5,7 @@ import hmac
 import struct
 import time
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -23,7 +23,7 @@ class TelemetryAuthenticationError(ValueError):
     pass
 
 
-class ThreatIndicatorType(str, Enum):
+class ThreatIndicatorType(StrEnum):
     GPS_SPOOFING = "gps_spoofing"
     RF_JAMMING = "rf_jamming"
     UNAUTHORIZED_DRONE = "unauthorized_drone"
