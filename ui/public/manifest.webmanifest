@@ -1,0 +1,10 @@
+{
+  "name": "Aegis Continuity",
+  "short_name": "Aegis",
+  "description": "Sovereign Resilience-as-Code and cyber-physical continuity assurance for defense supply chains.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b11",
+  "theme_color": "#0a0e14",
+  "icons": []
+}
