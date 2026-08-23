@@ -88,7 +88,7 @@ class TelemetryParser:
     @staticmethod
     def detect_anomalies(kinematics_stream: list[DroneKinematics]) -> list[ThreatIndicator]:
         """Detect anomalies such as GPS spoofing or RF jamming across a stream."""
-        threats = []
+        threats: list[ThreatIndicator] = []
         if not kinematics_stream:
             return threats
             
