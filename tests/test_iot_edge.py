@@ -1,10 +1,28 @@
+import asyncio
 import struct
 from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from continuityos.edge import IoTMeshNode, ModelPayload
-from continuityos.intelligence import DistillationResult, ModelDistiller
+from continuityos.domain import (
+    AssertionClass,
+    CorridorAssessment,
+    CorridorState,
+    MetricName,
+    Observation,
+    Provenance,
+    SourceTrust,
+)
+from continuityos.edge import EdgeNode, IoTMeshNode, ModelPayload
+from continuityos.graph import DependencyGraph, DependencyNode, NodeType
+from continuityos.intelligence import (
+    BayesianCascadeForecaster,
+    DistillationResult,
+    ModelDistiller,
+    TelemetryAnomalyForecaster,
+    XAIRiskExplainer,
+)
 from continuityos.telemetry import (
     DroneKinematics,
     TelemetryParser,
@@ -122,12 +140,6 @@ def test_detect_anomalies_empty():
     assert len(threats) == 0
 
 
-import asyncio
-from unittest.mock import MagicMock, patch
-
-from continuityos.edge import EdgeNode
-
-
 def test_edge_node_add_peer():
     node = EdgeNode("node1", MagicMock())
     node.add_peer("http://peer1/")
@@ -224,23 +236,6 @@ def test_edge_node_get_manifest_invalid_json(tmp_path):
     node = EdgeNode("node1", cache_mock)
     manifest = node.get_manifest()
     assert len(manifest.snapshot_ids) == 0
-
-
-from continuityos.domain import (
-    AssertionClass,
-    CorridorAssessment,
-    CorridorState,
-    MetricName,
-    Observation,
-    Provenance,
-    SourceTrust,
-)
-from continuityos.graph import DependencyGraph, DependencyNode, NodeType
-from continuityos.intelligence import (
-    BayesianCascadeForecaster,
-    TelemetryAnomalyForecaster,
-    XAIRiskExplainer,
-)
 
 
 def test_bayesian_cascade_forecaster():

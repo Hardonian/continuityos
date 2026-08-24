@@ -22,10 +22,19 @@ from pydantic import BaseModel
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
+from continuityos.counter_intel import (
+    DarkFleetDetector,
+    SARSatelliteOverflightPredictor,
+)
 from continuityos.crypto import ZKPReserveProof
 from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
 from continuityos.edge import EdgeNode
+from continuityos.environmental import (
+    PermafrostDegradationModel,
+    SubseaAcousticMonitor,
+    WildfireCorridorRiskModel,
+)
 from continuityos.evidence import EvidenceLedger, EvidenceRecord
 from continuityos.exchange import (
     GeoJSONFeatureCollection,
@@ -68,16 +77,6 @@ from continuityos.strategic import (
     StrategicAnalysisReport,
     StrategicAnalysisRequest,
     build_strategic_report,
-)
-from continuityos.counter_intel import (
-    DarkFleetDetector,
-    InsiderReconDetector,
-    SARSatelliteOverflightPredictor,
-)
-from continuityos.environmental import (
-    PermafrostDegradationModel,
-    SubseaAcousticMonitor,
-    WildfireCorridorRiskModel,
 )
 from continuityos.telemetry import (
     TelemetryAuthenticationError,
@@ -1569,7 +1568,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.post("/v1/intel/counter-surveillance/assess")
-    async def assess_counter_surveillance(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    async def assess_counter_surveillance(payload: dict[str, Any]) -> dict[str, Any]:
         """Evaluate orbital SAR / Earth Observation reconnaissance exposure and EMCON posture."""
         corridor_id = payload.get("corridor_id", "CORRIDOR-DEFAULT")
         orbital_ephemeris = payload.get("orbital_ephemeris", [])
@@ -1584,8 +1583,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return report.model_dump()
 
     @app.post("/v1/intel/dark-fleet/correlate")
-    async def correlate_dark_fleet(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
-        """Correlate maritime radar/optical contacts against active AIS MMSIs to detect dark vessels."""
+    async def correlate_dark_fleet(payload: dict[str, Any]) -> dict[str, Any]:
+        """Correlate radar contacts against active AIS MMSIs to detect dark vessels."""
         corridor_id = payload.get("corridor_id", "MARITIME-CHOKEPOINT")
         contacts = payload.get("contacts", [])
         active_mmsis = set(payload.get("active_mmsis", []))
@@ -1604,7 +1603,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return report.model_dump()
 
     @app.post("/v1/environmental/permafrost-assess")
-    async def assess_permafrost_thaw(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    async def assess_permafrost_thaw(payload: dict[str, Any]) -> dict[str, Any]:
         """Simulate permafrost active-layer thaw depth and track embankment stability."""
         corridor_id = payload.get("corridor_id", "HUDSON-BAY-RAILWAY")
         ddt = float(payload.get("degree_days_of_thaw", 450.0))
@@ -1619,7 +1618,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return report.model_dump()
 
     @app.post("/v1/environmental/wildfire-corridor-risk")
-    async def assess_wildfire_corridor(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    async def assess_wildfire_corridor(payload: dict[str, Any]) -> dict[str, Any]:
         """Evaluate Canadian Fire Weather Index and wildfire proximity to transport corridors."""
         corridor_id = payload.get("corridor_id", "TRANS-CANADA-MAINLINE")
         fwi = float(payload.get("fire_weather_index_fwi", 28.5))
@@ -1638,7 +1637,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return report.model_dump()
 
     @app.post("/v1/environmental/subsea-integrity")
-    async def assess_subsea_integrity(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    async def assess_subsea_integrity(payload: dict[str, Any]) -> dict[str, Any]:
         """Monitor subsea telecom cable and seabed energy conduit acoustic integrity."""
         infra_id = payload.get("infrastructure_id", "TRANSATLANTIC-SUBSEA-01")
         acoustic_db = float(payload.get("acoustic_anomaly_db", 14.5))

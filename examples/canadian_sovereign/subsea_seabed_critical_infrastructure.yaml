@@ -1,0 +1,74 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  id: canadian-subsea-seabed-infrastructure
+  name: Canadian Atlantic Subsea Fiber & Seabed Energy Conduit Network
+  version: 1.0.0
+  tags:
+    domain: subsea_infrastructure
+    region: Atlantic_Canada_and_Gulf_of_St_Lawrence
+    sovereign_classification: PROTECTED_B
+    dissemination: CANADIAN_EYES_ONLY
+
+spec:
+  nodes:
+    - id: HALIFAX-LANDING-01
+      name: Halifax Atlantic Subsea Cable Landing Station
+      type: facility
+      criticality: 0.95
+      location:
+        latitude: 44.65
+        longitude: -63.58
+
+    - id: SUBSEA-FIBER-TRANSATLANTIC
+      name: Transatlantic High-Capacity Subsea Optical Trunk (Hibernia Express)
+      type: subsea_cable
+      criticality: 0.98
+      location:
+        latitude: 44.10
+        longitude: -60.20
+
+    - id: SEABED-SONAR-NODE-01
+      name: Scotian Shelf Acoustic Hydrophone & Seabed Sensor Node
+      type: seabed_sensor
+      criticality: 0.88
+      location:
+        latitude: 43.80
+        longitude: -61.50
+
+    - id: CABOT-STRAIT-CONDUIT
+      name: Cabot Strait Subsea Power Cable & Telecom Intertie
+      type: subsea_cable
+      criticality: 0.90
+      location:
+        latitude: 47.60
+        longitude: -59.80
+
+    - id: ST-JOHNS-LANDING-02
+      name: St. John's Avalon Subsea Landing Terminal
+      type: facility
+      criticality: 0.92
+      location:
+        latitude: 47.56
+        longitude: -52.71
+
+  dependencies:
+    - source: SUBSEA-FIBER-TRANSATLANTIC
+      target: HALIFAX-LANDING-01
+      kind: subsea_connects
+      criticality: 0.98
+
+    - source: SEABED-SONAR-NODE-01
+      target: SUBSEA-FIBER-TRANSATLANTIC
+      kind: validates
+      criticality: 0.88
+
+    - source: CABOT-STRAIT-CONDUIT
+      target: ST-JOHNS-LANDING-02
+      kind: subsea_connects
+      criticality: 0.90
+
+  constraints:
+    min_alternate_routes: 2
+    max_acceptable_downtime_hours: 4
+    acoustic_anomaly_threshold_db: 15.0

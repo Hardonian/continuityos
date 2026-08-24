@@ -4,6 +4,8 @@ const NAV = [
   { href: "/", label: "Home" },
   { href: "/canadian-corridors", label: "Canadian Corridors" },
   { href: "/supply-chain", label: "Supply Chain BOM" },
+  { href: "/counter-intel", label: "Counter-Intel / EMCON" },
+  { href: "/environmental-risk", label: "Environmental & Permafrost" },
   { href: "/rfp-proposal", label: "Gov RFP / PBMM" },
   { href: "/sovereign-compliance", label: "Sovereign Compliance" },
   { href: "/capabilities", label: "Capabilities" },

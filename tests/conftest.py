@@ -6,10 +6,6 @@ from datetime import UTC, datetime
 
 import pytest
 
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="starlette.*")
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="fastapi.*")
-warnings.filterwarnings("ignore", message=".*httpx.*")
-
 from continuityos.domain import (
     AssertionClass,
     MetricName,
@@ -17,6 +13,10 @@ from continuityos.domain import (
     Provenance,
     SourceTrust,
 )
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="starlette.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="fastapi.*")
+warnings.filterwarnings("ignore", message=".*httpx.*")
 
 
 @pytest.fixture

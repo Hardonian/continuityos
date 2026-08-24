@@ -1,13 +1,10 @@
 """Sovereign Counter-Intelligence, Anti-Reconnaissance, and Maritime Surveillance Engine.
 
 Provides defensive capabilities:
-  1. DarkFleetDetector: Correlates optical/radar maritime contacts against active AIS broadcasts
-     to identify non-transmitting (dark) vessels, MMSI spoofing, and covert loitering near EEZ boundaries.
-  2. SARSatelliteOverflightPredictor: Models foreign Earth Observation / SAR satellite overflight
-     exposure windows over strategic defense corridors, critical mineral convoys, and naval bases.
-  3. EMCONPostureManager: Evaluates emission control posture (Alpha/Bravo/Charlie) and RF signature
-     leakage for secure resupply operations.
-  4. InsiderReconDetector: Detects anomalous geographic telemetry scraping and reconnaissance patterns.
+  1. DarkFleetDetector: Correlates radar contacts vs active AIS to detect dark vessels.
+  2. SARSatelliteOverflightPredictor: Models orbital SAR overflight exposure windows.
+  3. EMCONPostureManager: Evaluates emission control posture (Alpha/Bravo/Charlie).
+  4. InsiderReconDetector: Detects anomalous telemetry scraping and reconnaissance.
 """
 
 from __future__ import annotations
@@ -78,7 +75,6 @@ class DarkFleetDetector:
             c_len = float(contact.get("length_meters", 80.0))
             reported_mmsi = contact.get("mmsi")
 
-            # Calculate distance to asset using haversine formula
             dist_km = self._haversine_km(
                 asset_location.latitude, asset_location.longitude, c_lat, c_lon
             )
@@ -186,9 +182,7 @@ class SARSatelliteOverflightPredictor:
             sat_id = str(eph.get("satellite_id", "UNKNOWN-SAT"))
             sensor = str(eph.get("sensor_type", "SAR_RADAR"))
             elev = float(eph.get("elevation_max_deg", 45.0))
-            duration_mins = float(eph.get("duration_minutes", 12.0))
 
-            # Higher elevation angles produce higher resolution radar & optical imaging
             elev_factor = min(1.0, elev / 90.0)
             sensor_weight = 1.0 if "SAR" in sensor.upper() else 0.8
             vuln = min(1.0, elev_factor * sensor_weight)
@@ -213,11 +207,12 @@ class SARSatelliteOverflightPredictor:
                 )
             )
 
-        emcon = (
-            EMCONLevel.ALPHA_SILENT
-            if max_vuln > 0.75
-            else (EMCONLevel.BRAVO_LOW_PROBABILITY if max_vuln > 0.40 else EMCONLevel.CHARLIE_ACTIVE)
-        )
+        if max_vuln > 0.75:
+            emcon = EMCONLevel.ALPHA_SILENT
+        elif max_vuln > 0.40:
+            emcon = EMCONLevel.BRAVO_LOW_PROBABILITY
+        else:
+            emcon = EMCONLevel.CHARLIE_ACTIVE
 
         directive = (
             f"Orbital reconnaissance risk index: {max_vuln:.2f}. "
@@ -258,7 +253,9 @@ class InsiderReconDetector:
 
         if attempted_clearance_escalations > 0:
             risk += 0.40
-            flags.append(f"UNAUTHORIZED_CLEARANCE_ESCALATION_ATTEMPTS_{attempted_clearance_escalations}")
+            flags.append(
+                f"UNAUTHORIZED_CLEARANCE_ESCALATION_ATTEMPTS_{attempted_clearance_escalations}"
+            )
 
         risk_score = min(1.0, risk)
         is_threat = risk_score > 0.65

@@ -19,24 +19,23 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.compiler import ContinuityCompiler
+from continuityos.counter_intel import (
+    DarkFleetDetector,
+    SARSatelliteOverflightPredictor,
+)
 from continuityos.domain import CompileRequest, Observation
 from continuityos.dsl import load_resource, load_resources, validate_resource
+from continuityos.environmental import (
+    PermafrostDegradationModel,
+    SubseaAcousticMonitor,
+    WildfireCorridorRiskModel,
+)
 from continuityos.evidence import EvidenceLedger
 from continuityos.fusion import FusionEngine
 from continuityos.graph import (
     DependencyEngine,
     DependencyGraph,
     detect_cycles,
-)
-from continuityos.counter_intel import (
-    DarkFleetDetector,
-    EMCONPostureManager,
-    SARSatelliteOverflightPredictor,
-)
-from continuityos.environmental import (
-    PermafrostDegradationModel,
-    SubseaAcousticMonitor,
-    WildfireCorridorRiskModel,
 )
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.providers.mock import MockProvider
@@ -934,6 +933,109 @@ def command_rfp_pack(args: argparse.Namespace) -> None:
     _output(summary, args)
 
 
+def command_counter_intel(args: argparse.Namespace) -> None:
+    """Evaluate orbital SAR / Earth Observation exposure and EMCON posture."""
+    predictor = SARSatelliteOverflightPredictor()
+    ephemeris = [
+        {
+            "satellite_id": "COSMO-SkyMed-4",
+            "sensor_type": "SAR_RADAR",
+            "elevation_max_deg": args.elevation,
+        },
+        {
+            "satellite_id": "Gaofen-3-SAR",
+            "sensor_type": "SAR_RADAR",
+            "elevation_max_deg": args.elevation * 0.9,
+        },
+        {
+            "satellite_id": "Resurs-P-Optical",
+            "sensor_type": "OPTICAL_HIGH_RES",
+            "elevation_max_deg": args.elevation * 0.75,
+        },
+    ]
+    report = predictor.evaluate_exposure(
+        corridor_id=args.corridor_id,
+        orbital_ephemeris=ephemeris,
+        critical_corridor_length_km=args.length_km,
+    )
+    _output(report.model_dump(mode="json"), args)
+
+
+def command_dark_fleet_detect(args: argparse.Namespace) -> None:
+    """Correlate optical/radar contacts against active AIS transponders to detect dark vessels."""
+    from continuityos.domain import GeoPoint
+
+    detector = DarkFleetDetector()
+    sample_contacts = [
+        {
+            "latitude": args.lat + 0.12,
+            "longitude": args.lon - 0.15,
+            "speed_knots": 1.2,
+            "mmsi": None,
+        },
+        {
+            "latitude": args.lat - 0.08,
+            "longitude": args.lon + 0.22,
+            "speed_knots": 14.5,
+            "mmsi": "316001234",
+        },
+        {
+            "latitude": args.lat + 0.35,
+            "longitude": args.lon + 0.05,
+            "speed_knots": 0.5,
+            "mmsi": None,
+        },
+    ]
+    active_mmsis = {"316001234"}
+    report = detector.correlate_contacts(
+        corridor_id=args.corridor_id,
+        radar_optical_contacts=sample_contacts,
+        active_ais_mmsis=active_mmsis,
+        asset_location=GeoPoint(latitude=args.lat, longitude=args.lon),
+    )
+    _output(report.model_dump(mode="json"), args)
+
+
+def command_permafrost_audit(args: argparse.Namespace) -> None:
+    """Simulate permafrost active-layer thaw depth and track embankment stability."""
+    model = PermafrostDegradationModel()
+    report = model.evaluate_corridor_thaw(
+        corridor_id=args.corridor_id,
+        degree_days_of_thaw=args.ddt,
+        insulating_peat_cover_cm=args.peat_cm,
+    )
+    _output(report.model_dump(mode="json"), args)
+
+
+def command_environmental_scan(args: argparse.Namespace) -> None:
+    """Run multi-hazard environmental assessment (permafrost, wildfire, subsea)."""
+    p_model = PermafrostDegradationModel()
+    p_rep = p_model.evaluate_corridor_thaw(
+        corridor_id=args.corridor_id, degree_days_of_thaw=args.ddt
+    )
+
+    w_model = WildfireCorridorRiskModel()
+    w_rep = w_model.evaluate_wildfire_risk(
+        corridor_id=args.corridor_id, fwi=args.fwi, closest_fire_distance_km=args.fire_dist_km
+    )
+
+    s_model = SubseaAcousticMonitor()
+    s_rep = s_model.evaluate_subsea_risk(
+        infrastructure_id=f"{args.corridor_id}-SUBSEA",
+        acoustic_anomaly_db=args.acoustic_db,
+        closest_anchoring_vessel_dist_km=args.anchor_dist_km,
+    )
+
+    combined = {
+        "corridor_id": args.corridor_id,
+        "assessed_at": datetime.now(UTC).isoformat(),
+        "permafrost_thaw_assessment": p_rep.model_dump(mode="json"),
+        "wildfire_corridor_assessment": w_rep.model_dump(mode="json"),
+        "subsea_infrastructure_assessment": s_rep.model_dump(mode="json"),
+    }
+    _output(combined, args)
+
+
 # --- Parser builder ---
 
 
@@ -1233,6 +1335,76 @@ def build_parser() -> argparse.ArgumentParser:
     p_pbmma.add_argument("--tls-version", default="1.3", help="Enforced TLS version")
     p_pbmma.add_argument("--disable-cmk", action="store_true", help="Simulate unmanaged KMS keys")
     p_pbmma.set_defaults(func=command_pbmm_audit)
+
+    # counter-intel
+    p_cintel = subparsers.add_parser(
+        "counter-intel",
+        help="Evaluate orbital SAR overflight exposure and EMCON posture for a corridor",
+    )
+    p_cintel.add_argument("--corridor-id", default="ARCTIC-CONVOY-01", help="Corridor ID")
+    p_cintel.add_argument(
+        "--elevation", type=float, default=65.0, help="Max satellite elevation angle in degrees"
+    )
+    p_cintel.add_argument(
+        "--length-km", type=float, default=150.0, help="Critical corridor length in km"
+    )
+    p_cintel.set_defaults(func=command_counter_intel)
+
+    # dark-fleet-detect
+    p_dark = subparsers.add_parser(
+        "dark-fleet-detect",
+        help="Correlate radar contacts against active AIS to detect dark/unverified vessels",
+    )
+    p_dark.add_argument(
+        "--corridor-id", default="ST-LAWRENCE-GULF", help="Maritime corridor identifier"
+    )
+    p_dark.add_argument("--lat", type=float, default=48.5, help="Asset latitude")
+    p_dark.add_argument("--lon", type=float, default=-64.2, help="Asset longitude")
+    p_dark.set_defaults(func=command_dark_fleet_detect)
+
+    # permafrost-audit
+    p_perm = subparsers.add_parser(
+        "permafrost-audit",
+        help="Simulate permafrost active-layer thaw depth and track embankment stability",
+    )
+    p_perm.add_argument(
+        "--corridor-id", default="HUDSON-BAY-RAILWAY", help="Northern rail or highway corridor"
+    )
+    p_perm.add_argument(
+        "--ddt",
+        type=float,
+        default=450.0,
+        help="Degree-days of thaw (cumulative temperature index)",
+    )
+    p_perm.add_argument(
+        "--peat-cm", type=float, default=15.0, help="Insulating organic peat cover thickness in cm"
+    )
+    p_perm.set_defaults(func=command_permafrost_audit)
+
+    # environmental-scan
+    p_env = subparsers.add_parser(
+        "environmental-scan",
+        help="Run multi-hazard environmental risk assessment (permafrost, wildfire, subsea)",
+    )
+    p_env.add_argument("--corridor-id", default="TRANS-CANADA-NORTH", help="Corridor identifier")
+    p_env.add_argument("--ddt", type=float, default=400.0, help="Degree-days of thaw")
+    p_env.add_argument("--fwi", type=float, default=28.0, help="Canadian Fire Weather Index (FWI)")
+    p_env.add_argument(
+        "--fire-dist-km", type=float, default=14.0, help="Closest active wildfire perimeter in km"
+    )
+    p_env.add_argument(
+        "--acoustic-db",
+        type=float,
+        default=12.0,
+        help="Subsea acoustic anomaly level in dB above baseline",
+    )
+    p_env.add_argument(
+        "--anchor-dist-km",
+        type=float,
+        default=4.5,
+        help="Closest unauthorized anchoring distance in km",
+    )
+    p_env.set_defaults(func=command_environmental_scan)
 
     # rfp-pack
     p_rfp = subparsers.add_parser(

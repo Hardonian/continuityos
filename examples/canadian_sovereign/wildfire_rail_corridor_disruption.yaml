@@ -1,0 +1,66 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  id: canadian-wildfire-rail-corridor
+  name: Trans-Canada Rail Mainline Wildfire Flame & Smoke Threat Model
+  version: 1.0.0
+  tags:
+    domain: environmental_resilience
+    region: British_Columbia_and_Alberta_Interior
+    sovereign_classification: PROTECTED_A
+    dissemination: CANADIAN_EYES_ONLY
+
+spec:
+  nodes:
+    - id: FRASER-CANYON-MAINLINE
+      name: CN/CPKC Fraser Canyon Directional Running Zone
+      type: corridor
+      criticality: 0.96
+      location:
+        latitude: 49.80
+        longitude: -121.44
+
+    - id: KAMLOOPS-INTERMODAL-JUNCTION
+      name: Kamloops Inland Rail Logistics Junction
+      type: rail_hub
+      criticality: 0.90
+      location:
+        latitude: 50.67
+        longitude: -120.33
+
+    - id: ROGERS-PASS-TUNNEL
+      name: Mount Macdonald / Rogers Pass Avalanche & Fire Protection Corridor
+      type: corridor
+      criticality: 0.94
+      location:
+        latitude: 51.30
+        longitude: -117.52
+
+    - id: CALGARY-LOGISTICS-HUB
+      name: Calgary Intermodal Logistics Terminal
+      type: intermodal_terminal
+      criticality: 0.92
+      location:
+        latitude: 51.05
+        longitude: -114.07
+
+  dependencies:
+    - source: FRASER-CANYON-MAINLINE
+      target: KAMLOOPS-INTERMODAL-JUNCTION
+      kind: transports
+      criticality: 0.96
+
+    - source: KAMLOOPS-INTERMODAL-JUNCTION
+      target: ROGERS-PASS-TUNNEL
+      kind: transports
+      criticality: 0.94
+
+    - source: ROGERS-PASS-TUNNEL
+      target: CALGARY-LOGISTICS-HUB
+      kind: transports
+      criticality: 0.92
+
+  constraints:
+    max_fire_weather_index_fwi: 30.0
+    min_flame_front_buffer_km: 10.0
+    require_smoke_visibility_monitoring: true

@@ -1,12 +1,10 @@
 """Canadian Geographic, Environmental, Permafrost, and Subsea Infrastructure Engine.
 
 Provides:
-  1. PermafrostDegradationModel: Active-layer thaw depth simulation and embankment settlement risk
-     for Arctic rail corridors (Hudson Bay Railway) and northern highways (Dempster Highway).
-  2. WildfireCorridorRiskModel: Canadian Fire Weather Index (FWI) fusion and corridor flame impingement
-     modeling for Trans-Canada rail and highway links.
+  1. PermafrostDegradationModel: Active-layer thaw depth & settlement risk for northern rail/roads.
+  2. WildfireCorridorRiskModel: Canadian Fire Weather Index (FWI) corridor impingement modeling.
   3. SubseaAcousticMonitor: Subsea telecom cable and seabed energy conduit integrity monitoring.
-  4. MountainPassGeomorphology: Rockfall, landslide, and avalanche hazard modeling for mountain corridors.
+  4. MountainPassGeomorphology: Rockfall and landslide hazard modeling for mountain corridors.
 """
 
 from __future__ import annotations
@@ -14,7 +12,6 @@ from __future__ import annotations
 import math
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -43,7 +40,7 @@ class PermafrostThawAssessment(BaseModel):
 
 
 class PermafrostDegradationModel:
-    """Simulates active-layer thaw and trackbed differential settlement over discontinuous permafrost."""
+    """Simulates active-layer thaw and trackbed differential settlement over permafrost."""
 
     def evaluate_corridor_thaw(
         self,
@@ -55,12 +52,12 @@ class PermafrostDegradationModel:
         unfrozen_moisture_content: float = 0.28,
         insulating_peat_cover_cm: float = 15.0,
     ) -> PermafrostThawAssessment:
-        # Modified Stefan solution for active-layer thaw depth in permafrost soils
-        # Thaw depth d ≈ sqrt((2 * k * DDT * 86400) / L) adjusted for insulating organic peat cover
         time_seconds = degree_days_of_thaw * 86400.0
         latent_heat_joules = latent_heat_mj_m3 * 1_000_000.0
 
-        raw_depth_m = math.sqrt((2.0 * soil_thermal_conductivity_w_mk * time_seconds) / latent_heat_joules)
+        raw_depth_m = math.sqrt(
+            (2.0 * soil_thermal_conductivity_w_mk * time_seconds) / latent_heat_joules
+        )
         raw_depth_cm = raw_depth_m * 100.0
 
         # Organic insulation buffer dampens thaw penetration
@@ -72,15 +69,15 @@ class PermafrostDegradationModel:
         if settlement_risk > 0.75:
             status = TrackStabilityStatus.CRITICAL_SETTLEMENT_SUSPENSION
             max_speed = 0
-            action = "Suspend heavy axle-load rail traffic; dispatch ballast tamping & ground radar inspection crew"
+            action = "Suspend heavy rail traffic; dispatch ballast tamping & radar inspection crew"
         elif settlement_risk > 0.40:
             status = TrackStabilityStatus.SPEED_RESTRICTED
             max_speed = 15
-            action = "Enforce 15 mph slow order across thaw-sensitive subgrade zones; monitor thermosiphons"
+            action = "Enforce 15 mph slow order across thaw subgrade zones; monitor thermosiphons"
         else:
             status = TrackStabilityStatus.STABLE_FULL_SPEED
             max_speed = 45
-            action = "Nominal embankment conditions; continue routine geometric car telemetry logging"
+            action = "Nominal embankment conditions; continue routine geometric telemetry logging"
 
         return PermafrostThawAssessment(
             corridor_id=corridor_id,
@@ -105,7 +102,7 @@ class WildfireCorridorAssessment(BaseModel):
 
 
 class WildfireCorridorRiskModel:
-    """Evaluates wildfire impingement risk and heavy smoke visibility loss on transport corridors."""
+    """Evaluates wildfire impingement risk and heavy smoke visibility loss on corridors."""
 
     def evaluate_wildfire_risk(
         self,
@@ -116,24 +113,22 @@ class WildfireCorridorRiskModel:
         wind_speed_kmh: float = 25.0,
         wind_direction_towards_corridor: bool = True,
     ) -> WildfireCorridorAssessment:
-        # FWI > 30 is Extreme in Canadian Forest Fire Danger Rating System (CFFDRS)
         fwi_factor = min(1.0, fwi / 40.0)
-
-        # Proximity factor: < 10km is high threat
         proximity_factor = max(0.0, 1.0 - (closest_fire_distance_km / 30.0))
 
-        wind_multiplier = 1.3 if (wind_direction_towards_corridor and wind_speed_kmh > 20.0) else 0.8
+        wind_multiplier = (
+            1.3 if (wind_direction_towards_corridor and wind_speed_kmh > 20.0) else 0.8
+        )
         closure_prob = min(1.0, (fwi_factor * 0.4 + proximity_factor * 0.6) * wind_multiplier)
 
-        # Smoke visibility reduction model
         visibility_loss = min(95.0, (fwi_factor * 30.0) + (proximity_factor * 60.0))
 
         if closure_prob > 0.70:
-            rec = "CRITICAL: Implement precautionary corridor shutdown and initiate modal rail/road bypass"
+            rec = "CRITICAL: Implement precautionary shutdown and initiate modal rail/road bypass"
         elif closure_prob > 0.35:
-            rec = "ELEVATED: Station water tender support units and enforce thermal sensor speed limits"
+            rec = "ELEVATED: Station water tender support units and enforce thermal speed limits"
         else:
-            rec = "LOW: Corridor clear; monitor ECCC FireSmoke and Canadian Wildland Fire Information System"
+            rec = "LOW: Corridor clear; monitor ECCC FireSmoke and Canadian Fire Information"
 
         return WildfireCorridorAssessment(
             corridor_id=corridor_id,
@@ -167,20 +162,20 @@ class SubseaAcousticMonitor:
         closest_anchoring_vessel_dist_km: float,
         seabed_sensor_health: float = 0.95,
     ) -> SubseaCableIntegrityAssessment:
-        # Acoustic anomaly > 15 dB above ambient baseline indicates seafloor disturbance
         acoustic_score = min(1.0, max(0.0, (acoustic_anomaly_db - 5.0) / 25.0))
-
         anchor_risk = max(0.0, 1.0 - (closest_anchoring_vessel_dist_km / 10.0))
 
-        composite_risk = min(1.0, (acoustic_score * 0.55 + anchor_risk * 0.45) * (1.0 / seabed_sensor_health))
+        composite_risk = min(
+            1.0, (acoustic_score * 0.55 + anchor_risk * 0.45) * (1.0 / seabed_sensor_health)
+        )
         integrity = max(0.0, 1.0 - composite_risk)
 
         if composite_risk > 0.65:
             status = "HIGH_THREAT_ANOMALY"
-            rec = "Deploy Canadian Maritime Coastal Patrol / RCAF CP-140 Aurora for seabed inspection"
+            rec = "Deploy Canadian Maritime Coastal Patrol / RCAF CP-140 for seabed inspection"
         elif composite_risk > 0.30:
             status = "SUSPICIOUS_SEABED_ACTIVITY"
-            rec = "Alert Canadian Coast Guard MCTS to challenge vessel anchoring in cable protection zone"
+            rec = "Alert CCG MCTS to challenge vessel anchoring in cable protection zone"
         else:
             status = "NOMINAL_SEABED_INTEGRITY"
             rec = "Normal acoustic background levels across seabed cable corridor"

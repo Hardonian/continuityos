@@ -1,0 +1,66 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  id: canadian-hudson-bay-permafrost-railway
+  name: Hudson Bay Railway Subarctic Permafrost Trackbed Network
+  version: 1.0.0
+  tags:
+    domain: permafrost_infrastructure
+    region: Northern_Manitoba_and_Hudson_Bay
+    sovereign_classification: PROTECTED_B
+    dissemination: CANADIAN_EYES_ONLY
+
+spec:
+  nodes:
+    - id: THE-PAS-RAIL-TERMINAL
+      name: The Pas Rail Gateway & Crew Change Terminal
+      type: rail_hub
+      criticality: 0.85
+      location:
+        latitude: 53.82
+        longitude: -101.24
+
+    - id: THOMPSON-LOGISTICS-HUB
+      name: Thompson Northern Mining & Mineral Junction
+      type: rail_hub
+      criticality: 0.88
+      location:
+        latitude: 55.74
+        longitude: -97.85
+
+    - id: WIKUSKO-PERMAFROST-BOG
+      name: Wikusko Peat Bog & Discontinuous Permafrost Subgrade Zone
+      type: permafrost_corridor
+      criticality: 0.95
+      location:
+        latitude: 56.50
+        longitude: -95.20
+
+    - id: CHURCHILL-DEEPWATER-PORT
+      name: Port of Churchill Arctic Grain & Mineral Terminal
+      type: port
+      criticality: 0.96
+      location:
+        latitude: 58.76
+        longitude: -94.17
+
+  dependencies:
+    - source: THE-PAS-RAIL-TERMINAL
+      target: THOMPSON-LOGISTICS-HUB
+      kind: transports
+      criticality: 0.88
+
+    - source: THOMPSON-LOGISTICS-HUB
+      target: WIKUSKO-PERMAFROST-BOG
+      kind: traverses_permafrost
+      criticality: 0.95
+
+    - source: WIKUSKO-PERMAFROST-BOG
+      target: CHURCHILL-DEEPWATER-PORT
+      kind: transports
+      criticality: 0.96
+
+  constraints:
+    max_active_layer_thaw_depth_cm: 65.0
+    slow_order_speed_threshold_mph: 15
+    require_ground_temperature_telemetry: true
