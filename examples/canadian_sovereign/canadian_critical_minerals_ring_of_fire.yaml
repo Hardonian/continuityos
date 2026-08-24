@@ -1,0 +1,79 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  id: canadian-critical-minerals-ring-of-fire
+  name: Ring of Fire Strategic Chromite, Nickel & Cobalt Mining Corridor
+  version: 1.0.0
+  tags:
+    domain: critical_minerals
+    region: James_Bay_Lowlands_Northern_Ontario
+    sovereign_classification: SECRET
+    dissemination: CANADIAN_EYES_ONLY
+
+spec:
+  nodes:
+    - id: RING-OF-FIRE-EAGLES-NEST
+      name: Eagle's Nest Nickel-Copper-PGE & Chromite Deposit
+      type: mine_or_refinery
+      criticality: 0.98
+      location:
+        latitude: 52.75
+        longitude: -86.35
+
+    - id: NAKINA-ALL-WEATHER-ROAD
+      name: Northern Road-Link Intermodal Terminal (Nakina Railhead)
+      type: intermodal_terminal
+      criticality: 0.92
+      location:
+        latitude: 50.18
+        longitude: -86.70
+
+    - id: SUDBURY-SMELTING-COMPLEX
+      name: Sudbury Integrated Nickel Smelter & High-Purity Refinery
+      type: mine_or_refinery
+      criticality: 0.96
+      location:
+        latitude: 46.49
+        longitude: -81.01
+
+    - id: PORT-COLBORNE-COBALT-REFINERY
+      name: Port Colborne Class-1 Cobalt & Precious Metal Refinery
+      type: manufacturing_plant
+      criticality: 0.94
+      location:
+        latitude: 42.88
+        longitude: -79.25
+
+    - id: NATO-DEFENSE-PRIME-DISTRIBUTION
+      name: Canadian & NATO Tier-1 Aerospace Defense Logistics Hub
+      type: facility
+      criticality: 0.99
+      location:
+        latitude: 43.68
+        longitude: -79.62
+
+  dependencies:
+    - source: RING-OF-FIRE-EAGLES-NEST
+      target: NAKINA-ALL-WEATHER-ROAD
+      kind: transports
+      criticality: 0.92
+
+    - source: NAKINA-ALL-WEATHER-ROAD
+      target: SUDBURY-SMELTING-COMPLEX
+      kind: transports
+      criticality: 0.96
+
+    - source: SUDBURY-SMELTING-COMPLEX
+      target: PORT-COLBORNE-COBALT-REFINERY
+      kind: supplies
+      criticality: 0.94
+
+    - source: PORT-COLBORNE-COBALT-REFINERY
+      target: NATO-DEFENSE-PRIME-DISTRIBUTION
+      kind: supplies
+      criticality: 0.99
+
+  constraints:
+    min_strategic_stockpile_days: 90
+    require_domestic_refining_audit: true
+    nato_tier1_allocation_priority: true

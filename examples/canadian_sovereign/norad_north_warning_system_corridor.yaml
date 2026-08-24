@@ -1,0 +1,79 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  id: norad-north-warning-system-arctic
+  name: NORAD North Warning System Long-Range Radar & Polar Fuel Resilience
+  version: 1.0.0
+  tags:
+    domain: national_defense_surveillance
+    region: Canadian_Arctic_Archipelago
+    sovereign_classification: SECRET
+    dissemination: CANADIAN_EYES_ONLY
+
+spec:
+  nodes:
+    - id: CFB-TRENTON-AIR-BRIDGE
+      name: 8 Wing Trenton RCAF Strategic Airlift Hub
+      type: airfield
+      criticality: 0.95
+      location:
+        latitude: 44.12
+        longitude: -77.53
+
+    - id: RESOLUTE-BAY-FORWARD-OPERATING-LOCATION
+      name: Resolute Bay Forward Operating Location (FOL) & Bulk Fuel Cache
+      type: fuel
+      criticality: 0.97
+      location:
+        latitude: 74.72
+        longitude: -94.97
+
+    - id: NORTH-WARNING-RADAR-SITE-LAB-6
+      name: NWS Long-Range Radar Site (AN/FPS-117 S-Band Sensor)
+      type: facility
+      criticality: 0.99
+      location:
+        latitude: 69.10
+        longitude: -105.05
+
+    - id: ARCTIC-POLAR-SATCOM-UPLINK
+      name: Sovereign Polar Orbiting EHF SATCOM Terminal
+      type: satellite_uplink
+      criticality: 0.96
+      location:
+        latitude: 76.25
+        longitude: -119.35
+
+    - id: CFB-NORTH-BAY-UNDERGROUND-COMPLEX
+      name: Canadian Air Defence Sector (CADS) NORAD Operations Center
+      type: facility
+      criticality: 0.99
+      location:
+        latitude: 46.36
+        longitude: -79.42
+
+  dependencies:
+    - source: CFB-TRENTON-AIR-BRIDGE
+      target: RESOLUTE-BAY-FORWARD-OPERATING-LOCATION
+      kind: transports
+      criticality: 0.95
+
+    - source: RESOLUTE-BAY-FORWARD-OPERATING-LOCATION
+      target: NORTH-WARNING-RADAR-SITE-LAB-6
+      kind: powers
+      criticality: 0.97
+
+    - source: NORTH-WARNING-RADAR-SITE-LAB-6
+      target: ARCTIC-POLAR-SATCOM-UPLINK
+      kind: connects
+      criticality: 0.96
+
+    - source: ARCTIC-POLAR-SATCOM-UPLINK
+      target: CFB-NORTH-BAY-UNDERGROUND-COMPLEX
+      kind: connects
+      criticality: 0.99
+
+  constraints:
+    min_arctic_fuel_reserve_days: 120
+    max_acceptable_downtime_hours: 1
+    require_redundant_satellite_uplinks: true

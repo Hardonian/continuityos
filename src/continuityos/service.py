@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse, Response, Streami
 from pydantic import BaseModel
 
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
+from continuityos.cluster import RaftStateSynchronizer
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
 from continuityos.counter_intel import (
@@ -78,10 +79,22 @@ from continuityos.strategic import (
     StrategicAnalysisRequest,
     build_strategic_report,
 )
+from continuityos.streaming import GLOBAL_EVENT_BUS, SovereignEvent, sse_event_streamer
+from continuityos.supply_chain import (
+    BOMComponent,
+    EconomicLossCalculator,
+    ModalReroutingSolver,
+    MultiTierSupplyEngine,
+)
 from continuityos.telemetry import (
     TelemetryAuthenticationError,
     normalized_operator_observation,
     verify_operator_signature,
+)
+from continuityos.wargame import (
+    CANADIAN_CRITICAL_MINERALS,
+    DisruptionScenarioType,
+    WargameSimulator,
 )
 
 logger = logging.getLogger("continuityos.access")
@@ -1443,7 +1456,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
     )
     async def assess_supply_chain_bom(payload: dict[str, Any]) -> dict[str, Any]:
-        from continuityos.supply_chain import BOMComponent, MultiTierSupplyEngine
 
         system_name = str(payload.get("system_name", "Critical-Supply-Network"))
         raw_components = payload.get("components", [])
@@ -1463,7 +1475,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
     )
     async def calculate_economic_impact(payload: dict[str, Any]) -> dict[str, Any]:
-        from continuityos.supply_chain import EconomicLossCalculator
 
         duration_days = int(payload.get("disruption_duration_days", 7))
         daily_inv = float(payload.get("daily_inventory_value_cad", 5_000_000.0))
@@ -1485,7 +1496,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
     )
     async def solve_modal_rerouting(payload: dict[str, Any]) -> dict[str, Any]:
-        from continuityos.supply_chain import ModalReroutingSolver
 
         corridor_id = str(payload.get("corridor_id", "CORRIDOR-PRIMARY"))
         origin = str(payload.get("origin", "Vancouver"))
@@ -1650,6 +1660,86 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             closest_anchoring_vessel_dist_km=anchor_km,
         )
         return report.model_dump()
+
+    # --- Live Streaming SSE & Sovereign Event Endpoints ---
+
+    @app.get("/v1/streaming/events")
+    async def stream_live_events() -> StreamingResponse:
+        """Stream live sovereign multi-domain events via Server-Sent Events (SSE)."""
+        return StreamingResponse(
+            sse_event_streamer(GLOBAL_EVENT_BUS),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+        )
+
+    @app.post("/v1/streaming/publish")
+    async def publish_event(payload: dict[str, Any]) -> dict[str, Any]:
+        """Publish a real-time event to the global event bus."""
+        event = SovereignEvent(
+            domain=payload.get("domain", "MARITIME"),
+            event_type=payload.get("event_type", "INCIDENT_ALERT"),
+            corridor_id=payload.get("corridor_id", "CORRIDOR-01"),
+            severity=payload.get("severity", "WARNING"),
+            threat_score=float(payload.get("threat_score", 0.6)),
+            title=payload.get("title", "Telemetry Threat Injected"),
+            payload=payload.get("payload", {}),
+        )
+        await GLOBAL_EVENT_BUS.publish(event)
+        return {"status": "PUBLISHED", "event_id": str(event.event_id)}
+
+    # --- Strategic War-Gaming & Critical Minerals Endpoints ---
+
+    @app.post("/v1/wargame/simulate")
+    async def run_wargame_simulation(payload: dict[str, Any]) -> dict[str, Any]:
+        """Run game-theoretic defensive disruption wargame simulation."""
+        scenario_str = payload.get("scenario_type", "maritime_blockade")
+        try:
+            scenario_type = DisruptionScenarioType(scenario_str)
+        except ValueError:
+            scenario_type = DisruptionScenarioType.MARITIME_BLOCKADE
+
+        corridor_id = payload.get("corridor_id", "ST-LAWRENCE-SEAWAY")
+        horizons = payload.get("horizons_days", [30, 60, 90, 180])
+        adversary_pressure = float(payload.get("adversary_pressure_level", 0.75))
+        domestic_cushion = float(payload.get("domestic_reserves_cushion", 0.5))
+
+        simulator = WargameSimulator()
+        report = simulator.run_simulation(
+            scenario_type=scenario_type,
+            corridor_id=corridor_id,
+            horizons_days=horizons,
+            adversary_pressure_level=adversary_pressure,
+            domestic_reserves_cushion=domestic_cushion,
+        )
+        return report.model_dump(mode="json")
+
+    @app.get("/v1/wargame/critical-minerals")
+    async def list_critical_minerals() -> dict[str, Any]:
+        """List Canada's strategic critical minerals and NATO Tier-1 defense dependencies."""
+        return {
+            "critical_minerals": {
+                k: v.model_dump(mode="json") for k, v in CANADIAN_CRITICAL_MINERALS.items()
+            }
+        }
+
+    # --- Air-Gapped DDIL SCIF Cluster Endpoints ---
+
+    scif_cluster = RaftStateSynchronizer("SCIF-HQ-OTTAWA", "DND-Carling-Campus-SCIF")
+    scif_cluster.register_peer("SCIF-NODE-HALIFAX", "CFB-Halifax-Dockyard-SCIF", True, 512.0)
+    scif_cluster.register_peer("SCIF-NODE-ESQUIMALT", "CFB-Esquimalt-Pacific-SCIF", True, 256.0)
+
+    @app.get("/v1/cluster/status")
+    async def get_cluster_status() -> dict[str, Any]:
+        """Get air-gapped DDIL SCIF cluster node status and Merkle consensus roots."""
+        return scif_cluster.get_cluster_status()
+
+    @app.post("/v1/cluster/peers/sync")
+    async def sync_cluster_peer(payload: dict[str, Any]) -> dict[str, Any]:
+        """Perform peer delta state replication in air-gapped mesh."""
+        peer_id = payload.get("peer_id", "SCIF-NODE-HALIFAX")
+        peer_index = int(payload.get("last_log_index", 0))
+        result = scif_cluster.sync_with_peer(peer_id, peer_index)
+        return result.model_dump(mode="json")
 
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():

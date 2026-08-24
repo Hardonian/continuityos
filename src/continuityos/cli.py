@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from continuityos.closure import ClosureInput, assess_closure
+from continuityos.cluster import RaftStateSynchronizer
 from continuityos.compiler import ContinuityCompiler
 from continuityos.counter_intel import (
     DarkFleetDetector,
@@ -44,6 +45,11 @@ from continuityos.recovery import RecoveryProfile, model_recovery
 from continuityos.remediation import generate_remediation
 from continuityos.scenario import Scenario, simulate_scenario
 from continuityos.sources.cache import SnapshotCache
+from continuityos.wargame import (
+    CANADIAN_CRITICAL_MINERALS,
+    DisruptionScenarioType,
+    WargameSimulator,
+)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -1036,6 +1042,46 @@ def command_environmental_scan(args: argparse.Namespace) -> None:
     _output(combined, args)
 
 
+def command_wargame_sim(args: argparse.Namespace) -> None:
+    """Run game-theoretic wargame and critical mineral disruption simulation."""
+    try:
+        scenario_type = DisruptionScenarioType(args.scenario)
+    except ValueError:
+        scenario_type = DisruptionScenarioType.MARITIME_BLOCKADE
+
+    simulator = WargameSimulator()
+    report = simulator.run_simulation(
+        scenario_type=scenario_type,
+        corridor_id=args.corridor_id,
+        adversary_pressure_level=args.adversary_pressure,
+        domestic_reserves_cushion=args.cushion,
+    )
+    _output(report.model_dump(mode="json"), args)
+
+
+def command_critical_minerals_audit(args: argparse.Namespace) -> None:
+    """Audit Canada's 31 critical minerals stockpiles and NATO Tier-1 prime dependencies."""
+    minerals = {k: v.model_dump(mode="json") for k, v in CANADIAN_CRITICAL_MINERALS.items()}
+    _output({"critical_minerals_inventory": minerals}, args)
+
+
+def command_cluster_status(args: argparse.Namespace) -> None:
+    """Check air-gapped DDIL SCIF cluster consensus and peer synchronization health."""
+    cluster = RaftStateSynchronizer(args.node_id, args.enclave_name)
+    cluster.register_peer("SCIF-HALIFAX", "CFB-Halifax-SCIF", True, 512.0)
+    cluster.register_peer("SCIF-ESQUIMALT", "CFB-Esquimalt-SCIF", True, 256.0)
+    _output(cluster.get_cluster_status(), args)
+
+
+def command_cluster_sync(args: argparse.Namespace) -> None:
+    """Synchronize state log with an air-gapped DDIL peer node."""
+    cluster = RaftStateSynchronizer(args.node_id, args.enclave_name)
+    cluster.register_peer(args.peer_id, "Target-Peer-Enclave", True, 256.0)
+    cluster.append_command("INCIDENT_LOG", {"corridor": "ARCTIC", "threat": "ELEVATED"})
+    result = cluster.sync_with_peer(args.peer_id, args.last_log_index)
+    _output(result.model_dump(mode="json"), args)
+
+
 # --- Parser builder ---
 
 
@@ -1414,6 +1460,66 @@ def build_parser() -> argparse.ArgumentParser:
         "--out-dir", type=Path, help="Optional directory to export RFP manifest JSON"
     )
     p_rfp.set_defaults(func=command_rfp_pack)
+
+    # wargame-sim
+    p_war = subparsers.add_parser(
+        "wargame-sim",
+        help="Run game-theoretic wargame and critical mineral disruption simulation",
+    )
+    p_war.add_argument(
+        "--scenario",
+        default="maritime_blockade",
+        help="Disruption scenario (e.g. maritime_blockade, critical_mineral_embargo)",
+    )
+    p_war.add_argument(
+        "--corridor-id", default="ST-LAWRENCE-SEAWAY", help="Target corridor identifier"
+    )
+    p_war.add_argument(
+        "--adversary-pressure",
+        type=float,
+        default=0.75,
+        help="Adversary disruption pressure index (0.0 - 1.0)",
+    )
+    p_war.add_argument(
+        "--cushion",
+        type=float,
+        default=0.5,
+        help="Domestic critical mineral reserve cushion index (0.0 - 1.0)",
+    )
+    p_war.set_defaults(func=command_wargame_sim)
+
+    # critical-minerals-audit
+    p_cmin = subparsers.add_parser(
+        "critical-minerals-audit",
+        help="Audit Canada's 31 critical minerals stockpiles and NATO Tier-1 prime dependencies",
+    )
+    p_cmin.set_defaults(func=command_critical_minerals_audit)
+
+    # cluster-status
+    p_cstat = subparsers.add_parser(
+        "cluster-status",
+        help="Check air-gapped DDIL SCIF cluster consensus and peer synchronization health",
+    )
+    p_cstat.add_argument("--node-id", default="SCIF-HQ-OTTAWA", help="Local SCIF Node ID")
+    p_cstat.add_argument(
+        "--enclave-name", default="DND-Carling-Campus-SCIF", help="Sovereign enclave facility name"
+    )
+    p_cstat.set_defaults(func=command_cluster_status)
+
+    # cluster-sync
+    p_csync = subparsers.add_parser(
+        "cluster-sync",
+        help="Synchronize state log with an air-gapped DDIL peer node",
+    )
+    p_csync.add_argument("--node-id", default="SCIF-HQ-OTTAWA", help="Local SCIF Node ID")
+    p_csync.add_argument(
+        "--enclave-name", default="DND-Carling-Campus-SCIF", help="Sovereign enclave facility name"
+    )
+    p_csync.add_argument("--peer-id", default="SCIF-HALIFAX", help="Target Peer Node ID")
+    p_csync.add_argument(
+        "--last-log-index", type=int, default=0, help="Last synchronized log index"
+    )
+    p_csync.set_defaults(func=command_cluster_sync)
 
     return parser
 
