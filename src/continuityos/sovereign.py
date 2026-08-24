@@ -10,12 +10,22 @@ Provides enterprise and nation-state security capabilities:
 from __future__ import annotations
 
 import os
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
 from continuityos.domain import DataClassification
+
+ClassificationLevel = DataClassification
+
+
+class DisseminationControl(StrEnum):
+    CANADIAN_EYES_ONLY = "canadian_eyes_only"
+    FIVE_EYES = "five_eyes"
+    NATO_SECRET = "nato_secret"
+    NOFORN = "noforn"
 
 
 class SecurityLabel(BaseModel):
