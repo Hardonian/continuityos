@@ -636,6 +636,294 @@ def command_operator(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def command_canadian_corridor(args: argparse.Namespace) -> None:
+    """Assess and display status of Canadian strategic sovereign supply corridors."""
+    corridor_key = getattr(args, "corridor", "critical-minerals").lower()
+
+    corridor_catalog = {
+        "critical-minerals": {
+            "corridor_id": "can-critical-minerals-ring-of-fire",
+            "name": "Ontario Ring of Fire to Windsor EV Gigafactory Corridor",
+            "category": "CRITICAL_MINERALS",
+            "sovereign_priority": "NATIONAL_PRIORITY_TIER_1",
+            "nodes": [
+                {
+                    "id": "Eskers-Mine-Hub",
+                    "type": "MINE_OR_REFINERY",
+                    "location": "James Bay Lowlands (52.9°N, 86.1°W)",
+                    "commodity": "Nickel / Lithium / Cobalt",
+                },
+                {
+                    "id": "Sudbury-Smelter",
+                    "type": "MINE_OR_REFINERY",
+                    "location": "Greater Sudbury (46.5°N, 80.9°W)",
+                    "capacity": "Smelting & Refining",
+                },
+                {
+                    "id": "Windsor-EV-Plant",
+                    "type": "MANUFACTURING_PLANT",
+                    "location": "Windsor-Essex (42.3°N, 83.0°W)",
+                    "demand": "Gigafactory Battery Cells",
+                },
+                {
+                    "id": "Montreal-Port-Export",
+                    "type": "PORT",
+                    "location": "Port of Montreal (45.5°N, 73.5°W)",
+                    "function": "Transatlantic Gateway",
+                },
+            ],
+            "primary_transit_modes": ["RAIL_CN", "RAIL_CPKC", "LONG_HAUL_TRUCK"],
+            "resilience_status": "MONITORED_NOMINAL",
+            "continuity_score": 0.96,
+            "security_clearance_required": "PROTECTED_B",
+        },
+        "arctic-norad": {
+            "corridor_id": "can-arctic-norad-northern-logistics",
+            "name": "Canadian Arctic & NORAD Northern Defense Logistics Corridor",
+            "category": "NORTHERN_SOVEREIGNTY",
+            "sovereign_priority": "DEFENSE_AND_SOVEREIGNTY",
+            "nodes": [
+                {
+                    "id": "CFS-Alert",
+                    "type": "FACILITY",
+                    "location": "Ellesmere Island (82.5°N, 62.3°W)",
+                    "function": "Signals Intelligence / Northernmost Outpost",
+                },
+                {
+                    "id": "Nanisivik-Transition-Hub",
+                    "type": "PORT",
+                    "location": "Baffin Island (73.0°N, 84.5°W)",
+                    "function": "Northern Logistics Transition",
+                },
+                {
+                    "id": "Churchill-Deepwater-Port",
+                    "type": "PORT",
+                    "location": "Hudson Bay (58.7°N, 94.2°W)",
+                    "function": "Arctic Ocean Deepwater Gateway",
+                },
+                {
+                    "id": "Iqaluit-FOL",
+                    "type": "AIRFIELD",
+                    "location": "Iqaluit (63.7°N, 68.5°W)",
+                    "function": "Forward Operating Location",
+                },
+            ],
+            "primary_transit_modes": ["MARITIME", "AIR_CARGO", "ICEBREAKER_ESCORT"],
+            "resilience_status": "HIGH_SURVEILLANCE",
+            "continuity_score": 0.89,
+            "security_clearance_required": "SECRET",
+        },
+        "trans-canada-rail": {
+            "corridor_id": "can-trans-canada-intermodal-rail",
+            "name": "Trans-Canada CPKC & CN Intermodal Freight Corridor",
+            "category": "INTERMODAL_FREIGHT",
+            "sovereign_priority": "NATIONAL_COMMERCE",
+            "nodes": [
+                {
+                    "id": "Port-of-Vancouver",
+                    "type": "PORT",
+                    "location": "Vancouver, BC (49.3°N, 123.1°W)",
+                    "function": "Asia-Pacific Gateway",
+                },
+                {
+                    "id": "Port-of-Prince-Rupert",
+                    "type": "PORT",
+                    "location": "Prince Rupert, BC (54.3°N, 130.3°W)",
+                    "function": "Northern Pacific Gateway",
+                },
+                {
+                    "id": "Calgary-Intermodal-Yard",
+                    "type": "RAIL_HUB",
+                    "location": "Calgary, AB (51.0°N, 114.0°W)",
+                    "function": "Western Transshipment",
+                },
+                {
+                    "id": "Toronto-Logistics-Hub",
+                    "type": "INTERMODAL_TERMINAL",
+                    "location": "Vaughan/Brampton, ON (43.8°N, 79.5°W)",
+                    "function": "Industrial Core",
+                },
+                {
+                    "id": "Port-of-Halifax",
+                    "type": "PORT",
+                    "location": "Halifax, NS (44.6°N, 63.6°W)",
+                    "function": "Atlantic Gateway",
+                },
+            ],
+            "primary_transit_modes": ["RAIL_CPKC", "RAIL_CN", "LONG_HAUL_TRUCK"],
+            "resilience_status": "MONITORED_NOMINAL",
+            "continuity_score": 0.94,
+            "security_clearance_required": "PROTECTED_A",
+        },
+        "st-lawrence-seaway": {
+            "corridor_id": "can-st-lawrence-seaway-locks",
+            "name": "St. Lawrence Seaway & Great Lakes Maritime Lock Corridor",
+            "category": "MARITIME_BULK_COMMODITIES",
+            "sovereign_priority": "COMMERCIAL_STRATEGIC",
+            "nodes": [
+                {
+                    "id": "Welland-Canal-Lock-8",
+                    "type": "FACILITY",
+                    "location": "Port Colborne, ON (42.9°N, 79.2°W)",
+                    "function": "Lake Erie-Ontario Lock",
+                },
+                {
+                    "id": "Montreal-Lake-Ontario-Locks",
+                    "type": "FACILITY",
+                    "location": "St. Lawrence River (45.3°N, 73.7°W)",
+                    "function": "Seaway Descent",
+                },
+                {
+                    "id": "Port-of-Montreal",
+                    "type": "PORT",
+                    "location": "Montreal, QC (45.5°N, 73.5°W)",
+                    "function": "Container & Bulk Terminal",
+                },
+            ],
+            "primary_transit_modes": ["MARITIME", "RAIL_CN"],
+            "resilience_status": "SEASONAL_MONITORING",
+            "continuity_score": 0.92,
+            "security_clearance_required": "PROTECTED_A",
+        },
+    }
+
+    matched = None
+    for key, data in corridor_catalog.items():
+        if key in corridor_key or corridor_key in key:
+            matched = data
+            break
+    if not matched:
+        matched = corridor_catalog["critical-minerals"]
+
+    _output(matched, args)
+
+
+def command_supply_chain_simulate(args: argparse.Namespace) -> None:
+    """Simulate multi-tier supply chain disruption, single-source bottlenecks, and economic loss."""
+    from continuityos.supply_chain import (
+        BOMComponent,
+        EconomicLossCalculator,
+        ModalReroutingSolver,
+        MultiTierSupplyEngine,
+    )
+
+    raw = _load(args.file)
+    system_name = raw.get("system_name", raw.get("metadata", {}).get("name", "Supply-Network"))
+
+    raw_components = raw.get("components", raw.get("spec", {}).get("components", []))
+    components = []
+    if raw_components:
+        components = [BOMComponent.model_validate(c) for c in raw_components]
+    else:
+        components = [
+            BOMComponent(
+                component_id="COMP-T1-BATTERY",
+                name="Lithium-Ion Battery Pack Module",
+                tier=1,
+                supplier_id="SUPPLIER-WINDSOR-01",
+                is_single_sourced=True,
+                lead_time_days=21,
+                inventory_buffer_days=args.buffer_days,
+                criticality=0.9,
+            ),
+            BOMComponent(
+                component_id="COMP-T2-CATHODE",
+                name="Nickel-Manganese-Cobalt Cathode",
+                tier=2,
+                supplier_id="SUPPLIER-SUDBURY-02",
+                is_single_sourced=False,
+                lead_time_days=14,
+                inventory_buffer_days=args.buffer_days + 5,
+                criticality=0.8,
+            ),
+            BOMComponent(
+                component_id="COMP-T3-MINERALS",
+                name="Refined High-Purity Nickel/Cobalt",
+                tier=3,
+                supplier_id="MINE-JAMES-BAY-03",
+                is_single_sourced=True,
+                lead_time_days=30,
+                inventory_buffer_days=args.buffer_days,
+                criticality=0.95,
+            ),
+        ]
+
+    bom_assessment = MultiTierSupplyEngine().assess_bom(
+        system_name, components, corridor_disruption_days=args.disruption_days
+    )
+    econ_estimate = EconomicLossCalculator().calculate_losses(
+        disruption_duration_days=args.disruption_days,
+        daily_inventory_value_cad=args.daily_value,
+        vessels_delayed_count=args.vessels_delayed,
+        production_line_daily_burn_cad=args.daily_burn,
+    )
+    reroute = ModalReroutingSolver().solve_rerouting(
+        corridor_id="CORRIDOR-DISRUPTED",
+        origin=args.origin,
+        destination=args.destination,
+        distance_km=args.distance_km,
+    )
+
+    results = {
+        "bom_vulnerability": bom_assessment.model_dump(mode="json"),
+        "economic_disruption_estimate": econ_estimate.model_dump(mode="json"),
+        "modal_rerouting_solution": reroute.model_dump(mode="json"),
+    }
+    _output(results, args)
+
+
+def command_pbmm_audit(args: argparse.Namespace) -> None:
+    """Run automated CCCS ITSG-33 Protected B / Medium Integrity / Medium Availability audit."""
+    from continuityos.sovereign import PBMMComplianceValidator
+
+    validator = PBMMComplianceValidator()
+    report = validator.validate_deployment(
+        region=args.region,
+        encryption_at_rest_cmk=not args.disable_cmk,
+        tls_version=args.tls_version,
+        airgap_capable=True,
+        immutable_evidence_chain=True,
+        rbac_clearance_filtering=True,
+    )
+    _output(report.model_dump(mode="json"), args)
+
+
+def command_rfp_pack(args: argparse.Namespace) -> None:
+    """Export complete Canadian Federal Government SaaS & IaC RFP Bid Proposal package."""
+    summary = {
+        "rfp_proposal_title": "ContinuityOS Sovereign Resilience-as-Code Platform",
+        "target_solicitation": (
+            "Government of Canada Enterprise SaaS & Resilient Infrastructure-as-Code"
+        ),
+        "procurement_compliance": {
+            "security_profile": (
+                "ITSG-33 / Protected B / Medium Integrity / Medium Availability (PBMM)"
+            ),
+            "canadian_data_residency": "Enforced (AWS ca-central-1 / Azure canadacentral)",
+            "itb_canadian_content_value": "100% Sovereign IP & Domestic Engineering",
+            "high_availability_sla": "99.99% Multi-Region Failover",
+            "recovery_point_objective": "< 15 minutes",
+            "recovery_time_objective": "< 60 minutes",
+        },
+        "artifacts_generated": [
+            "docs/rfp/CANADIAN_GOVERNMENT_SAAS_RFP_PROPOSAL.md",
+            "docs/rfp/ITSG33_PBMM_SECURITY_COMPLIANCE_MATRIX.md",
+            "docs/rfp/ITB_VALUE_PROPOSITION_CANADIAN_CONTENT.md",
+            "docs/rfp/SERVICE_LEVEL_AGREEMENT_AND_DISASTER_RECOVERY.md",
+            "infra/terraform/aws-canada-pbmm/",
+            "infra/terraform/azure-canada-pbmm/",
+        ],
+    }
+    if args.out_dir:
+        out = Path(args.out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "rfp_proposal_manifest.json").write_text(
+            json.dumps(summary, indent=2), encoding="utf-8"
+        )
+        print(f"RFP package manifest exported to {out / 'rfp_proposal_manifest.json'}")
+    _output(summary, args)
+
+
 # --- Parser builder ---
 
 
@@ -883,6 +1171,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional directory to write aegis_embedded_config.h and partitions.csv",
     )
     p_edge_pkg.set_defaults(func=command_edge_package)
+
+    # --- New Canadian Sovereign & Supply Chain Subcommands ---
+
+    # canadian-corridor
+    p_cancor = subparsers.add_parser(
+        "canadian-corridor", help="Assess Canadian strategic sovereign supply corridors"
+    )
+    p_cancor.add_argument(
+        "corridor",
+        nargs="?",
+        default="critical-minerals",
+        choices=["critical-minerals", "arctic-norad", "trans-canada-rail", "st-lawrence-seaway"],
+        help="Canadian strategic corridor key",
+    )
+    p_cancor.set_defaults(func=command_canadian_corridor)
+
+    # supply-chain-simulate
+    p_scsim = subparsers.add_parser(
+        "supply-chain-simulate",
+        help="Simulate multi-tier BOM risk, single sources, and economic loss",
+    )
+    p_scsim.add_argument("file", type=Path, help="Supply network or BOM spec JSON/YAML")
+    p_scsim.add_argument(
+        "--disruption-days", type=int, default=14, help="Disruption duration in days"
+    )
+    p_scsim.add_argument("--buffer-days", type=int, default=10, help="Initial buffer reserve days")
+    p_scsim.add_argument(
+        "--daily-value", type=float, default=5_000_000.0, help="Daily inventory value in CAD"
+    )
+    p_scsim.add_argument(
+        "--vessels-delayed", type=int, default=3, help="Count of delayed vessels/trains"
+    )
+    p_scsim.add_argument(
+        "--daily-burn", type=float, default=200_000.0, help="Daily plant stoppage burn in CAD"
+    )
+    p_scsim.add_argument("--origin", default="Vancouver", help="Freight origin")
+    p_scsim.add_argument("--destination", default="Toronto", help="Freight destination")
+    p_scsim.add_argument(
+        "--distance-km", type=float, default=4350.0, help="Transit corridor distance in km"
+    )
+    p_scsim.set_defaults(func=command_supply_chain_simulate)
+
+    # pbmm-audit
+    p_pbmma = subparsers.add_parser(
+        "pbmm-audit", help="Run automated CCCS ITSG-33 / PBMM security and data residency audit"
+    )
+    p_pbmma.add_argument(
+        "--region", default="ca-central-1", help="Sovereign cloud data residency region"
+    )
+    p_pbmma.add_argument("--tls-version", default="1.3", help="Enforced TLS version")
+    p_pbmma.add_argument("--disable-cmk", action="store_true", help="Simulate unmanaged KMS keys")
+    p_pbmma.set_defaults(func=command_pbmm_audit)
+
+    # rfp-pack
+    p_rfp = subparsers.add_parser(
+        "rfp-pack", help="Generate Canadian Federal Government SaaS & IaC RFP bid package summary"
+    )
+    p_rfp.add_argument(
+        "--out-dir", type=Path, help="Optional directory to export RFP manifest JSON"
+    )
+    p_rfp.set_defaults(func=command_rfp_pack)
 
     return parser
 

@@ -1,0 +1,90 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  name: trans-canada-intermodal-rail-network
+  namespace: national-commerce
+  labels:
+    country: CAN
+    sector: INTERMODAL_FREIGHT
+    priority: NATIONAL_COMMERCE
+    clearance_required: PROTECTED_A
+spec:
+  network_id: can-trans-canada-intermodal-rail
+  description: "Trans-Canada CPKC & CN Transcontinental Freight Rail & Intermodal Container Corridor"
+  objectives:
+    minimum_continuity: 0.95
+    maximum_critical_shortage_days: 7
+    maximum_recovery_days: 14
+  redundancy:
+    minimum_routes: 2
+    minimum_ports: 3
+    minimum_rail_providers: 2
+  inventory:
+    intermodal_chassis_days: 21
+    locomotive_fuel_days: 30
+    spare_parts_days: 45
+  nodes:
+    - id: Port-of-Vancouver
+      name: "Port of Vancouver (Roberts Bank & Burrard Inlet)"
+      type: port
+      criticality: 0.96
+      location:
+        latitude: 49.28
+        longitude: -123.12
+      attributes:
+        teu_capacity_annual: 3800000
+    - id: Port-of-Prince-Rupert
+      name: "Port of Prince Rupert Fairview Terminal"
+      type: port
+      criticality: 0.90
+      location:
+        latitude: 54.31
+        longitude: -130.32
+      attributes:
+        teu_capacity_annual: 1350000
+    - id: Calgary-Intermodal-Yard
+      name: "CPKC Calgary Logistics Park & Intermodal Terminal"
+      type: rail_hub
+      criticality: 0.88
+      location:
+        latitude: 51.04
+        longitude: -114.07
+    - id: Toronto-Logistics-Hub
+      name: "CN Brampton & CPKC Vaughan Intermodal Terminals"
+      type: intermodal_terminal
+      criticality: 0.94
+      location:
+        latitude: 43.73
+        longitude: -79.76
+    - id: Port-of-Halifax
+      name: "Port of Halifax Atlantic Gateway"
+      type: port
+      criticality: 0.89
+      location:
+        latitude: 44.64
+        longitude: -63.57
+  edges:
+    - source: Port-of-Vancouver
+      target: Calgary-Intermodal-Yard
+      kind: transports
+      dependency_strength: 0.92
+      substitutable: true
+      substitute_group: "pacific-inland-rail"
+    - source: Port-of-Prince-Rupert
+      target: Calgary-Intermodal-Yard
+      kind: transports
+      dependency_strength: 0.88
+      substitutable: true
+      substitute_group: "pacific-inland-rail"
+    - source: Calgary-Intermodal-Yard
+      target: Toronto-Logistics-Hub
+      kind: transports
+      dependency_strength: 0.95
+      substitutable: true
+      substitute_group: "prairie-east-corridors"
+    - source: Toronto-Logistics-Hub
+      target: Port-of-Halifax
+      kind: transports
+      dependency_strength: 0.85
+      substitutable: true
+      substitute_group: "atlantic-rail-corridors"

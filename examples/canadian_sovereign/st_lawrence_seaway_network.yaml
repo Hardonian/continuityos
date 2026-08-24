@@ -1,0 +1,75 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  name: st-lawrence-seaway-lock-network
+  namespace: maritime-commerce
+  labels:
+    country: CAN
+    sector: MARITIME_BULK_COMMODITIES
+    priority: COMMERCIAL_STRATEGIC
+    clearance_required: PROTECTED_A
+spec:
+  network_id: can-st-lawrence-seaway-locks
+  description: "St. Lawrence Seaway, Welland Canal, and Great Lakes Bulk Grain, Steel, and Agri-Food Maritime Corridor"
+  objectives:
+    minimum_continuity: 0.92
+    maximum_critical_shortage_days: 10
+    maximum_recovery_days: 21
+  redundancy:
+    minimum_routes: 2
+    minimum_ports: 2
+    minimum_lock_systems: 2
+  inventory:
+    grain_stockpile_days: 45
+    iron_ore_reserve_days: 30
+    marine_diesel_days: 30
+  nodes:
+    - id: Welland-Canal-Lock-8
+      name: "Welland Canal Flight Lock System"
+      type: facility
+      criticality: 0.94
+      location:
+        latitude: 42.88
+        longitude: -79.25
+      attributes:
+        lock_dimensions: "225.5m x 23.8m"
+        max_vessel_draft_m: 8.08
+    - id: Montreal-Lake-Ontario-Locks
+      name: "MLO Section (St. Lambert & Côte Ste. Catherine Locks)"
+      type: facility
+      criticality: 0.92
+      location:
+        latitude: 45.42
+        longitude: -73.58
+    - id: Port-of-Montreal
+      name: "Port of Montreal Grain & Bulk Terminals"
+      type: port
+      criticality: 0.90
+      location:
+        latitude: 45.50
+        longitude: -73.55
+    - id: Port-of-Quebec
+      name: "Port of Québec Deepwater Transshipment Port"
+      type: port
+      criticality: 0.88
+      location:
+        latitude: 46.81
+        longitude: -71.20
+  edges:
+    - source: Welland-Canal-Lock-8
+      target: Montreal-Lake-Ontario-Locks
+      kind: transports
+      dependency_strength: 0.95
+      substitutable: false
+    - source: Montreal-Lake-Ontario-Locks
+      target: Port-of-Montreal
+      kind: transports
+      dependency_strength: 0.90
+      substitutable: true
+      substitute_group: "st-lawrence-maritime"
+    - source: Port-of-Montreal
+      target: Port-of-Quebec
+      kind: transports
+      dependency_strength: 0.85
+      substitutable: true
+      substitute_group: "st-lawrence-maritime"

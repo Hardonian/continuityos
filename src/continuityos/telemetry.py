@@ -32,6 +32,7 @@ class ThreatIndicatorType(StrEnum):
 
 class DroneKinematics(BaseModel):
     """Schema for UAV and drone kinematic telemetry."""
+
     drone_id: str
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
@@ -44,6 +45,7 @@ class DroneKinematics(BaseModel):
 
 class ThreatIndicator(BaseModel):
     """Schema for drone/anti-drone surveillance threats."""
+
     indicator_type: ThreatIndicatorType
     confidence: float = Field(..., ge=0.0, le=1.0)
     latitude: float | None = None
@@ -54,7 +56,7 @@ class ThreatIndicator(BaseModel):
 
 class TelemetryParser:
     """Parses binary telemetry payloads optimized for ESP32/IoT edge nodes."""
-    
+
     @staticmethod
     def parse_binary_kinematics(payload: bytes) -> DroneKinematics:
         """
@@ -71,27 +73,27 @@ class TelemetryParser:
         """
         if len(payload) < 36:
             raise ValueError(f"Payload too short for kinematics: {len(payload)} bytes")
-            
+
         drone_id_bytes, lat, lon, alt, vel, hdg, sig, ts = struct.unpack("<8sffffffI", payload[:36])
-        
+
         return DroneKinematics(
-            drone_id=drone_id_bytes.decode('utf-8').strip('\x00'),
+            drone_id=drone_id_bytes.decode("utf-8").strip("\x00"),
             latitude=lat,
             longitude=lon,
             altitude_m=alt,
             velocity_mps=vel,
             heading_deg=hdg,
             signal_strength_dbm=sig,
-            timestamp=datetime.fromtimestamp(ts, tz=UTC)
+            timestamp=datetime.fromtimestamp(ts, tz=UTC),
         )
-        
+
     @staticmethod
     def detect_anomalies(kinematics_stream: list[DroneKinematics]) -> list[ThreatIndicator]:
         """Detect anomalies such as GPS spoofing or RF jamming across a stream."""
         threats: list[ThreatIndicator] = []
         if not kinematics_stream:
             return threats
-            
+
         # Example Anomaly Rule 1: Sudden drop in signal strength could indicate RF Jamming
         for k in kinematics_stream:
             if k.signal_strength_dbm < -100.0:
@@ -102,13 +104,13 @@ class TelemetryParser:
                         latitude=k.latitude,
                         longitude=k.longitude,
                         description=f"Critical signal drop to {k.signal_strength_dbm} dBm",
-                        detected_at=k.timestamp
+                        detected_at=k.timestamp,
                     )
                 )
-                
+
         # Example Anomaly Rule 2: Unrealistic velocity indicates GPS Spoofing
         for k in kinematics_stream:
-            if k.velocity_mps > 300.0: # Mach 1+ drone is unlikely
+            if k.velocity_mps > 300.0:  # Mach 1+ drone is unlikely
                 threats.append(
                     ThreatIndicator(
                         indicator_type=ThreatIndicatorType.GPS_SPOOFING,
@@ -116,10 +118,10 @@ class TelemetryParser:
                         latitude=k.latitude,
                         longitude=k.longitude,
                         description=f"Unrealistic velocity detected: {k.velocity_mps} m/s",
-                        detected_at=k.timestamp
+                        detected_at=k.timestamp,
                     )
                 )
-                
+
         return threats
 
 

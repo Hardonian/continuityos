@@ -40,6 +40,9 @@ class AssertionClass(StrEnum):
     TACTICAL_SURVEILLANCE = "tactical_surveillance"
     COUNTER_UAS = "counter_uas"
     LEO_SATCOM = "leo_satcom"
+    SUPPLY_CHAIN_INTELLIGENCE = "supply_chain_intelligence"
+    STRATEGIC_MINERALS = "strategic_minerals"
+    RAIL_LOGISTICS = "rail_logistics"
 
 
 class MetricName(StrEnum):
@@ -75,6 +78,12 @@ class MetricName(StrEnum):
     STARLINK_OBSTRUCTION_RATE = "starlink_obstruction_rate"
     CUAS_THREAT_DENSITY = "cuas_threat_density"
     CUAS_JAMMING_ACTIVE = "cuas_jamming_active"
+    RAIL_NETWORK_FLUIDITY = "rail_network_fluidity"
+    MINERAL_RESERVE_DAYS = "mineral_reserve_days"
+    REFINERY_CAPACITY_UTILIZATION = "refinery_capacity_utilization"
+    BORDER_CROSSING_DELAY_HOURS = "border_crossing_delay_hours"
+    DEMURRAGE_RISK_INDEX = "demurrage_risk_index"
+    LOCK_OPERATIONAL_STATUS = "lock_operational_status"
 
 
 class GeoPoint(BaseModel):
@@ -136,6 +145,10 @@ class Observation(BaseModel):
             MetricName.STARLINK_OBSTRUCTION_RATE,
             MetricName.CUAS_THREAT_DENSITY,
             MetricName.CUAS_JAMMING_ACTIVE,
+            MetricName.RAIL_NETWORK_FLUIDITY,
+            MetricName.REFINERY_CAPACITY_UTILIZATION,
+            MetricName.DEMURRAGE_RISK_INDEX,
+            MetricName.LOCK_OPERATIONAL_STATUS,
         }
         if self.metric in ratio_metrics and not 0.0 <= self.value <= 1.0:
             raise ValueError(f"{self.metric} must be normalized to [0, 1]")
@@ -143,8 +156,11 @@ class Observation(BaseModel):
             upper = 100.0 if self.unit.lower() in {"percent", "%"} else 1.0
             if not 0.0 <= self.value <= upper:
                 raise ValueError(f"sea-ice concentration outside [0, {upper:g}]")
-        if self.metric == MetricName.INVENTORY_DAYS and not 0.0 <= self.value <= 3650.0:
-            raise ValueError("inventory_days outside supported range")
+        if (
+            self.metric in {MetricName.INVENTORY_DAYS, MetricName.MINERAL_RESERVE_DAYS}
+            and not 0.0 <= self.value <= 3650.0
+        ):
+            raise ValueError(f"{self.metric} outside supported range")
         if (
             self.metric
             in {
@@ -154,6 +170,7 @@ class Observation(BaseModel):
                 MetricName.UAV_LINK_MARGIN,
                 MetricName.STARLINK_LATENCY_MS,
                 MetricName.STARLINK_DOWNLINK_MBPS,
+                MetricName.BORDER_CROSSING_DELAY_HOURS,
             }
             and self.value < 0
         ):
@@ -271,6 +288,9 @@ class DataClassification(StrEnum):
     PUBLIC = "public"
     INTERNAL = "internal"
     UNCLASSIFIED = "unclassified"
+    PROTECTED_A = "protected_a"
+    PROTECTED_B = "protected_b"
+    PROTECTED_C = "protected_c"
     RESTRICTED = "restricted"
     CONFIDENTIAL = "confidential"
     SECRET = "secret"
@@ -284,7 +304,10 @@ class DataClassification(StrEnum):
             self.PUBLIC: 0,
             self.UNCLASSIFIED: 0,
             self.INTERNAL: 1,
+            self.PROTECTED_A: 1,
+            self.PROTECTED_B: 2,
             self.RESTRICTED: 2,
+            self.PROTECTED_C: 3,
             self.CONFIDENTIAL: 3,
             self.SECRET: 4,
             self.TOP_SECRET: 5,

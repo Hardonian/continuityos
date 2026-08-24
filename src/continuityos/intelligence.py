@@ -23,6 +23,7 @@ from continuityos.graph import DependencyGraph
 
 class DistillationResult(BaseModel):
     """Result of LLM distillation for an edge MoE target."""
+
     model_id: str
     target_architecture: str
     compression_ratio: float
@@ -35,6 +36,7 @@ class ModelDistiller:
     Distills and quantizes large frontier models into dense, PSRAM-friendly
     MoE (Mixture of Experts) lookup tables optimized for ESP32.
     """
+
     def __init__(self, backend_url: str = "http://localhost:8000"):
         self.backend_url = backend_url
 
@@ -44,25 +46,25 @@ class ModelDistiller:
         applying per-layer embeddings to compress into <16MB.
         """
         import hashlib
-        
+
         # Simulate an intensive quantization operation
         simulated_hex = hashlib.sha256(f"{base_model}-{task_domain}".encode()).hexdigest() * 1024
         vocab_hex = hashlib.sha256(b"vocab").hexdigest() * 128
-        
+
         payload = ModelPayload(
             model_id=f"{base_model}_{task_domain}_q4",
             version="1.0.0",
             layer_embeddings_hex=simulated_hex[:10000],  # Truncated for mock
             vocabulary_hex=vocab_hex[:1000],
-            target_architecture="esp32-s3"
+            target_architecture="esp32-s3",
         )
-        
+
         return DistillationResult(
             model_id=payload.model_id,
             target_architecture=payload.target_architecture,
             compression_ratio=42.5,  # e.g., 7B parameter to 20M parameter expert
             perplexity_score=1.12,
-            payload=payload
+            payload=payload,
         )
 
 

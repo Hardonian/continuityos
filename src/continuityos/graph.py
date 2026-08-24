@@ -27,6 +27,13 @@ class NodeType(StrEnum):
     CARRIER = "carrier"
     COMMUNITY = "community"
     FACILITY = "facility"
+    RAIL_HUB = "rail_hub"
+    PIPELINE = "pipeline"
+    MINE_OR_REFINERY = "mine_or_refinery"
+    MANUFACTURING_PLANT = "manufacturing_plant"
+    INTERMODAL_TERMINAL = "intermodal_terminal"
+    CUSTOMS_BORDER = "customs_border"
+    STRATEGIC_STOCKPILE = "strategic_stockpile"
 
 
 class DependencyKind(StrEnum):
@@ -37,6 +44,9 @@ class DependencyKind(StrEnum):
     CONNECTS = "connects"
     SUPPLIES = "supplies"
     VALIDATES = "validates"
+    REFINES = "refines"
+    MANUFACTURES = "manufactures"
+    CLEARS_CUSTOMS = "clears_customs"
 
 
 class DependencyNode(BaseModel):

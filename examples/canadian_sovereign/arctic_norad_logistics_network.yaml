@@ -1,0 +1,84 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  name: canadian-arctic-norad-logistics-network
+  namespace: sovereign-defense
+  labels:
+    country: CAN
+    sector: ARCTIC_SOVEREIGNTY
+    priority: NATIONAL_DEFENSE
+    clearance_required: SECRET
+spec:
+  network_id: can-arctic-norad-northern-logistics
+  description: "Canadian Arctic Sovereignty, CFS Alert Resupply, North Warning System (NWS), and Churchill Deepwater Gateway"
+  objectives:
+    minimum_continuity: 0.90
+    maximum_critical_shortage_days: 14
+    maximum_recovery_days: 30
+  redundancy:
+    minimum_routes: 2
+    minimum_ports: 2
+    minimum_satcom_providers: 2
+    minimum_icebreakers: 2
+  inventory:
+    arctic_diesel_days: 120
+    aviation_fuel_days: 90
+    survival_rations_days: 180
+    medical_supplies_days: 90
+  nodes:
+    - id: CFS-Alert
+      name: "Canadian Forces Station Alert"
+      type: facility
+      criticality: 0.98
+      location:
+        latitude: 82.50
+        longitude: -62.34
+      attributes:
+        mission: "Signals Intelligence & Northernmost Strategic Outpost"
+    - id: Nanisivik-Transition-Hub
+      name: "Nanisivik Naval Transition Hub"
+      type: port
+      criticality: 0.85
+      location:
+        latitude: 73.04
+        longitude: -84.55
+      attributes:
+        function: "Northern Maritime Refueling & Logistics Transition"
+    - id: Churchill-Deepwater-Port
+      name: "Port of Churchill Arctic Deepwater Hub"
+      type: port
+      criticality: 0.88
+      location:
+        latitude: 58.76
+        longitude: -94.16
+      attributes:
+        dock_draft_m: 11.5
+        rail_connection: "Hudson Bay Railway"
+    - id: Iqaluit-FOL
+      name: "Iqaluit Forward Operating Location"
+      type: airfield
+      criticality: 0.92
+      location:
+        latitude: 63.75
+        longitude: -68.55
+      attributes:
+        runway_length_ft: 8600
+        norad_fighter_support: true
+  edges:
+    - source: Churchill-Deepwater-Port
+      target: Nanisivik-Transition-Hub
+      kind: transports
+      dependency_strength: 0.85
+      substitutable: true
+      substitute_group: "arctic-sealift"
+    - source: Nanisivik-Transition-Hub
+      target: CFS-Alert
+      kind: supplies
+      dependency_strength: 0.95
+      substitutable: false
+    - source: Iqaluit-FOL
+      target: CFS-Alert
+      kind: transports
+      dependency_strength: 0.90
+      substitutable: true
+      substitute_group: "arctic-airlift"

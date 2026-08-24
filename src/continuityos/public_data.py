@@ -65,6 +65,27 @@ PUBLIC_SOURCE_SPECS: dict[str, PublicSourceSpec] = {
         freshness_hours=48.0,
         licence="Statistics Canada / Open Government Licence where applicable",
     ),
+    "ccg-icebreaking": PublicSourceSpec(
+        "ccg-icebreaking",
+        "Canadian Coast Guard Icebreaking Operations & Escort Status",
+        "https://inter-j01.dfo-mpo.gc.ca/opendata/ccg-ice-ops.json",
+        freshness_hours=6.0,
+        licence="Open Government Licence - Canada (CCG Maritime Services)",
+    ),
+    "nrcan-critical-minerals": PublicSourceSpec(
+        "nrcan-critical-minerals",
+        "Natural Resources Canada Critical Minerals & Mines Infrastructure",
+        "https://geoscan.nrcan.gc.ca/api/critical-minerals.json",
+        freshness_hours=168.0,
+        licence="Open Government Licence - Canada (NRCan Minerals and Metals)",
+    ),
+    "slsmc-lock-status": PublicSourceSpec(
+        "slsmc-lock-status",
+        "Great Lakes St. Lawrence Seaway Lock Transit & Water Levels",
+        "https://greatlakes-seaway.com/api/v1/lock-operations.json",
+        freshness_hours=4.0,
+        licence="St. Lawrence Seaway Management Corporation terms",
+    ),
     "copernicus-cdse-stac": PublicSourceSpec(
         "copernicus-cdse-stac",
         "Copernicus CDSE STAC catalogue",

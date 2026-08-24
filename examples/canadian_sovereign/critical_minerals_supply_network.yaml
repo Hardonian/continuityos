@@ -1,0 +1,84 @@
+apiVersion: continuity.io/v1
+kind: SupplyNetwork
+metadata:
+  name: canadian-critical-minerals-network
+  namespace: sovereign-defense
+  labels:
+    country: CAN
+    sector: CRITICAL_MINERALS
+    priority: NATIONAL_PRIORITY_TIER_1
+    clearance_required: PROTECTED_B
+spec:
+  network_id: can-critical-minerals-ring-of-fire
+  description: "Canadian Strategic Critical Minerals Corridor from Northern Ontario (Ring of Fire / James Bay) to Sudbury Smelting, Windsor EV Battery Gigafactory, and Montreal Export Gateway"
+  objectives:
+    minimum_continuity: 0.96
+    maximum_critical_shortage_days: 10
+    maximum_recovery_days: 21
+  redundancy:
+    minimum_routes: 2
+    minimum_ports: 2
+    minimum_rail_providers: 2
+    minimum_refineries: 2
+  inventory:
+    refined_nickel_days: 45
+    lithium_hydroxide_days: 60
+    cobalt_sulfate_days: 45
+    cathode_active_material_days: 30
+  nodes:
+    - id: Eskers-Mine-Hub
+      name: "Ring of Fire Mining & Extraction Hub"
+      type: mine_or_refinery
+      criticality: 0.95
+      location:
+        latitude: 52.91
+        longitude: -86.12
+      attributes:
+        commodity: "Nickel-Copper-PGE-Chromite"
+        annual_capacity_tons: 250000
+    - id: Sudbury-Smelter
+      name: "Sudbury Smelting & Refining Complex"
+      type: mine_or_refinery
+      criticality: 0.90
+      location:
+        latitude: 46.49
+        longitude: -80.99
+      attributes:
+        processing_type: "Flash Smelting & Hydrometallurgical Refining"
+    - id: Windsor-EV-Plant
+      name: "Windsor NextStar EV Battery Gigafactory"
+      type: manufacturing_plant
+      criticality: 0.92
+      location:
+        latitude: 42.31
+        longitude: -83.03
+      attributes:
+        output: "Lithium-Ion Battery Cells & Packs"
+        daily_capacity_mwh: 125
+    - id: Port-of-Montreal
+      name: "Port of Montreal Intermodal Terminal"
+      type: port
+      criticality: 0.88
+      location:
+        latitude: 45.50
+        longitude: -73.55
+      attributes:
+        terminal_type: "Container & Bulk Maritime Export"
+  edges:
+    - source: Eskers-Mine-Hub
+      target: Sudbury-Smelter
+      kind: refines
+      dependency_strength: 0.95
+      substitutable: false
+    - source: Sudbury-Smelter
+      target: Windsor-EV-Plant
+      kind: manufactures
+      dependency_strength: 0.90
+      substitutable: true
+      substitute_group: "ontario-refining-cluster"
+    - source: Sudbury-Smelter
+      target: Port-of-Montreal
+      kind: transports
+      dependency_strength: 0.85
+      substitutable: true
+      substitute_group: "eastern-export-corridors"

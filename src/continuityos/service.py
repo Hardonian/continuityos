@@ -1364,6 +1364,200 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         packet = CompactBinaryProtocolCodec.decode(frame_bytes)
         return packet.model_dump(mode="json")
 
+    # --- Canadian Sovereign & Enterprise Supply Chain Endpoints ---
+
+    @app.get("/v1/canadian/corridors")
+    async def list_canadian_corridors() -> dict[str, Any]:
+        corridors = [
+            {
+                "corridor_id": "can-critical-minerals-ring-of-fire",
+                "name": "Ontario Ring of Fire to Windsor EV Gigafactory Corridor",
+                "category": "CRITICAL_MINERALS",
+                "strategic_importance": "TIER_1_SOVEREIGN",
+                "key_nodes": [
+                    "Eskers-Mine-Hub",
+                    "Sudbury-Smelter",
+                    "Windsor-EV-Plant",
+                    "Montreal-Port-Export",
+                ],
+                "transport_modes": ["RAIL_CN", "RAIL_CPKC", "LONG_HAUL_TRUCK", "MARITIME"],
+                "resilience_status": "MONITORED_NOMINAL",
+            },
+            {
+                "corridor_id": "can-arctic-norad-northern-logistics",
+                "name": "Canadian Arctic & NORAD Northern Defense Corridor",
+                "category": "NORTHERN_SOVEREIGNTY",
+                "strategic_importance": "NATIONAL_DEFENSE",
+                "key_nodes": [
+                    "Nanisivik-Transition-Hub",
+                    "CFS-Alert",
+                    "Churchill-Deepwater-Port",
+                    "Iqaluit-Forward-Operating-Location",
+                ],
+                "transport_modes": ["MARITIME", "AIR_CARGO", "ICEBREAKER_ESCORT"],
+                "resilience_status": "HIGH_SURVEILLANCE",
+            },
+            {
+                "corridor_id": "can-trans-canada-intermodal-rail",
+                "name": "Trans-Canada CPKC & CN Intermodal Freight Corridor",
+                "category": "INTERMODAL_FREIGHT",
+                "strategic_importance": "NATIONAL_COMMERCE",
+                "key_nodes": [
+                    "Port-of-Vancouver",
+                    "Prince-Rupert",
+                    "Calgary-Intermodal-Yard",
+                    "Toronto-Logistics-Hub",
+                    "Port-of-Halifax",
+                ],
+                "transport_modes": ["RAIL_CPKC", "RAIL_CN", "LONG_HAUL_TRUCK"],
+                "resilience_status": "MONITORED_NOMINAL",
+            },
+            {
+                "corridor_id": "can-st-lawrence-seaway-locks",
+                "name": "St. Lawrence Seaway & Great Lakes Maritime Lock Corridor",
+                "category": "MARITIME_BULK_COMMODITIES",
+                "strategic_importance": "COMMERCIAL_STRATEGIC",
+                "key_nodes": [
+                    "Welland-Canal-Lock-8",
+                    "Montreal-Lake-Ontario-Locks",
+                    "Port-of-Montreal",
+                    "Port-of-Quebec",
+                ],
+                "transport_modes": ["MARITIME", "RAIL_CN"],
+                "resilience_status": "SEASONAL_MONITORING",
+            },
+        ]
+        return {"corridors": corridors, "count": len(corridors), "sovereign_region": "CANADA"}
+
+    @app.post(
+        "/v1/supply-chain/bom-assess",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def assess_supply_chain_bom(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.supply_chain import BOMComponent, MultiTierSupplyEngine
+
+        system_name = str(payload.get("system_name", "Critical-Supply-Network"))
+        raw_components = payload.get("components", [])
+        disruption_days = int(payload.get("disruption_days", 0))
+
+        if not raw_components:
+            raise HTTPException(status_code=400, detail="components list must not be empty")
+
+        components = [BOMComponent.model_validate(c) for c in raw_components]
+        assessment = MultiTierSupplyEngine().assess_bom(
+            system_name, components, corridor_disruption_days=disruption_days
+        )
+        return assessment.model_dump(mode="json")
+
+    @app.post(
+        "/v1/supply-chain/economic-impact",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def calculate_economic_impact(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.supply_chain import EconomicLossCalculator
+
+        duration_days = int(payload.get("disruption_duration_days", 7))
+        daily_inv = float(payload.get("daily_inventory_value_cad", 5_000_000.0))
+        vessels = int(payload.get("vessels_delayed_count", 2))
+        demurrage_rate = float(payload.get("demurrage_rate_per_vessel_daily_cad", 25_000.0))
+        prod_loss = float(payload.get("production_line_daily_burn_cad", 150_000.0))
+
+        estimate = EconomicLossCalculator().calculate_losses(
+            disruption_duration_days=duration_days,
+            daily_inventory_value_cad=daily_inv,
+            vessels_delayed_count=vessels,
+            demurrage_rate_per_vessel_daily_cad=demurrage_rate,
+            production_line_daily_burn_cad=prod_loss,
+        )
+        return estimate.model_dump(mode="json")
+
+    @app.post(
+        "/v1/supply-chain/reroute",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def solve_modal_rerouting(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.supply_chain import ModalReroutingSolver
+
+        corridor_id = str(payload.get("corridor_id", "CORRIDOR-PRIMARY"))
+        origin = str(payload.get("origin", "Vancouver"))
+        destination = str(payload.get("destination", "Toronto"))
+        distance_km = float(payload.get("distance_km", 4350.0))
+        time_critical = bool(payload.get("time_critical", False))
+        budget_constrained = bool(payload.get("budget_constrained", False))
+
+        result = ModalReroutingSolver().solve_rerouting(
+            corridor_id=corridor_id,
+            origin=origin,
+            destination=destination,
+            distance_km=distance_km,
+            time_critical=time_critical,
+            budget_constrained=budget_constrained,
+        )
+        return result.model_dump(mode="json")
+
+    @app.post(
+        "/v1/sovereign/pbmm-audit",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def audit_pbmm_compliance(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from continuityos.sovereign import PBMMComplianceValidator
+
+        req = payload or {}
+        region = str(req.get("region", "ca-central-1"))
+        encryption_cmk = bool(req.get("encryption_at_rest_cmk", True))
+        tls_ver = str(req.get("tls_version", "1.3"))
+        airgap = bool(req.get("airgap_capable", True))
+        immutable_chain = bool(req.get("immutable_evidence_chain", True))
+        rbac_clearance = bool(req.get("rbac_clearance_filtering", True))
+
+        report = PBMMComplianceValidator().validate_deployment(
+            region=region,
+            encryption_at_rest_cmk=encryption_cmk,
+            tls_version=tls_ver,
+            airgap_capable=airgap,
+            immutable_evidence_chain=immutable_chain,
+            rbac_clearance_filtering=rbac_clearance,
+        )
+        return report.model_dump(mode="json")
+
+    @app.get("/v1/rfp/package-summary")
+    async def get_rfp_package_summary() -> dict[str, Any]:
+        return {
+            "platform_name": "Aegis Continuity / ContinuityOS Sovereign Suite",
+            "version": "0.1.0-sovereign-cad",
+            "target_buyers": [
+                "Public Services and Procurement Canada (PSPC)",
+                "Department of National Defence / Canadian Armed Forces (DND/CAF)",
+                "Shared Services Canada (SSC)",
+                "Transport Canada (EMSA / Corridors)",
+                "Public Safety Canada (Emergency Management)",
+                "Natural Resources Canada (Critical Minerals Strategy)",
+            ],
+            "security_certification_profile": (
+                "ITSG-33 Protected B / Medium Integrity / Medium Availability (PBMM)"
+            ),
+            "canadian_data_residency": [
+                "ca-central-1 (Montreal)",
+                "ca-west-1 (Calgary)",
+                "canadacentral (Toronto)",
+            ],
+            "industrial_technological_benefits": {
+                "canadian_content_value": "100% Sovereign Canadian IP and Operations",
+                "domestic_cyber_workforce": True,
+                "smb_defense_prime_integration": True,
+            },
+            "sla_and_recovery_objectives": {
+                "availability_sla": "99.99%",
+                "recovery_point_objective_minutes": 15,
+                "recovery_time_objective_minutes": 60,
+                "multi_region_failover": "Active-Active / Active-Standby",
+            },
+            "infrastructure_as_code_supported": [
+                "Terraform (AWS Canada / Azure Canada)",
+                "Hardened Kubernetes Helm",
+            ],
+        }
+
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():
 

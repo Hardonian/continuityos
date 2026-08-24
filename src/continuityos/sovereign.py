@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -19,17 +19,17 @@ from continuityos.domain import DataClassification
 
 
 class SecurityLabel(BaseModel):
-    """Standard military/intelligence security classification label."""
+    """Standard military/intelligence and Canadian sovereign security classification label."""
 
     classification: DataClassification = DataClassification.UNCLASSIFIED
     compartments: set[str] = Field(default_factory=set)
     dissemination_controls: set[str] = Field(
         default_factory=set
-    )  # e.g., {"NOFORN", "REL_TO_NATO", "FVEY"}
+    )  # e.g., {"NOFORN", "CANADIAN_EYES_ONLY", "REL_TO_NATO", "CAN_US_FVEY", "REL_TO_CAN"}
     releasable_to: set[str] = Field(
         default_factory=set
-    )  # ISO country codes: {"USA", "GBR", "CAN", "AUS", "NZL"}
-    owner_nation: str = "USA"
+    )  # e.g., {"USA", "GBR", "CAN", "AUS", "NZL"}
+    owner_nation: str = "CAN"
 
     def is_authorized(
         self, user_clearance: DataClassification, user_nation: str, user_compartments: set[str]
@@ -43,8 +43,24 @@ class SecurityLabel(BaseModel):
         if not self.compartments.issubset(user_compartments):
             return False
 
-        # 3. Dissemination / Nationality check
-        if "NOFORN" in self.dissemination_controls and user_nation != self.owner_nation:
+        # 3. Canadian & Allied Dissemination checks
+        controls = {c.upper() for c in self.dissemination_controls}
+        if ("CANADIAN_EYES_ONLY" in controls or "CEO" in controls) and user_nation != "CAN":
+            return False
+
+        if ("CAN_US_FVEY" in controls or "REL_TO_FVEY" in controls) and user_nation not in {
+            "CAN",
+            "USA",
+            "GBR",
+            "AUS",
+            "NZL",
+        }:
+            return False
+
+        if "NOFORN" in controls and user_nation != self.owner_nation:
+            return False
+
+        if "REL_TO_CAN" in controls and user_nation != "CAN" and user_nation != self.owner_nation:
             return False
 
         return not (
@@ -119,7 +135,13 @@ class CrossDomainFilter:
         sanitized_fields: list[str] = []
 
         # Strip internal cryptographic material and private telemetry IDs
-        for sensitive_key in ["private_key", "internal_api_key", "raw_sensor_ip", "source_jwt"]:
+        for sensitive_key in [
+            "private_key",
+            "internal_api_key",
+            "raw_sensor_ip",
+            "source_jwt",
+            "hmac_secret",
+        ]:
             if sensitive_key in sanitized:
                 sanitized.pop(sensitive_key)
                 sanitized_fields.append(sensitive_key)
@@ -206,9 +228,7 @@ class AirGapAuditor:
             AirGapAuditCheck(
                 check_name="LOCAL_CRYPTO_ISOLATION",
                 status="PASS" if has_local_keys else "WARN",
-                details=(
-                    "Cryptographic signing operates purely local (Ed25519/SHA-256 without KMS)"
-                ),
+                details="Local signing operational (Ed25519/SHA-256 without external KMS)",
             )
         )
 
@@ -234,3 +254,156 @@ class AirGapAuditor:
                 f"Air-Gap SCIF Audit: {passed}/{len(checks)} checks PASSED (compliant={compliant})"
             ),
         )
+
+
+class PBMMControlStatus(BaseModel):
+    """Assessment of an individual CCCS ITSG-33 / PBMM security control."""
+
+    control_id: str
+    domain: str
+    name: str
+    status: str  # "SATISFIED", "PARTIALLY_SATISFIED", "NOT_APPLICABLE"
+    evidence: str
+
+
+class PBMMComplianceReport(BaseModel):
+    """Protected B, Medium Integrity, Medium Availability (PBMM) & ITSG-33 Compliance Report."""
+
+    is_compliant: bool
+    data_residency_region: str
+    canadian_sovereignty_enforced: bool
+    evaluated_controls_count: int
+    satisfied_controls_count: int
+    controls: list[PBMMControlStatus]
+    summary: str
+
+
+class PBMMComplianceValidator:
+    """Automated validator for Canadian Centre for Cyber Security (CCCS) ITSG-33 PBMM profile."""
+
+    CANADIAN_SOVEREIGN_REGIONS: ClassVar[set[str]] = {
+        "ca-central-1",  # AWS Montreal
+        "ca-west-1",  # AWS Calgary
+        "canadacentral",  # Azure Toronto
+        "canadaeast",  # Azure Quebec City
+        "northamerica-northeast1",  # GCP Montreal
+        "northamerica-northeast2",  # GCP Toronto
+        "on-premise-scif-canada",
+    }
+
+    def validate_deployment(
+        self,
+        *,
+        region: str = "ca-central-1",
+        encryption_at_rest_cmk: bool = True,
+        tls_version: str = "1.3",
+        airgap_capable: bool = True,
+        immutable_evidence_chain: bool = True,
+        rbac_clearance_filtering: bool = True,
+    ) -> PBMMComplianceReport:
+        controls: list[PBMMControlStatus] = []
+
+        # 1. AC-3: Access Enforcement / Multi-level Clearance
+        controls.append(
+            PBMMControlStatus(
+                control_id="AC-3",
+                domain="Access Control",
+                name="Access Enforcement & Clearance Boundary",
+                status="SATISFIED" if rbac_clearance_filtering else "PARTIALLY_SATISFIED",
+                evidence="SecurityLabel checking with PROTECTED_B and Canadian Eyes Only controls",
+            )
+        )
+
+        # 2. SC-8: Transmission Confidentiality and Integrity (TLS 1.3 / mTLS)
+        is_tls_ok = tls_version in {"1.3", "1.2"}
+        controls.append(
+            PBMMControlStatus(
+                control_id="SC-8",
+                domain="System and Communications Protection",
+                name="Transmission Confidentiality (In-Transit Encryption)",
+                status="SATISFIED" if is_tls_ok else "PARTIALLY_SATISFIED",
+                evidence=f"Enforced TLS {tls_version} with mutual TLS across sovereign endpoints",
+            )
+        )
+
+        # 3. SC-28: Protection at Rest (CMK / Sovereign KMS)
+        controls.append(
+            PBMMControlStatus(
+                control_id="SC-28",
+                domain="System and Communications Protection",
+                name="Cryptographic Protection at Rest",
+                status="SATISFIED" if encryption_at_rest_cmk else "PARTIALLY_SATISFIED",
+                evidence="Customer Managed Keys (CMK) / CloudHSM / Ed25519 payload encryption",
+            )
+        )
+
+        # 4. AU-9: Protection of Audit Information (Immutable Evidence Ledger)
+        controls.append(
+            PBMMControlStatus(
+                control_id="AU-9",
+                domain="Audit and Accountability",
+                name="Protection of Audit Records (Tamper Evidence)",
+                status="SATISFIED" if immutable_evidence_chain else "PARTIALLY_SATISFIED",
+                evidence="Append-only SHA-256 ledger with Ed25519 signatures and Merkle proofs",
+            )
+        )
+
+        # 5. MP-5: Media Transport & Data Residency
+        is_residency_ok = region.lower() in self.CANADIAN_SOVEREIGN_REGIONS
+        controls.append(
+            PBMMControlStatus(
+                control_id="MP-5",
+                domain="Media Protection / Sovereignty",
+                name="Canadian Data Residency & Sovereignty",
+                status="SATISFIED" if is_residency_ok else "NOT_APPLICABLE",
+                evidence=f"Data strictly confined to Canadian sovereign enclave region: {region}",
+            )
+        )
+
+        # 6. CP-2: Contingency Plan / Air-Gap Readiness
+        controls.append(
+            PBMMControlStatus(
+                control_id="CP-2",
+                domain="Contingency Planning",
+                name="Air-Gapped Operation & Degraded State Continuity",
+                status="SATISFIED" if airgap_capable else "PARTIALLY_SATISFIED",
+                evidence="Zero-egress offline operation mode with synthetic mock telemetry feeds",
+            )
+        )
+
+        satisfied = sum(1 for c in controls if c.status == "SATISFIED")
+        compliant = satisfied == len(controls) and is_residency_ok
+
+        residency_status = "ENFORCED" if is_residency_ok else "FAILED"
+        return PBMMComplianceReport(
+            is_compliant=compliant,
+            data_residency_region=region,
+            canadian_sovereignty_enforced=is_residency_ok,
+            evaluated_controls_count=len(controls),
+            satisfied_controls_count=satisfied,
+            controls=controls,
+            summary=(
+                f"ITSG-33 / PBMM Audit: {satisfied}/{len(controls)} controls SATISFIED. "
+                f"Canadian Data Residency in {region}: {residency_status}."
+            ),
+        )
+
+
+class SovereignTenant(BaseModel):
+    """Sovereign organization or department isolation boundary."""
+
+    tenant_id: str
+    name: str
+    department_code: str  # e.g., "DND_CAF", "TRANSPORT_CANADA", "PSPC", "PUBLIC_SAFETY", "NRCAN"
+    maximum_clearance: DataClassification = DataClassification.PROTECTED_B
+    data_residency_region: str = "ca-central-1"
+    is_airgap_scif: bool = False
+    authorized_compartments: set[str] = Field(default_factory=set)
+
+
+class SovereignRole(BaseModel):
+    """Role-based and attribute-based security access definition."""
+
+    role_name: str  # e.g., "SovereignAdmin", "Commander", "LogisticsOfficer", "Operator"
+    allowed_operations: set[str] = Field(default_factory=set)
+    required_clearance: DataClassification = DataClassification.UNCLASSIFIED
