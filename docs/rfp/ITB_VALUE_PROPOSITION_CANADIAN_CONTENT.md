@@ -25,7 +25,7 @@ Adopting and integrating **Aegis Continuity** provides Tier-1 Prime Contractors 
 Aegis Continuity directly aligns with Canada's priority **Key Industrial Capabilities (KICs)**:
 
 | KIC Category | Domain | Aegis Continuity Contribution |
-|:---|:---|:---|
+| :--- | :--- | :--- |
 | **Cyber Resilience** | Defensive Cyberspace Operations | Fuses cyber telemetry (SCADA floods, GNSS spoofing) into physical supply and logistics consequence modeling. |
 | **Space Systems** | Satellite Comms & EO Resilience | Assesses Starlink/Telesat LEO constellation degradation, orbital geometry, and solar weather interference. |
 | **Leading-Edge and Disruptive Technologies** | AI & Mathematical Solvers | Exact bounded combinatorial solvers and Shapley value risk attribution with zero AI hallucination risk. |

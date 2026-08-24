@@ -10,7 +10,7 @@
 ## 1. Service Level Commitments
 
 | Metric | Target SLA Commitment | Measurement Window | Failure Remedy / Credit |
-|:---|:---|:---|:---|
+| :--- | :--- | :--- | :--- |
 | **Service Availability** | **99.99%** | Monthly Calendar Month | Tiered service credit: 10% for <99.99%, 25% for <99.9%, 50% for <99.0% |
 | **API Response Latency (p95)** | **< 150 ms** | 1-hour rolling window | Automated horizontal pod autoscaling and read-replica routing |
 | **Assessment Computation (p99)** | **< 2.0 s** | Per execution | Deterministic exact solver bounding limit (max 24 actions) |
@@ -36,6 +36,7 @@
 ```
 
 ### Data Synchronization & Cryptographic Invariants
+
 1. **Cross-Region Evidence Ledger Replication:** Every append-only record is synchronized across Canadian regions via TLS 1.3 encrypted replication with SHA-256 integrity checks.
 2. **Post-Quantum Zero Data Loss:** Point-in-time recovery enables restoration to any exact transaction timestamp within the 35-day backup retention window.
 3. **Automated Drill Verification:** Quarterly simulated failover drills are executed using `scripts/restore_data.sh --confirm` against disposable environments.

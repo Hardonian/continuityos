@@ -15,7 +15,7 @@ This compliance matrix details how **Aegis Continuity** satisfies the operationa
 ## 2. Security Control Domain Mapping
 
 | Family / Control ID | Control Name | PBMM Baseline Requirement | Aegis Continuity Implementation Status | Evidence / Architectural Mechanism |
-|:---|:---|:---|:---|:---|
+| :--- | :--- | :--- | :--- | :--- |
 | **AC-2** | Account Management | Role-based lifecycle control for operators and administrators. | **SATISFIED** | Multi-tenant `SovereignTenant` and `SovereignRole` isolation; API keys and JWT claims mapped to clearances. |
 | **AC-3** | Access Enforcement | Mandatory clearance and compartment checking before record retrieval. | **SATISFIED** | `SecurityLabel.is_authorized()` strictly enforces clearance levels (`PROTECTED_B`, `SECRET`) and `CANADIAN_EYES_ONLY`. |
 | **AC-4** | Information Flow Enforcement | Data diode / cross-domain filtering on high-to-low enclave transfers. | **SATISFIED** | `CrossDomainFilter` prevents classification downgrades and sanitizes internal cryptographic secrets. |
@@ -46,6 +46,7 @@ continuity pbmm-audit --region ca-central-1 --tls-version 1.3
 ```
 
 **Expected JSON Output:**
+
 ```json
 {
   "is_compliant": true,
