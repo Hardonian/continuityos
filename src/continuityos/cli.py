@@ -28,6 +28,16 @@ from continuityos.graph import (
     DependencyGraph,
     detect_cycles,
 )
+from continuityos.counter_intel import (
+    DarkFleetDetector,
+    EMCONPostureManager,
+    SARSatelliteOverflightPredictor,
+)
+from continuityos.environmental import (
+    PermafrostDegradationModel,
+    SubseaAcousticMonitor,
+    WildfireCorridorRiskModel,
+)
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.providers.mock import MockProvider
 from continuityos.reconcile import ActualState, DesiredState, ReconciliationStatus, reconcile

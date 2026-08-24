@@ -69,6 +69,16 @@ from continuityos.strategic import (
     StrategicAnalysisRequest,
     build_strategic_report,
 )
+from continuityos.counter_intel import (
+    DarkFleetDetector,
+    InsiderReconDetector,
+    SARSatelliteOverflightPredictor,
+)
+from continuityos.environmental import (
+    PermafrostDegradationModel,
+    SubseaAcousticMonitor,
+    WildfireCorridorRiskModel,
+)
 from continuityos.telemetry import (
     TelemetryAuthenticationError,
     normalized_operator_observation,
@@ -1557,6 +1567,90 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "Hardened Kubernetes Helm",
             ],
         }
+
+    @app.post("/v1/intel/counter-surveillance/assess")
+    async def assess_counter_surveillance(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Evaluate orbital SAR / Earth Observation reconnaissance exposure and EMCON posture."""
+        corridor_id = payload.get("corridor_id", "CORRIDOR-DEFAULT")
+        orbital_ephemeris = payload.get("orbital_ephemeris", [])
+        corridor_length_km = float(payload.get("corridor_length_km", 100.0))
+
+        predictor = SARSatelliteOverflightPredictor()
+        report = predictor.evaluate_exposure(
+            corridor_id=corridor_id,
+            orbital_ephemeris=orbital_ephemeris,
+            critical_corridor_length_km=corridor_length_km,
+        )
+        return report.model_dump()
+
+    @app.post("/v1/intel/dark-fleet/correlate")
+    async def correlate_dark_fleet(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Correlate maritime radar/optical contacts against active AIS MMSIs to detect dark vessels."""
+        corridor_id = payload.get("corridor_id", "MARITIME-CHOKEPOINT")
+        contacts = payload.get("contacts", [])
+        active_mmsis = set(payload.get("active_mmsis", []))
+        asset_lat = float(payload.get("asset_latitude", 48.0))
+        asset_lon = float(payload.get("asset_longitude", -65.0))
+
+        from continuityos.domain import GeoPoint
+
+        detector = DarkFleetDetector()
+        report = detector.correlate_contacts(
+            corridor_id=corridor_id,
+            radar_optical_contacts=contacts,
+            active_ais_mmsis=active_mmsis,
+            asset_location=GeoPoint(latitude=asset_lat, longitude=asset_lon),
+        )
+        return report.model_dump()
+
+    @app.post("/v1/environmental/permafrost-assess")
+    async def assess_permafrost_thaw(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Simulate permafrost active-layer thaw depth and track embankment stability."""
+        corridor_id = payload.get("corridor_id", "HUDSON-BAY-RAILWAY")
+        ddt = float(payload.get("degree_days_of_thaw", 450.0))
+        peat_cover = float(payload.get("insulating_peat_cover_cm", 15.0))
+
+        model = PermafrostDegradationModel()
+        report = model.evaluate_corridor_thaw(
+            corridor_id=corridor_id,
+            degree_days_of_thaw=ddt,
+            insulating_peat_cover_cm=peat_cover,
+        )
+        return report.model_dump()
+
+    @app.post("/v1/environmental/wildfire-corridor-risk")
+    async def assess_wildfire_corridor(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Evaluate Canadian Fire Weather Index and wildfire proximity to transport corridors."""
+        corridor_id = payload.get("corridor_id", "TRANS-CANADA-MAINLINE")
+        fwi = float(payload.get("fire_weather_index_fwi", 28.5))
+        closest_km = float(payload.get("closest_fire_distance_km", 12.0))
+        wind_speed = float(payload.get("wind_speed_kmh", 30.0))
+        wind_towards = bool(payload.get("wind_direction_towards_corridor", True))
+
+        model = WildfireCorridorRiskModel()
+        report = model.evaluate_wildfire_risk(
+            corridor_id=corridor_id,
+            fwi=fwi,
+            closest_fire_distance_km=closest_km,
+            wind_speed_kmh=wind_speed,
+            wind_direction_towards_corridor=wind_towards,
+        )
+        return report.model_dump()
+
+    @app.post("/v1/environmental/subsea-integrity")
+    async def assess_subsea_integrity(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Monitor subsea telecom cable and seabed energy conduit acoustic integrity."""
+        infra_id = payload.get("infrastructure_id", "TRANSATLANTIC-SUBSEA-01")
+        acoustic_db = float(payload.get("acoustic_anomaly_db", 14.5))
+        anchor_km = float(payload.get("closest_anchoring_vessel_dist_km", 3.2))
+
+        monitor = SubseaAcousticMonitor()
+        report = monitor.evaluate_subsea_risk(
+            infrastructure_id=infra_id,
+            acoustic_anomaly_db=acoustic_db,
+            closest_anchoring_vessel_dist_km=anchor_km,
+        )
+        return report.model_dump()
 
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():
