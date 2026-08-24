@@ -34,6 +34,11 @@ class NodeType(StrEnum):
     INTERMODAL_TERMINAL = "intermodal_terminal"
     CUSTOMS_BORDER = "customs_border"
     STRATEGIC_STOCKPILE = "strategic_stockpile"
+    SUBSEA_CABLE = "subsea_cable"
+    PERMAFROST_CORRIDOR = "permafrost_corridor"
+    SEABED_SENSOR = "seabed_sensor"
+    MICROWAVE_RELAY = "microwave_relay"
+    SATELLITE_UPLINK = "satellite_uplink"
 
 
 class DependencyKind(StrEnum):
@@ -47,6 +52,9 @@ class DependencyKind(StrEnum):
     REFINES = "refines"
     MANUFACTURES = "manufactures"
     CLEARS_CUSTOMS = "clears_customs"
+    SUBSEA_CONNECTS = "subsea_connects"
+    TRAVERSES_PERMAFROST = "traverses_permafrost"
+    RELAYS_MICROWAVE = "relays_microwave"
 
 
 class DependencyNode(BaseModel):

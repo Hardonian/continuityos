@@ -43,6 +43,11 @@ class AssertionClass(StrEnum):
     SUPPLY_CHAIN_INTELLIGENCE = "supply_chain_intelligence"
     STRATEGIC_MINERALS = "strategic_minerals"
     RAIL_LOGISTICS = "rail_logistics"
+    COUNTER_INTELLIGENCE = "counter_intelligence"
+    PERMAFROST_INTEGRITY = "permafrost_integrity"
+    WILDFIRE_THREAT = "wildfire_threat"
+    SUBSEA_INFRASTRUCTURE = "subsea_infrastructure"
+    EMCON_SURVEILLANCE = "emcon_surveillance"
 
 
 class MetricName(StrEnum):
@@ -84,6 +89,13 @@ class MetricName(StrEnum):
     BORDER_CROSSING_DELAY_HOURS = "border_crossing_delay_hours"
     DEMURRAGE_RISK_INDEX = "demurrage_risk_index"
     LOCK_OPERATIONAL_STATUS = "lock_operational_status"
+    PERMAFROST_THAW_DEPTH_CM = "permafrost_thaw_depth_cm"
+    WILDFIRE_INDEX_FWI = "wildfire_index_fwi"
+    DARK_VESSEL_PROXIMITY_KM = "dark_vessel_proximity_km"
+    SAR_SATELLITE_EXPOSURE_INDEX = "sar_satellite_exposure_index"
+    ACOUSTIC_ANOMALY_LEVEL = "acoustic_anomaly_level"
+    SEABED_CABLE_INTEGRITY = "seabed_cable_integrity"
+    EMCON_COMPLIANCE_SCORE = "emcon_compliance_score"
 
 
 class GeoPoint(BaseModel):
@@ -149,6 +161,10 @@ class Observation(BaseModel):
             MetricName.REFINERY_CAPACITY_UTILIZATION,
             MetricName.DEMURRAGE_RISK_INDEX,
             MetricName.LOCK_OPERATIONAL_STATUS,
+            MetricName.SAR_SATELLITE_EXPOSURE_INDEX,
+            MetricName.ACOUSTIC_ANOMALY_LEVEL,
+            MetricName.SEABED_CABLE_INTEGRITY,
+            MetricName.EMCON_COMPLIANCE_SCORE,
         }
         if self.metric in ratio_metrics and not 0.0 <= self.value <= 1.0:
             raise ValueError(f"{self.metric} must be normalized to [0, 1]")
@@ -171,6 +187,9 @@ class Observation(BaseModel):
                 MetricName.STARLINK_LATENCY_MS,
                 MetricName.STARLINK_DOWNLINK_MBPS,
                 MetricName.BORDER_CROSSING_DELAY_HOURS,
+                MetricName.PERMAFROST_THAW_DEPTH_CM,
+                MetricName.WILDFIRE_INDEX_FWI,
+                MetricName.DARK_VESSEL_PROXIMITY_KM,
             }
             and self.value < 0
         ):
