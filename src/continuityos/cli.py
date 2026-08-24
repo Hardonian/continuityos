@@ -17,6 +17,7 @@ import yaml
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from continuityos.attestation import SCIFAttestationEngine
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.cluster import RaftStateSynchronizer
 from continuityos.compiler import ContinuityCompiler
@@ -40,6 +41,12 @@ from continuityos.graph import (
 )
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.providers.mock import MockProvider
+from continuityos.rbac import (
+    AccessControlEvaluator,
+    Permission,
+    SovereignIdentity,
+    SovereignRole,
+)
 from continuityos.reconcile import ActualState, DesiredState, ReconciliationStatus, reconcile
 from continuityos.recovery import RecoveryProfile, model_recovery
 from continuityos.remediation import generate_remediation
@@ -1082,6 +1089,56 @@ def command_cluster_sync(args: argparse.Namespace) -> None:
     _output(result.model_dump(mode="json"), args)
 
 
+def command_rbac_check(args: argparse.Namespace) -> None:
+    """Evaluate multi-tenant role authorizations and clearance guards."""
+    from continuityos.sovereign import ClassificationLevel
+
+    evaluator = AccessControlEvaluator()
+    role = (
+        SovereignRole(args.role)
+        if args.role in SovereignRole._value2member_map_
+        else SovereignRole.OPERATOR_ANALYST
+    )
+    clearance = (
+        ClassificationLevel(args.clearance)
+        if args.clearance in ClassificationLevel._value2member_map_
+        else ClassificationLevel.SECRET
+    )
+    perm = (
+        Permission(args.permission)
+        if args.permission in Permission._value2member_map_
+        else Permission.COMPILE_PLAN
+    )
+
+    identity = SovereignIdentity(
+        user_id=args.user_id,
+        tenant_id=args.tenant_id,
+        roles=[role],
+        clearance_level=clearance,
+        citizenship_nation=args.nationality,
+    )
+
+    decision = evaluator.evaluate_access(
+        identity=identity,
+        target_tenant_id=args.target_tenant_id,
+        required_permission=perm,
+    )
+    _output(decision.model_dump(mode="json"), args)
+
+
+def command_scif_attest(args: argparse.Namespace) -> None:
+    """Execute SCIF hardware TPM 2.0, entropy, and air-gap attestation check."""
+    engine = SCIFAttestationEngine()
+    cert = engine.perform_attestation(
+        facility_id=args.facility_id,
+        facility_name=args.facility_name,
+        outbound_network_interfaces_detected=args.outbound_interfaces,
+        secure_boot_enabled=not args.disable_secure_boot,
+        memory_zeroization_verified=not args.disable_mem_zero,
+    )
+    _output(cert.model_dump(mode="json"), args)
+
+
 # --- Parser builder ---
 
 
@@ -1520,6 +1577,53 @@ def build_parser() -> argparse.ArgumentParser:
         "--last-log-index", type=int, default=0, help="Last synchronized log index"
     )
     p_csync.set_defaults(func=command_cluster_sync)
+
+    # rbac-check
+    p_rbac = subparsers.add_parser(
+        "rbac-check",
+        help="Evaluate multi-tenant role authorizations, clearance levels, and security caveats",
+    )
+    p_rbac.add_argument("--user-id", default="OPERATOR-01", help="Authenticated user ID")
+    p_rbac.add_argument("--tenant-id", default="DND-RCAF-TRENTON", help="User home tenant ID")
+    p_rbac.add_argument(
+        "--target-tenant-id", default="DND-RCAF-TRENTON", help="Target resource tenant ID"
+    )
+    p_rbac.add_argument(
+        "--role",
+        default="operator_analyst",
+        help="Assigned role (sovereign_commander, tenant_admin, operator_analyst, etc.)",
+    )
+    p_rbac.add_argument(
+        "--clearance", default="SECRET", help="Security clearance level (PROTECTED_B, SECRET, etc.)"
+    )
+    p_rbac.add_argument("--permission", default="compile_plan", help="Required permission to check")
+    p_rbac.add_argument("--nationality", default="CAN", help="Citizen nationality ISO code")
+    p_rbac.set_defaults(func=command_rbac_check)
+
+    # scif-attest
+    p_attest = subparsers.add_parser(
+        "scif-attest",
+        help="Audit SCIF hardware TPM 2.0 PCR quote, memory zeroization, and air-gap network posture",
+    )
+    p_attest.add_argument("--facility-id", default="SCIF-HQ-OTTAWA", help="Target facility ID")
+    p_attest.add_argument(
+        "--facility-name",
+        default="DND Carling Campus National Command SCIF",
+        help="Target facility human name",
+    )
+    p_attest.add_argument(
+        "--outbound-interfaces",
+        type=int,
+        default=0,
+        help="Number of non-local outbound network interfaces detected",
+    )
+    p_attest.add_argument(
+        "--disable-secure-boot", action="store_true", help="Simulate disabled secure boot"
+    )
+    p_attest.add_argument(
+        "--disable-mem-zero", action="store_true", help="Simulate disabled memory zeroization"
+    )
+    p_attest.set_defaults(func=command_scif_attest)
 
     return parser
 

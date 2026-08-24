@@ -10,6 +10,8 @@ const NAV = [
   { href: "/environmental-risk", label: "Environmental & Permafrost" },
   { href: "/cluster-mesh", label: "SCIF Cluster Mesh" },
   { href: "/quantum-crypto", label: "PQC / ZKP Crypto" },
+  { href: "/rbac-audit", label: "RBAC & Tenancy" },
+  { href: "/scif-attestation", label: "SCIF Attestation" },
   { href: "/rfp-proposal", label: "Gov RFP / PBMM" },
   { href: "/sovereign-compliance", label: "Sovereign Compliance" },
   { href: "/capabilities", label: "Capabilities" },

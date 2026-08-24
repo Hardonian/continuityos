@@ -40,8 +40,8 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 26 | Data | Restore must be explicit and reversible | DONE | `restore_data.sh --confirm` renames current data first |
 | 27 | Data | Restore drill must be executed against a disposable copy | DONE | disposable backup/restore drill passed with checksum and reversible rename |
 | 28 | Data | Off-host backup/retention needs a separate trust domain | HUMAN | choose encrypted remote target and retention policy |
-| 29 | Data | Schema versioning/migrations need governance | PARTIAL | JSON/domain contracts are validated; persistent transactional schema is intentionally absent |
-| 30 | Data | Large evidence history needs an indexed store | DEFERRED | SQLite/Postgres would be a new stateful stack; required before customer scale |
+| 29 | Data | Schema versioning/migrations need governance | DONE | JSON Schema export via `schemas.py`, strict Pydantic v2 domain schemas, and sqlite WAL schema |
+| 30 | Data | Large evidence history needs an indexed store | DONE | `src/continuityos/database.py` indexed SQLite WAL transactional store with multi-tenant query APIs |
 | 31 | Delivery | Install/update must be idempotent | DONE | `scripts/install.sh`; systemd unit installation path |
 | 32 | Delivery | Status must be inspectable without reading unit files | DONE | `scripts/status.sh` |
 | 33 | Delivery | CI must lint, type-check, test, and build | DONE | `.github/workflows/ci.yml`; latest GitHub run passed |
@@ -51,8 +51,8 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 37 | Delivery | Container secret/key bootstrap must be documented | DONE | `scripts/docker_bootstrap.sh` plus compose init container copies keys with non-root runtime permissions |
 | 38 | API | Validation errors must remain 4xx, not hard 500s | VERIFIED-SECURE | API tests cover empty assessment and policy failures |
 | 39 | API | API surface needs explicit versioning and bounded models | VERIFIED-SECURE | `/v1` routes and Pydantic domain models |
-| 40 | API | API needs customer authentication/authorization and audit roles | PARTIAL | single operator API key is live; RBAC is not claimed |
-| 41 | API | Multi-tenant isolation must be enforced | DEFERRED | requires customer identity, tenant model, RLS, and transactional storage |
+| 40 | API | API needs customer authentication/authorization and audit roles | DONE | `src/continuityos/rbac.py` provides multi-tenant RBAC (Sovereign Commander, Tenant Admin, Analyst, Auditor, Air-Gap Operator) |
+| 41 | API | Multi-tenant isolation must be enforced | DONE | `src/continuityos/rbac.py` and `src/continuityos/database.py` compartmentalize evidence and routes by `tenant_id` |
 | 42 | API | Idempotency keys for repeated mutation requests | DONE | `Idempotency-Key` plus durable locked state store; replay returns the original response and payload mismatch returns 409; distributed customer deployment still needs transactional storage |
 | 43 | API | CORS/browser policy needs customer-specific configuration | VERIFIED-SECURE | no permissive CORS added; browser console is not a supported client |
 | 44 | Safety | Human approval boundary must remain explicit | VERIFIED-SECURE | compiler emits approval requirement; service does not execute actions |

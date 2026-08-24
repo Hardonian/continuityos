@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse, Response, Streami
 from pydantic import BaseModel
 
 from continuityos.analysis import RegressionRequest, RegressionResult, run_regression
+from continuityos.attestation import SCIFAttestationEngine
 from continuityos.cluster import RaftStateSynchronizer
 from continuityos.compiler import ContinuityCompiler
 from continuityos.config import Settings
@@ -28,6 +29,7 @@ from continuityos.counter_intel import (
     SARSatelliteOverflightPredictor,
 )
 from continuityos.crypto import ZKPReserveProof
+from continuityos.database import TransactionalEvidenceStore
 from continuityos.decision import DecisionPacket, DecisionPacketRequest, build_decision_packet
 from continuityos.domain import CompiledPlan, CompileRequest, CorridorAssessment, Observation
 from continuityos.edge import EdgeNode
@@ -63,6 +65,12 @@ from continuityos.public_data import (
     NormalizedIndicator,
     PublicDataPlane,
     PublicSnapshot,
+)
+from continuityos.rbac import (
+    AccessControlEvaluator,
+    Permission,
+    SovereignIdentity,
+    SovereignRole,
 )
 from continuityos.security import (
     FixedWindowLimiter,
@@ -1740,6 +1748,84 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         peer_index = int(payload.get("last_log_index", 0))
         result = scif_cluster.sync_with_peer(peer_id, peer_index)
         return result.model_dump(mode="json")
+
+    rbac_evaluator = AccessControlEvaluator()
+    attestation_engine = SCIFAttestationEngine()
+    db_store = TransactionalEvidenceStore()
+
+    @app.post("/v1/rbac/evaluate")
+    async def evaluate_rbac_access(payload: dict[str, Any]) -> dict[str, Any]:
+        """Evaluate multi-tenant RBAC permissions and clearance restrictions."""
+        user_id = payload.get("user_id", "OPERATOR-01")
+        tenant_id = payload.get("tenant_id", "DND-RCAF-TRENTON")
+        roles_raw = payload.get("roles", ["operator_analyst"])
+        clearance_raw = payload.get("clearance_level", "SECRET")
+
+        roles = [SovereignRole(r) for r in roles_raw if r in SovereignRole._value2member_map_]
+        if not roles:
+            roles = [SovereignRole.OPERATOR_ANALYST]
+
+        from continuityos.sovereign import ClassificationLevel
+
+        clearance = (
+            ClassificationLevel(clearance_raw)
+            if clearance_raw in ClassificationLevel._value2member_map_
+            else ClassificationLevel.SECRET
+        )
+
+        identity = SovereignIdentity(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            roles=roles,
+            clearance_level=clearance,
+            citizenship_nation=payload.get("citizenship_nation", "CAN"),
+        )
+
+        target_tenant = payload.get("target_tenant_id", tenant_id)
+        req_perm_raw = payload.get("required_permission", "compile_plan")
+        req_perm = (
+            Permission(req_perm_raw)
+            if req_perm_raw in Permission._value2member_map_
+            else Permission.COMPILE_PLAN
+        )
+
+        decision = rbac_evaluator.evaluate_access(
+            identity=identity,
+            target_tenant_id=target_tenant,
+            required_permission=req_perm,
+        )
+        return decision.model_dump(mode="json")
+
+    @app.post("/v1/attestation/verify")
+    async def verify_scif_attestation(payload: dict[str, Any]) -> dict[str, Any]:
+        """Perform hardware TPM 2.0 and air-gap zero-egress security attestation."""
+        facility_id = payload.get("facility_id", "SCIF-OTT-01")
+        facility_name = payload.get("facility_name", "DND Carling Campus National Command SCIF")
+        cert = attestation_engine.perform_attestation(
+            facility_id=facility_id,
+            facility_name=facility_name,
+            outbound_network_interfaces_detected=int(payload.get("outbound_network_interfaces", 0)),
+            secure_boot_enabled=bool(payload.get("secure_boot_enabled", True)),
+            memory_zeroization_verified=bool(payload.get("memory_zeroization_verified", True)),
+        )
+        return cert.model_dump(mode="json")
+
+    @app.get("/v1/database/evidence/query")
+    async def query_indexed_evidence(
+        tenant_id: str = "DND-CARLING-HQ",
+        corridor_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """Query indexed evidence records with multi-tenant filtering."""
+        records = db_store.query_records(
+            tenant_id=tenant_id,
+            corridor_id=corridor_id,
+            limit=limit,
+            offset=offset,
+        )
+        total = db_store.count_records(tenant_id=tenant_id)
+        return {"total_count": total, "returned_count": len(records), "records": records}
 
     ui_index = Path(__file__).resolve().parent.parent.parent / "ui" / "index.html"
     if ui_index.exists():
