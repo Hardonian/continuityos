@@ -134,9 +134,7 @@ class SCIFAttestationEngine:
 
         # Mock Ed25519 signature of the certificate payload
         sig_payload = f"{facility_id}:{pcr_hash}:{overall_score}:{is_certified}".encode()
-        signature_hex = (
-            hashlib.sha256(sig_payload).hexdigest() + "00112233445566778899aabbccddeeff"
-        )
+        signature_hex = hashlib.sha256(sig_payload).hexdigest() + "00112233445566778899aabbccddeeff"
 
         verdict = (
             f"SCIF Facility '{facility_name}' ({facility_id}) is FULLY CERTIFIED. "

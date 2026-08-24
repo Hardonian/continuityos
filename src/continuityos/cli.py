@@ -1603,7 +1603,7 @@ def build_parser() -> argparse.ArgumentParser:
     # scif-attest
     p_attest = subparsers.add_parser(
         "scif-attest",
-        help="Audit SCIF hardware TPM 2.0 PCR quote, memory zeroization, and air-gap network posture",
+        help="Audit SCIF hardware TPM 2.0 PCR quote, memory zeroization, and air-gap posture",
     )
     p_attest.add_argument("--facility-id", default="SCIF-HQ-OTTAWA", help="Target facility ID")
     p_attest.add_argument(
