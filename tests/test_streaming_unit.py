@@ -7,12 +7,16 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
+
 from continuityos.streaming import (
     GLOBAL_EVENT_BUS,
     SovereignEvent,
     SovereignEventBus,
     sse_event_streamer,
 )
+
+pytestmark = pytest.mark.anyio
 
 
 def _make_event(

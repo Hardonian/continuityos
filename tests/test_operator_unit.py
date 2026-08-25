@@ -21,6 +21,8 @@ from continuityos.operator import (
     ContinuityOperator,
 )
 
+pytestmark = pytest.mark.anyio
+
 
 class TestContinuityOperatorInit:
     """Test operator initialization with various kubeconfig scenarios."""
