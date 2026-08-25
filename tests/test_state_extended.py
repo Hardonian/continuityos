@@ -79,7 +79,13 @@ def test_state_unix_locking_path(tmp_path: Path) -> None:
     mock_fcntl.LOCK_EX = 2
     mock_fcntl.LOCK_UN = 8
 
-    with patch.object(sys, "platform", "linux"), patch.dict("sys.modules", {"fcntl": mock_fcntl}):
+    with (
+        patch.object(sys, "platform", "linux"),
+        patch.dict("sys.modules", {"fcntl": mock_fcntl}),
+        patch("os.open", return_value=99),
+        patch("os.fsync"),
+        patch("os.close"),
+    ):
         state.set_value("ns", "k", "v")
         val = state.get_value("ns", "k")
         assert val == "v"

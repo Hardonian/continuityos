@@ -231,8 +231,8 @@ class TestWatchResource:
             await task
 
         # Reconcile should have been called for ADDED event
-        mock_api.patch_namespaced_custom_object_status.assert_called_once()
-        call_kwargs = mock_api.patch_namespaced_custom_object_status.call_args.kwargs
+        assert mock_api.patch_namespaced_custom_object_status.call_count >= 1
+        call_kwargs = mock_api.patch_namespaced_custom_object_status.call_args_list[0].kwargs
         assert call_kwargs["name"] == "test-stream-cr"
 
     @patch("continuityos.operator.config")

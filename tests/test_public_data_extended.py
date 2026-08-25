@@ -19,6 +19,7 @@ from continuityos.public_data import (
     DFOIWLSAdapter,
     ECCCGeoMetAdapter,
     PublicDataPlane,
+    PublicSnapshot,
     _parse_date,
     _parse_excel_date,
     _xlsx_rows,
@@ -99,21 +100,16 @@ def test_cdd_adapter_no_dated_events_raises(tmp_path: Path) -> None:
 
     cache.store("canadian-disaster-database", "https://example.com", buf.getvalue(), {}, 200)
 
-    # Test direct normalization raises
-    from continuityos.public_data import PublicSnapshot
-
     mock_snap = PublicSnapshot(
         source_id="canadian-disaster-database",
         snapshot_id="snap-1",
-        url="https://example.com",
-        retrieved_at=datetime.now(UTC),
         content_sha256="a" * 64,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        byte_count=len(buf.getvalue()),
-        from_cache=True,
+        retrieved_at=datetime.now(UTC),
+        status_code=200,
+        parser="xlsx",
         record_count=0,
+        freshness_hours=720.0,
         quality_flags=(),
-        metadata={},
     )
     with pytest.raises(ValueError, match="contained no dated event rows"):
         CanadianDisasterDatabaseAdapter.normalize_events(mock_snap, buf.getvalue())
@@ -121,20 +117,16 @@ def test_cdd_adapter_no_dated_events_raises(tmp_path: Path) -> None:
 
 def test_eccc_alert_nonstandard_confidence() -> None:
     """ECCC alert with low or unknown confidence gets nonstandard_confidence flag."""
-    from continuityos.public_data import PublicSnapshot
-
     mock_snap = PublicSnapshot(
-        source_id="eccc-alerts-national",
+        source_id="eccc-geomet-alerts",
         snapshot_id="snap-1",
-        url="https://example.com",
-        retrieved_at=datetime.now(UTC),
         content_sha256="a" * 64,
-        content_type="application/geo+json",
-        byte_count=100,
-        from_cache=True,
+        retrieved_at=datetime.now(UTC),
+        status_code=200,
+        parser="geojson",
         record_count=1,
+        freshness_hours=6.0,
         quality_flags=(),
-        metadata={},
     )
 
     feature_collection = {
@@ -186,14 +178,14 @@ async def test_fetch_url_payload_size_limit_exceeded(tmp_path: Path) -> None:
         pytest.raises(ValueError, match="exceeds configured size limit"),
     ):
         await plane.fetch_url(
-            "eccc-alerts-national",
-            "https://example.com/alerts",
+            "eccc-geomet-alerts",
+            "https://api.weather.gc.ca/collections/weather-alerts/items?f=json&limit=100",
             force=True,
         )
 
 
 async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> None:
-    """DFOIWLSAdapter.fetch_station_and_water_levels coordinates station & level fetches."""
+    """DFOIWLSAdapter.fetch_current coordinates station & level fetches."""
     cache = SnapshotCache(tmp_path)
     plane = PublicDataPlane(cache, outbound_enabled=False)
 
@@ -205,6 +197,7 @@ async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> No
             "latitude": 44.65,
             "longitude": -63.58,
             "operating": True,
+            "timeSeries": [{"code": "wlo"}],
         }
     ]
     water_levels_data = [
@@ -214,14 +207,14 @@ async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> No
 
     # Pre-populate cache
     cache.store(
-        "dfo-iwls-stations",
-        "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations",
+        "dfo-iwls",
+        "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations?chs-region-code=ATL",
         json.dumps(station_data).encode(),
         {"content-type": "application/json"},
         200,
     )
     cache.store(
-        "dfo-iwls-stations",
+        "dfo-iwls",
         "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/STN-001/data?time-series-code=wlo&from=2024-01-01T00%3A00%3A00%2B00%3A00&to=2024-01-02T00%3A00%3A00%2B00%3A00&resolution=SIXTY_MINUTES",
         json.dumps(water_levels_data).encode(),
         {"content-type": "application/json"},
@@ -236,9 +229,9 @@ async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> No
         _data_snap,
         station,
         indicators,
-    ) = await DFOIWLSAdapter.fetch_station_and_water_levels(
+    ) = await DFOIWLSAdapter.fetch_current(
         plane,
-        region="atlantic",
+        region="ATL",
         start=start,
         end=end,
     )
