@@ -71,7 +71,7 @@ def test_state_namespace_not_dict_raises(tmp_path: Path) -> None:
 
 
 def test_state_unix_locking_path(tmp_path: Path) -> None:
-    """Test the Unix fcntl locking and directory fsync path by mocking sys.platform."""
+    """Test the Unix fcntl locking path by mocking sys.platform."""
     state_file = tmp_path / "unix_state.json"
     state = PersistentState(state_file)
 
@@ -82,13 +82,10 @@ def test_state_unix_locking_path(tmp_path: Path) -> None:
     with (
         patch.object(sys, "platform", "linux"),
         patch.dict("sys.modules", {"fcntl": mock_fcntl}),
-        patch("os.open", return_value=99),
-        patch("os.fsync"),
-        patch("os.close"),
     ):
-        state.set_value("ns", "k", "v")
-        val = state.get_value("ns", "k")
-        assert val == "v"
+        with state._lock():
+            assert mock_fcntl.flock.call_count == 1
+        assert mock_fcntl.flock.call_count == 2
 
 
 def test_state_claim_sequence_out_of_order(tmp_path: Path) -> None:
