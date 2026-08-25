@@ -270,7 +270,16 @@ class TestOperatorRun:
         """KeyboardInterrupt cleanly exits run loop."""
         operator = ContinuityOperator()
 
+        async def fake_watch(plural: str) -> None:
+            pass
+
+        monkeypatch.setattr(operator, "watch_resource", fake_watch)
+
         def fake_gather(*args: Any, **kwargs: Any) -> Any:
+            # Close/consume coroutines if any
+            for arg in args:
+                if hasattr(arg, "close"):
+                    arg.close()
             raise KeyboardInterrupt()
 
         monkeypatch.setattr(asyncio, "gather", fake_gather)

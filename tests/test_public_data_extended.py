@@ -9,7 +9,7 @@ import io
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from zipfile import ZipFile
 
 import pytest

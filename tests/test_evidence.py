@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import json
 from pathlib import Path
 
 import pytest
@@ -110,3 +109,123 @@ def test_evidence_ledger_records_empty_file(tmp_path: Path) -> None:
     path = tmp_path / "nonexistent.jsonl"
     ledger = EvidenceLedger(path)
     assert ledger.records() == []
+
+
+def test_evidence_ledger_from_key_files(tmp_path: Path) -> None:
+    """from_key_files loads valid Ed25519 PEM keys."""
+    from cryptography.hazmat.primitives import serialization
+
+    priv = Ed25519PrivateKey.generate()
+    pub = priv.public_key()
+
+    priv_path = tmp_path / "priv.pem"
+    pub_path = tmp_path / "pub.pem"
+
+    priv_path.write_bytes(
+        priv.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    pub_path.write_bytes(
+        pub.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    )
+
+    ledger = EvidenceLedger.from_key_files(tmp_path / "ledger.jsonl", priv_path, pub_path)
+    assert ledger.private_key is not None
+    assert ledger.public_key is not None
+
+
+def test_evidence_ledger_from_key_files_non_ed25519(tmp_path: Path) -> None:
+    """from_key_files rejects non-Ed25519 keys (e.g. RSA)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    rsa_priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    rsa_pub = rsa_priv.public_key()
+
+    priv_path = tmp_path / "rsa_priv.pem"
+    pub_path = tmp_path / "rsa_pub.pem"
+
+    priv_path.write_bytes(
+        rsa_priv.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    pub_path.write_bytes(
+        rsa_pub.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    )
+
+    with pytest.raises(TypeError, match="private key must be Ed25519"):
+        EvidenceLedger.from_key_files(tmp_path / "l.jsonl", priv_path, None)
+
+    with pytest.raises(TypeError, match="public key must be Ed25519"):
+        EvidenceLedger.from_key_files(tmp_path / "l.jsonl", None, pub_path)
+
+
+def test_evidence_ledger_verify_invalid_line_and_missing_pubkey(tmp_path: Path) -> None:
+    """verify() catches invalid JSON lines and signed records when no public key is present."""
+    priv = Ed25519PrivateKey.generate()
+    path = tmp_path / "ledger.jsonl"
+    ledger = EvidenceLedger(path, private_key=priv)
+    ledger.append("a", "s-1", {"k": 1})
+
+    # Verifying without public key when record is signed reports error
+    verifier_no_key = EvidenceLedger(path, public_key=None)
+    errors = verifier_no_key.verify()
+    assert any("signature present but no public key configured" in e for e in errors)
+
+    # Append invalid JSON line
+    with path.open("a") as f:
+        f.write("INVALID_JSON\n")
+
+    errors_with_bad_line = ledger.verify()
+    assert any("invalid record" in e for e in errors_with_bad_line)
+
+
+def test_evidence_ledger_verify_previous_hash_mismatch(tmp_path: Path) -> None:
+    """verify() catches previous_hash chain breaks."""
+    path = tmp_path / "ledger.jsonl"
+    ledger = EvidenceLedger(path)
+    ledger.append("a", "s-1", {"k": 1})
+    ledger.append("b", "s-2", {"k": 2})
+
+    lines = path.read_text().splitlines()
+    # Mutate previous_hash in line 2
+    rec2 = json.loads(lines[1])
+    rec2["previous_hash"] = "f" * 64
+    lines[1] = json.dumps(rec2)
+    path.write_text("\n".join(lines) + "\n")
+
+    errors = ledger.verify()
+    assert any("previous hash mismatch" in e for e in errors)
+
+
+def test_evidence_ledger_unix_locking(tmp_path: Path) -> None:
+    """Test the Unix fcntl locking path in _exclusive_lock."""
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    path = tmp_path / "ledger.jsonl"
+    ledger = EvidenceLedger(path)
+
+    mock_fcntl = MagicMock()
+    mock_fcntl.LOCK_EX = 2
+    mock_fcntl.LOCK_UN = 8
+
+    with (
+        patch.object(sys, "platform", "linux"),
+        patch.dict("sys.modules", {"fcntl": mock_fcntl}),
+    ):
+        with ledger._exclusive_lock():
+            assert mock_fcntl.flock.call_count == 1
+        assert mock_fcntl.flock.call_count == 2
