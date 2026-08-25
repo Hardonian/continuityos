@@ -215,7 +215,7 @@ async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> No
     )
     cache.store(
         "dfo-iwls",
-        "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/STN-001/data?time-series-code=wlo&from=2024-01-01T00%3A00%3A00%2B00%3A00&to=2024-01-02T00%3A00%3A00%2B00%3A00&resolution=SIXTY_MINUTES",
+        "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/STN-001/data?time-series-code=wlo&from=2024-01-01T00%3A00%3A00Z&to=2024-01-02T00%3A00%3A00Z&resolution=SIXTY_MINUTES",
         json.dumps(water_levels_data).encode(),
         {"content-type": "application/json"},
         200,
