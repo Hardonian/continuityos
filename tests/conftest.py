@@ -20,6 +20,11 @@ warnings.filterwarnings("ignore", message=".*httpx.*")
 
 
 @pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
 def provenance() -> Provenance:
     body = b"fixture"
     return Provenance(

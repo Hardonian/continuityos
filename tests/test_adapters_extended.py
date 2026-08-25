@@ -51,7 +51,7 @@ class TestParseNSIDC:
         assert isinstance(result, list)
 
     def test_utf8_bom_handling(self) -> None:
-        csv = "\ufeffYear, Month, Day, Extent\n1981, 3, 1, 14.0\n2024, 3, 1, 12.5\n"
+        csv = "Year, Month, Day, Extent\n1981, 3, 1, 14.0\n2024, 3, 1, 12.5\n"
         result = parse_nsidc_daily_extent_csv(csv.encode("utf-8-sig"), uri="https://example.com")
         assert len(result) >= 1
 

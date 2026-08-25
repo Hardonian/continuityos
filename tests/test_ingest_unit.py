@@ -5,7 +5,6 @@ Targets: ingest.py coverage from 67% → ≥85%.
 
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import UTC, datetime
 from typing import Any
@@ -15,6 +14,8 @@ import pytest
 
 from continuityos.ingest import OpenSourceIngestor
 from continuityos.sources.cache import SnapshotCache, SnapshotMetadata
+
+pytestmark = pytest.mark.anyio
 
 
 def _mock_metadata(source_id: str = "test-source") -> SnapshotMetadata:
@@ -34,21 +35,20 @@ def _mock_metadata(source_id: str = "test-source") -> SnapshotMetadata:
 class TestGetOrFetch:
     """Test the cache-first fetch logic."""
 
-    def test_returns_cached_when_available(self) -> None:
+    async def test_returns_cached_when_available(self) -> None:
         cache = MagicMock(spec=SnapshotCache)
         metadata = _mock_metadata()
         cache.latest.return_value = (metadata, b"cached-body")
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=False)
 
-        async def run() -> tuple[SnapshotMetadata, bytes]:
-            return await ingestor._get_or_fetch("test-source", "https://example.com/data")
-
-        _result_meta, result_body = asyncio.get_event_loop().run_until_complete(run())
+        _result_meta, result_body = await ingestor._get_or_fetch(
+            "test-source", "https://example.com/data"
+        )
         assert result_body == b"cached-body"
         cache.fetch.assert_not_called()
 
-    def test_fetches_when_not_cached(self) -> None:
+    async def test_fetches_when_not_cached(self) -> None:
         cache = MagicMock(spec=SnapshotCache)
         cache.latest.return_value = None
         metadata = _mock_metadata()
@@ -56,10 +56,9 @@ class TestGetOrFetch:
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=True)
 
-        async def run() -> tuple[SnapshotMetadata, bytes]:
-            return await ingestor._get_or_fetch("test-source", "https://example.com/data")
-
-        _result_meta, result_body = asyncio.get_event_loop().run_until_complete(run())
+        _result_meta, result_body = await ingestor._get_or_fetch(
+            "test-source", "https://example.com/data"
+        )
         assert result_body == b"fresh-body"
         cache.fetch.assert_called_once()
 
@@ -67,7 +66,7 @@ class TestGetOrFetch:
 class TestNSIDCDailyExtent:
     """Test NSIDC sea ice extent ingestion."""
 
-    def test_parses_cached_csv(self) -> None:
+    async def test_parses_cached_csv(self) -> None:
         csv_data = (
             "Year, Month, Day, Extent, Missing, Source Data, Hemisphere\n"
             "1981, 1, 1, 13.5, 0.0, nsidc, north\n"
@@ -81,7 +80,7 @@ class TestNSIDCDailyExtent:
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=False)
 
-        observations = asyncio.get_event_loop().run_until_complete(ingestor.nsidc_daily_extent())
+        observations = await ingestor.nsidc_daily_extent()
         # Only dates with baseline values (1981 data provides baseline for Jan 1 and Jan 2)
         assert len(observations) >= 2
 
@@ -89,7 +88,7 @@ class TestNSIDCDailyExtent:
 class TestCelestrakGeometry:
     """Test CelesTrak satellite geometry ingestion."""
 
-    def test_parses_cached_gp_json(self) -> None:
+    async def test_parses_cached_gp_json(self) -> None:
         records = [
             {"OBJECT_ID": "STARLINK-1", "EPOCH": "2024-01-15T12:00:00+00:00"},
             {"OBJECT_ID": "STARLINK-2", "EPOCH": "2024-01-15T13:00:00+00:00"},
@@ -102,9 +101,7 @@ class TestCelestrakGeometry:
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=False)
 
-        observation = asyncio.get_event_loop().run_until_complete(
-            ingestor.celestrak_geometry("starlink")
-        )
+        observation = await ingestor.celestrak_geometry("starlink")
         assert observation.source_id == "celestrak-gp"
         assert observation.value == 2.0
 
@@ -112,7 +109,7 @@ class TestCelestrakGeometry:
 class TestCopernicusSTAC:
     """Test Copernicus STAC ingestion paths."""
 
-    def test_returns_cached_stac_response(self) -> None:
+    async def test_returns_cached_stac_response(self) -> None:
         stac_response = {
             "type": "FeatureCollection",
             "features": [
@@ -131,29 +128,25 @@ class TestCopernicusSTAC:
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=False)
 
-        observation = asyncio.get_event_loop().run_until_complete(
-            ingestor.copernicus_stac(
-                bbox=(-80.0, 40.0, -70.0, 50.0),
-                start=datetime(2024, 1, 1, tzinfo=UTC),
-                end=datetime(2024, 1, 31, tzinfo=UTC),
-            )
+        observation = await ingestor.copernicus_stac(
+            bbox=(-80.0, 40.0, -70.0, 50.0),
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 31, tzinfo=UTC),
         )
         assert observation.source_id == "copernicus-cdse-stac"
         assert observation.value == 1.0
 
-    def test_raises_when_outbound_disabled_and_no_cache(self) -> None:
+    async def test_raises_when_outbound_disabled_and_no_cache(self) -> None:
         cache = MagicMock(spec=SnapshotCache)
         cache.latest.return_value = None
 
         ingestor = OpenSourceIngestor(cache, outbound_enabled=False)
 
         with pytest.raises(RuntimeError, match="outbound HTTP disabled"):
-            asyncio.get_event_loop().run_until_complete(
-                ingestor.copernicus_stac(
-                    bbox=(-80.0, 40.0, -70.0, 50.0),
-                    start=datetime(2024, 1, 1, tzinfo=UTC),
-                    end=datetime(2024, 1, 31, tzinfo=UTC),
-                )
+            await ingestor.copernicus_stac(
+                bbox=(-80.0, 40.0, -70.0, 50.0),
+                start=datetime(2024, 1, 1, tzinfo=UTC),
+                end=datetime(2024, 1, 31, tzinfo=UTC),
             )
 
 

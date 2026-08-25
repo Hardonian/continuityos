@@ -79,7 +79,7 @@ class TestReconcile:
 
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
-    def test_reconcile_success(self, mock_client: MagicMock, mock_config: MagicMock) -> None:
+    async def test_reconcile_success(self, mock_client: MagicMock, mock_config: MagicMock) -> None:
         """Successful reconciliation updates CRD status."""
         operator = ContinuityOperator()
         mock_api = MagicMock()
@@ -90,7 +90,7 @@ class TestReconcile:
             "spec": {"corridors": ["arctic-nwp"]},
         }
 
-        asyncio.get_event_loop().run_until_complete(operator.reconcile(PLURAL_POLICY, obj))
+        await operator.reconcile(PLURAL_POLICY, obj)
 
         mock_api.patch_namespaced_custom_object_status.assert_called_once()
         call_kwargs = mock_api.patch_namespaced_custom_object_status.call_args
@@ -101,7 +101,7 @@ class TestReconcile:
 
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
-    def test_reconcile_default_namespace(
+    async def test_reconcile_default_namespace(
         self, mock_client: MagicMock, mock_config: MagicMock
     ) -> None:
         """Missing namespace defaults to 'default'."""
@@ -113,14 +113,14 @@ class TestReconcile:
             "metadata": {"name": "test-network"},
         }
 
-        asyncio.get_event_loop().run_until_complete(operator.reconcile(PLURAL_NETWORK, obj))
+        await operator.reconcile(PLURAL_NETWORK, obj)
 
         call_kwargs = mock_api.patch_namespaced_custom_object_status.call_args
         assert call_kwargs.kwargs["namespace"] == "default"
 
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
-    def test_reconcile_failure_patches_error_status(
+    async def test_reconcile_failure_patches_error_status(
         self, mock_client: MagicMock, mock_config: MagicMock
     ) -> None:
         """When reconciliation fails, the error status is patched onto the CRD."""
@@ -137,7 +137,7 @@ class TestReconcile:
             "metadata": {"name": "broken-cr", "namespace": "ns"},
         }
 
-        asyncio.get_event_loop().run_until_complete(operator.reconcile(PLURAL_POLICY, obj))
+        await operator.reconcile(PLURAL_POLICY, obj)
 
         assert mock_api.patch_namespaced_custom_object_status.call_count == 2
         error_call = mock_api.patch_namespaced_custom_object_status.call_args_list[1]
@@ -145,7 +145,7 @@ class TestReconcile:
 
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
-    def test_reconcile_failure_error_patch_also_fails(
+    async def test_reconcile_failure_error_patch_also_fails(
         self, mock_client: MagicMock, mock_config: MagicMock, caplog: pytest.LogCaptureFixture
     ) -> None:
         """When both the reconcile and the error-status patch fail, log both errors."""
@@ -162,7 +162,7 @@ class TestReconcile:
         }
 
         with caplog.at_level(logging.ERROR, logger="continuityos.operator"):
-            asyncio.get_event_loop().run_until_complete(operator.reconcile(PLURAL_POLICY, obj))
+            await operator.reconcile(PLURAL_POLICY, obj)
 
         error_messages = [r.message for r in caplog.records if r.levelno >= logging.ERROR]
         assert len(error_messages) >= 2
@@ -174,7 +174,7 @@ class TestWatchResource:
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
     @patch("continuityos.operator.watch")
-    def test_watch_404_crd_not_found(
+    async def test_watch_404_crd_not_found(
         self, mock_watch_mod: MagicMock, mock_client: MagicMock, mock_config: MagicMock
     ) -> None:
         """When CRD is not installed (404), log error and retry."""
@@ -188,20 +188,16 @@ class TestWatchResource:
         mock_watch_mod.Watch.return_value = mock_watcher
         mock_watcher.stream.side_effect = ApiException(status=404)
 
-        # Run the watch for a very short period then cancel
-        async def run_short() -> None:
-            task = asyncio.create_task(operator.watch_resource(PLURAL_POLICY))
-            await asyncio.sleep(0.1)
-            task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await task
-
-        asyncio.get_event_loop().run_until_complete(run_short())
+        task = asyncio.create_task(operator.watch_resource(PLURAL_POLICY))
+        await asyncio.sleep(0.1)
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
     @patch("continuityos.operator.watch")
-    def test_watch_unexpected_error(
+    async def test_watch_unexpected_error(
         self, mock_watch_mod: MagicMock, mock_client: MagicMock, mock_config: MagicMock
     ) -> None:
         """Unexpected exceptions are caught, logged, and retried."""
@@ -213,14 +209,11 @@ class TestWatchResource:
         mock_watch_mod.Watch.return_value = mock_watcher
         mock_watcher.stream.side_effect = RuntimeError("network blip")
 
-        async def run_short() -> None:
-            task = asyncio.create_task(operator.watch_resource(PLURAL_NETWORK))
-            await asyncio.sleep(0.1)
-            task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await task
-
-        asyncio.get_event_loop().run_until_complete(run_short())
+        task = asyncio.create_task(operator.watch_resource(PLURAL_NETWORK))
+        await asyncio.sleep(0.1)
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 class TestConstants:
