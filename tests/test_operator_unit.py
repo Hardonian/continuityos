@@ -199,23 +199,83 @@ class TestWatchResource:
     @patch("continuityos.operator.config")
     @patch("continuityos.operator.client")
     @patch("continuityos.operator.watch")
-    async def test_watch_unexpected_error(
+    async def test_watch_receives_added_event(
         self, mock_watch_mod: MagicMock, mock_client: MagicMock, mock_config: MagicMock
     ) -> None:
-        """Unexpected exceptions are caught, logged, and retried."""
+        """Stream events of type ADDED trigger reconcile."""
         operator = ContinuityOperator()
         mock_api = MagicMock()
         operator.custom_api = mock_api
 
         mock_watcher = MagicMock()
         mock_watch_mod.Watch.return_value = mock_watcher
-        mock_watcher.stream.side_effect = RuntimeError("network blip")
+        mock_watcher.stream.return_value = [
+            {
+                "type": "ADDED",
+                "object": {
+                    "metadata": {"name": "test-stream-cr", "namespace": "sovereign"},
+                },
+            },
+            {
+                "type": "DELETED",  # Should not trigger reconcile
+                "object": {
+                    "metadata": {"name": "deleted-cr", "namespace": "sovereign"},
+                },
+            },
+        ]
 
-        task = asyncio.create_task(operator.watch_resource(PLURAL_NETWORK))
+        task = asyncio.create_task(operator.watch_resource(PLURAL_POLICY))
         await asyncio.sleep(0.1)
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
+
+        # Reconcile should have been called for ADDED event
+        mock_api.patch_namespaced_custom_object_status.assert_called_once()
+        call_kwargs = mock_api.patch_namespaced_custom_object_status.call_args.kwargs
+        assert call_kwargs["name"] == "test-stream-cr"
+
+    @patch("continuityos.operator.config")
+    @patch("continuityos.operator.client")
+    @patch("continuityos.operator.watch")
+    async def test_watch_generic_api_exception(
+        self, mock_watch_mod: MagicMock, mock_client: MagicMock, mock_config: MagicMock
+    ) -> None:
+        """Non-404 ApiExceptions are handled and retried."""
+        from kubernetes.client.rest import ApiException
+
+        operator = ContinuityOperator()
+        mock_api = MagicMock()
+        operator.custom_api = mock_api
+
+        mock_watcher = MagicMock()
+        mock_watch_mod.Watch.return_value = mock_watcher
+        mock_watcher.stream.side_effect = ApiException(status=500, reason="Internal Server Error")
+
+        task = asyncio.create_task(operator.watch_resource(PLURAL_POLICY))
+        await asyncio.sleep(0.1)
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+
+class TestOperatorRun:
+    """Test the operator.run() blocking lifecycle."""
+
+    @patch("continuityos.operator.config")
+    @patch("continuityos.operator.client")
+    def test_run_keyboard_interrupt(
+        self, mock_client: MagicMock, mock_config: MagicMock, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """KeyboardInterrupt cleanly exits run loop."""
+        operator = ContinuityOperator()
+
+        def fake_gather(*args: Any, **kwargs: Any) -> Any:
+            raise KeyboardInterrupt()
+
+        monkeypatch.setattr(asyncio, "gather", fake_gather)
+        # Should not raise
+        operator.run()
 
 
 class TestConstants:
