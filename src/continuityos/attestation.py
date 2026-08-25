@@ -5,6 +5,16 @@ Provides:
      entropy quality, and zero-egress network isolation.
   2. SCIFAttestationEngine: Generates cryptographically verifiable SCIF Attestation Certificates
      for Sovereign NATO Secret and Protected B enclaves.
+
+NOTE — REFERENCE SIMULATION BOUNDARY:
+  The certificate_signature_hex produced by SCIFAttestationEngine is a SHA-256 hash
+  digest concatenated with a fixed suffix. It is NOT a real Ed25519 signature bound to
+  a private key. This is intentional for the open-core reference implementation, which
+  must run without a hardware TPM or key ceremony.
+
+  TODO: For production SCIF deployments, replace the mock signature in
+  ``perform_attestation`` with real Ed25519 signing using a TPM-resident private key,
+  and bind the PCR quote to the signing operation via the TPM2_Certify command.
 """
 
 from __future__ import annotations

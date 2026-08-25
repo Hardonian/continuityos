@@ -212,13 +212,6 @@ class AccessControlEvaluator:
 
     @staticmethod
     def _classification_rank(level: ClassificationLevel) -> int:
-        ranks = {
-            ClassificationLevel.UNCLASSIFIED: 0,
-            ClassificationLevel.PROTECTED_A: 1,
-            ClassificationLevel.PROTECTED_B: 2,
-            ClassificationLevel.PROTECTED_C: 3,
-            ClassificationLevel.SECRET: 4,
-            ClassificationLevel.TOP_SECRET: 5,
-            ClassificationLevel.COSMIC_TOP_SECRET: 6,
-        }
-        return ranks.get(level, 0)
+        """Return numeric clearance rank. Delegates to DataClassification.level to
+        prevent rank-map divergence between RBAC and domain modules."""
+        return level.level

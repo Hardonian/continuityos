@@ -147,13 +147,36 @@ class EvidenceLedger:
         if not self.path.exists():
             return []
         lines = self.path.read_text(encoding="utf-8").splitlines()
+        if offset >= len(lines):
+            return []
         return [EvidenceRecord.model_validate_json(line) for line in lines[offset : offset + limit]]
 
     def _last_hash(self) -> str:
         if not self.path.exists() or self.path.stat().st_size == 0:
             return "0" * 64
-        last_line = self.path.read_text().splitlines()[-1]
-        return EvidenceRecord.model_validate_json(last_line).record_hash
+        # Read only the last line by seeking from end of file to avoid loading
+        # the entire ledger into memory for large evidence chains.
+        with self.path.open("rb") as fh:
+            fh.seek(0, 2)  # seek to end
+            pos = fh.tell()
+            if pos == 0:
+                return "0" * 64
+            # Walk backwards to find the last newline before the final line
+            buf = b""
+            while pos > 0:
+                read_size = min(4096, pos)
+                pos -= read_size
+                fh.seek(pos)
+                chunk = fh.read(read_size)
+                buf = chunk + buf
+                # We need at least one complete line (ending with \n followed by content)
+                lines = buf.split(b"\n")
+                # Filter empty trailing element from trailing newline
+                non_empty = [line for line in lines if line.strip()]
+                if non_empty:
+                    last_line = non_empty[-1].decode("utf-8")
+                    return EvidenceRecord.model_validate_json(last_line).record_hash
+        return "0" * 64
 
     @staticmethod
     def _canonical(payload: dict[str, Any]) -> bytes:

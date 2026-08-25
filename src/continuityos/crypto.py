@@ -191,8 +191,10 @@ class SealedIntelligenceEnvelope(BaseModel):
         cls, payload: dict[str, Any], recipient_key_hex: str, classification: str = "SECRET"
     ) -> SealedIntelligenceEnvelope:
         """Seal confidential intelligence payload into a verifiable cryptographic envelope."""
+        import os
+
         serialized = json.dumps(payload, sort_keys=True).encode("utf-8")
-        ephemeral_secret = hashlib.sha256(str(uuid4()).encode()).digest()
+        ephemeral_secret = os.urandom(32)
         ephemeral_pub_hex = hashlib.sha256(
             ephemeral_secret + recipient_key_hex.encode()
         ).hexdigest()

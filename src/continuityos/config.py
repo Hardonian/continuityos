@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     environment: Literal["development", "test", "production"] = "development"
     data_dir: Path = Path("./var")
+    database_path: Path | None = None
     evidence_private_key_path: Path | None = None
     evidence_public_key_path: Path | None = None
     operator_webhook_secret: str | None = Field(default=None, min_length=32)
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
                 missing.append("CONTINUITYOS_OPERATOR_WEBHOOK_SECRET")
             if self.api_key is None:
                 missing.append("CONTINUITYOS_API_KEY")
+            if self.database_path is None:
+                missing.append("CONTINUITYOS_DATABASE_PATH (in-memory DB forbidden in production)")
             if missing:
                 raise ValueError(f"production configuration missing: {', '.join(missing)}")
         return self
@@ -55,3 +58,12 @@ class Settings(BaseSettings):
     @property
     def evidence_dir(self) -> Path:
         return self.data_dir / "evidence"
+
+    @property
+    def resolved_database_path(self) -> str:
+        """Returns the database path string, defaulting to data_dir/evidence.db for non-memory."""
+        if self.database_path is not None:
+            return str(self.database_path)
+        if self.environment == "production":
+            return str(self.data_dir / "evidence.db")
+        return ":memory:"

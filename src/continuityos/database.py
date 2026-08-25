@@ -34,11 +34,21 @@ class IndexedEvidenceRecord(BaseModel):
 class TransactionalEvidenceStore:
     """High-throughput SQLite database engine with WAL mode and multi-tenant indexes."""
 
+    _MAX_LIMIT: int = 1000
+    _MAX_OFFSET: int = 1_000_000
+
     def __init__(self, db_path: str | Path = ":memory:") -> None:
         self.db_path = str(db_path)
+        self._closed = False
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._init_schema()
+
+    def __enter__(self) -> TransactionalEvidenceStore:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
 
     def _init_schema(self) -> None:
         with self.conn:
@@ -75,6 +85,11 @@ class TransactionalEvidenceStore:
         payload_hash: str,
         payload: dict[str, Any],
     ) -> IndexedEvidenceRecord:
+        if not tenant_id:
+            raise ValueError("tenant_id must be a non-empty string")
+        if not corridor_id:
+            raise ValueError("corridor_id must be a non-empty string")
+
         record_id = uuid4()
         now_iso = datetime.now(UTC).isoformat()
         payload_json = json.dumps(payload, sort_keys=True)
@@ -117,10 +132,19 @@ class TransactionalEvidenceStore:
         limit: int = 50,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
+        if not tenant_id:
+            raise ValueError("tenant_id must be a non-empty string")
+        if limit < 1 or limit > self._MAX_LIMIT:
+            raise ValueError(f"limit must be between 1 and {self._MAX_LIMIT}")
+        if offset < 0 or offset > self._MAX_OFFSET:
+            raise ValueError(f"offset must be between 0 and {self._MAX_OFFSET}")
+
         query = "SELECT * FROM evidence_records WHERE tenant_id = ?"
         params: list[Any] = [tenant_id]
 
-        if corridor_id:
+        if corridor_id is not None:
+            if not corridor_id:
+                raise ValueError("corridor_id must be non-empty when provided")
             query += " AND corridor_id = ?"
             params.append(corridor_id)
 
@@ -147,10 +171,14 @@ class TransactionalEvidenceStore:
         return results
 
     def count_records(self, tenant_id: str) -> int:
+        if not tenant_id:
+            raise ValueError("tenant_id must be a non-empty string")
         cursor = self.conn.execute(
             "SELECT COUNT(*) FROM evidence_records WHERE tenant_id = ?", (tenant_id,)
         )
         return int(cursor.fetchone()[0])
 
     def close(self) -> None:
-        self.conn.close()
+        if not self._closed:
+            self._closed = True
+            self.conn.close()

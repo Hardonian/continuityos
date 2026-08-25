@@ -17,16 +17,28 @@ class RateLimitExceeded(Exception):
 
 
 class FixedWindowLimiter:
-    """Small process-local limiter for the single-worker reference deployment."""
+    """Small process-local limiter for the single-worker reference deployment.
 
-    def __init__(self) -> None:
+    Tracks at most ``max_keys`` unique rate-limit keys. When the limit is reached,
+    the oldest-accessed key is evicted to prevent unbounded memory growth under
+    sustained DoS with rotating client identifiers.
+    """
+
+    def __init__(self, max_keys: int = 10_000) -> None:
         self._events: dict[str, deque[float]] = defaultdict(deque)
+        self._access_order: deque[str] = deque()
+        self._max_keys = max_keys
         self._lock = Lock()
 
     def check(self, key: str, limit: int, window_seconds: int = 60) -> int | None:
         now = time.monotonic()
         cutoff = now - window_seconds
         with self._lock:
+            # LRU eviction when key count exceeds bound
+            if key not in self._events and len(self._events) >= self._max_keys:
+                evict_key = self._access_order.popleft()
+                self._events.pop(evict_key, None)
+
             events = self._events[key]
             while events and events[0] <= cutoff:
                 events.popleft()
@@ -34,6 +46,7 @@ class FixedWindowLimiter:
                 retry_after = max(1, int(events[0] + window_seconds - now) + 1)
                 return retry_after
             events.append(now)
+            self._access_order.append(key)
         return None
 
 

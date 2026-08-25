@@ -121,11 +121,14 @@ class RaftStateSynchronizer:
         """Performs delta log replication with an air-gapped or DDIL peer node."""
         entries_to_send = [e for e in self.log if e.index > peer_log_index]
 
-        # Update peer tracking
+        # Update peer tracking with an immutable copy rather than in-place mutation
         if peer_id in self.peers:
-            peer = self.peers[peer_id]
-            peer.last_log_index = len(self.log)
-            peer.last_heartbeat = datetime.now(UTC)
+            self.peers[peer_id] = self.peers[peer_id].model_copy(
+                update={
+                    "last_log_index": len(self.log),
+                    "last_heartbeat": datetime.now(UTC),
+                }
+            )
 
         root = self.compute_merkle_root()
 

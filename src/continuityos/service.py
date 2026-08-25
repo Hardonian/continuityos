@@ -1751,7 +1751,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     rbac_evaluator = AccessControlEvaluator()
     attestation_engine = SCIFAttestationEngine()
-    db_store = TransactionalEvidenceStore()
+    db_store = TransactionalEvidenceStore(configured.resolved_database_path)
 
     @app.post("/v1/rbac/evaluate")
     async def evaluate_rbac_access(payload: dict[str, Any]) -> dict[str, Any]:
