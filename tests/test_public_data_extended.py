@@ -166,7 +166,7 @@ async def test_fetch_url_payload_size_limit_exceeded(tmp_path: Path) -> None:
     mock_resp.content = b"a" * 100  # 100 bytes > 10 max
     mock_resp.headers = {"content-type": "application/json"}
     mock_resp.status_code = 200
-    mock_resp.raise_for_status = AsyncMock()
+    mock_resp.raise_for_status = MagicMock()
 
     mock_client = AsyncMock()
     mock_client.get = AsyncMock(return_value=mock_resp)

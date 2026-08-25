@@ -51,7 +51,7 @@ async def test_cache_fetch_success(tmp_path: Path) -> None:
     mock_resp.content = b"downloaded-data"
     mock_resp.headers = {"content-type": "application/json"}
     mock_resp.status_code = 200
-    mock_resp.raise_for_status = AsyncMock()
+    mock_resp.raise_for_status = MagicMock()
 
     mock_client = AsyncMock()
     mock_client.get = AsyncMock(return_value=mock_resp)
