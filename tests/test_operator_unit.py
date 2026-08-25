@@ -64,10 +64,11 @@ class TestContinuityOperatorInit:
 
             env = os.environ.copy()
             env.pop("KUBERNETES_SERVICE_HOST", None)
-            with patch.dict("os.environ", env, clear=True), caplog.at_level(
-                    logging.WARNING, logger="continuityos.operator"
+            with (
+                patch.dict("os.environ", env, clear=True),
+                caplog.at_level(logging.WARNING, logger="continuityos.operator"),
             ):
-                    operator = ContinuityOperator()
+                operator = ContinuityOperator()
 
         assert operator is not None
         assert any("Could not load kubeconfig" in r.message for r in caplog.records)
