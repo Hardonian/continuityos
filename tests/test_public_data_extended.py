@@ -81,7 +81,6 @@ def test_parse_date_rfc_fallback() -> None:
 def test_cdd_adapter_no_dated_events_raises(tmp_path: Path) -> None:
     """CDD workbook with headers but no dated rows raises ValueError."""
     cache = SnapshotCache(tmp_path)
-    plane = PublicDataPlane(cache, outbound_enabled=False)
 
     # Minimal sheet with only headers
     buf = io.BytesIO()
@@ -98,17 +97,11 @@ def test_cdd_adapter_no_dated_events_raises(tmp_path: Path) -> None:
             </worksheet>""",
         )
 
-    meta = cache.store("canadian-disaster-database", "https://example.com", buf.getvalue(), {}, 200)
-    snap = plane._summarize(
-        spec=plane.cache,  # type: ignore
-        metadata=meta,
-        body=buf.getvalue(),
-        from_cache=True,
-        parser="xlsx",
-    ) if False else None
+    cache.store("canadian-disaster-database", "https://example.com", buf.getvalue(), {}, 200)
 
     # Test direct normalization raises
     from continuityos.public_data import PublicSnapshot
+
     mock_snap = PublicSnapshot(
         source_id="canadian-disaster-database",
         snapshot_id="snap-1",
@@ -188,13 +181,15 @@ async def test_fetch_url_payload_size_limit_exceeded(tmp_path: Path) -> None:
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        with pytest.raises(ValueError, match="exceeds configured size limit"):
-            await plane.fetch_url(
-                "eccc-alerts-national",
-                "https://example.com/alerts",
-                force=True,
-            )
+    with (
+        patch("httpx.AsyncClient", return_value=mock_client),
+        pytest.raises(ValueError, match="exceeds configured size limit"),
+    ):
+        await plane.fetch_url(
+            "eccc-alerts-national",
+            "https://example.com/alerts",
+            force=True,
+        )
 
 
 async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> None:
@@ -236,13 +231,16 @@ async def test_fetch_dfo_station_and_water_levels_combined(tmp_path: Path) -> No
     start = datetime(2024, 1, 1, tzinfo=UTC)
     end = datetime(2024, 1, 2, tzinfo=UTC)
 
-    stn_snap, data_snap, station, indicators = (
-        await DFOIWLSAdapter.fetch_station_and_water_levels(
-            plane,
-            region="atlantic",
-            start=start,
-            end=end,
-        )
+    (
+        _stn_snap,
+        _data_snap,
+        station,
+        indicators,
+    ) = await DFOIWLSAdapter.fetch_station_and_water_levels(
+        plane,
+        region="atlantic",
+        start=start,
+        end=end,
     )
 
     assert station["id"] == "STN-001"

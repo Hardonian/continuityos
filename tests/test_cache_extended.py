@@ -95,10 +95,11 @@ def test_cache_latest_max_age_filter(tmp_path: Path) -> None:
     meta = cache.import_file("src-age", "https://example.com/old", f)
 
     # Corrupt or modify timestamp in metadata file to simulate an old snapshot
-    meta_path = tmp_path / "src-age" / meta.content_sha256[:2] / meta.content_sha256 / "metadata.json"
-    meta_path.write_text(meta_path.read_text().replace(
-        meta.retrieved_at, "2020-01-01T00:00:00+00:00"
-    ))
+    digest = meta.content_sha256
+    meta_path = tmp_path / "src-age" / digest[:2] / digest / "metadata.json"
+    meta_path.write_text(
+        meta_path.read_text().replace(meta.retrieved_at, "2020-01-01T00:00:00+00:00")
+    )
 
     # Should be None when max_age_hours is small
     found = cache.latest("src-age", max_age_hours=1.0)
@@ -114,7 +115,8 @@ def test_cache_latest_corrupt_metadata_skipped(tmp_path: Path) -> None:
     meta = cache.import_file("src-corrupt", "https://example.com/data", f)
 
     # Write garbage to metadata.json
-    meta_path = tmp_path / "src-corrupt" / meta.content_sha256[:2] / meta.content_sha256 / "metadata.json"
+    digest = meta.content_sha256
+    meta_path = tmp_path / "src-corrupt" / digest[:2] / digest / "metadata.json"
     meta_path.write_text("NOT_JSON")
 
     found = cache.latest("src-corrupt")

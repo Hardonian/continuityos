@@ -92,5 +92,5 @@ def test_state_claim_sequence_out_of_order(tmp_path: Path) -> None:
 
     assert state.claim_sequence("T1", "A1", 10) is True
     assert state.claim_sequence("T1", "A1", 10) is False  # duplicate
-    assert state.claim_sequence("T1", "A1", 5) is False   # older
-    assert state.claim_sequence("T1", "A1", 11) is True   # newer
+    assert state.claim_sequence("T1", "A1", 5) is False  # older
+    assert state.claim_sequence("T1", "A1", 11) is True  # newer
