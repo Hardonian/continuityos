@@ -49,11 +49,11 @@ class IoTMeshNode:
 
     def get_delta_sync(self, device_id: str, last_sync_hash: str) -> dict[str, Any]:
         """Delta-compression synchronization for constrained bandwidth (Starlink)."""
-        # In a real implementation, this computes a binary patch. 
+        # In a real implementation, this computes a binary patch.
         # Here we mock the synchronization payload.
         if device_id not in self.devices:
             raise ValueError("Unknown device")
-        
+
         return {
             "type": "delta_sync",
             "device_id": device_id,

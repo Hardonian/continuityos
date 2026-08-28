@@ -54,7 +54,7 @@ class ThreatIndicator(BaseModel):
 
 class TelemetryParser:
     """Parses binary telemetry payloads optimized for ESP32/IoT edge nodes."""
-    
+
     @staticmethod
     def parse_binary_kinematics(payload: bytes) -> DroneKinematics:
         """
@@ -71,9 +71,9 @@ class TelemetryParser:
         """
         if len(payload) < 36:
             raise ValueError(f"Payload too short for kinematics: {len(payload)} bytes")
-            
+
         drone_id_bytes, lat, lon, alt, vel, hdg, sig, ts = struct.unpack("<8sffffffI", payload[:36])
-        
+
         return DroneKinematics(
             drone_id=drone_id_bytes.decode('utf-8').strip('\x00'),
             latitude=lat,
@@ -84,14 +84,14 @@ class TelemetryParser:
             signal_strength_dbm=sig,
             timestamp=datetime.fromtimestamp(ts, tz=UTC)
         )
-        
+
     @staticmethod
     def detect_anomalies(kinematics_stream: list[DroneKinematics]) -> list[ThreatIndicator]:
         """Detect anomalies such as GPS spoofing or RF jamming across a stream."""
         threats: list[ThreatIndicator] = []
         if not kinematics_stream:
             return threats
-            
+
         # Example Anomaly Rule 1: Sudden drop in signal strength could indicate RF Jamming
         for k in kinematics_stream:
             if k.signal_strength_dbm < -100.0:
@@ -105,7 +105,7 @@ class TelemetryParser:
                         detected_at=k.timestamp
                     )
                 )
-                
+
         # Example Anomaly Rule 2: Unrealistic velocity indicates GPS Spoofing
         for k in kinematics_stream:
             if k.velocity_mps > 300.0: # Mach 1+ drone is unlikely
@@ -119,7 +119,7 @@ class TelemetryParser:
                         detected_at=k.timestamp
                     )
                 )
-                
+
         return threats
 
 

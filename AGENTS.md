@@ -1,6 +1,6 @@
 # Aegis Continuity (Sovereign Edition) — Agent Engineering Guide & System Specifications
 
-Welcome to **Aegis Continuity** (built upon the ContinuityOS open-core engine). This is the premier **Continuity-as-Code / Resilience-as-Code** platform designed for NATO-aligned Sovereign Governments, Ministries of Defense, and Tier-1 Defense Primes. 
+Welcome to **Aegis Continuity** (built upon the ContinuityOS open-core engine). This is the premier **Continuity-as-Code / Resilience-as-Code** platform designed for NATO-aligned Sovereign Governments, Ministries of Defense, and Tier-1 Defense Primes.
 
 This document serves as the authoritative guide for AI coding agents and human contributors working on this repository, ensuring strict adherence to MIL-SPEC resilience, air-gapped security, and deterministic exact-solvers.
 

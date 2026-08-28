@@ -33,7 +33,7 @@ def test_iot_mesh_node_deploy_model():
 def test_iot_mesh_node_delta_sync():
     node = IoTMeshNode("fleet-01")
     node.register_device("esp32-alpha")
-    
+
     sync = node.get_delta_sync("esp32-alpha", "last_hash")
     assert sync["type"] == "delta_sync"
     assert sync["base_hash"] == "last_hash"
@@ -45,7 +45,7 @@ def test_iot_mesh_node_delta_sync():
 def test_model_distiller():
     distiller = ModelDistiller()
     result = distiller.generate_moe_payload("llama3", "surveillance")
-    
+
     assert isinstance(result, DistillationResult)
     assert result.compression_ratio == 42.5
     assert result.payload.target_architecture == "esp32-s3"
@@ -66,9 +66,9 @@ def test_telemetry_parser_kinematics():
     drone_id = b"UAV-001\x00"
     lat, lon, alt, vel, hdg, sig = 45.0, -75.0, 100.0, 15.0, 90.0, -50.0
     ts = int(datetime(2025, 1, 1, tzinfo=UTC).timestamp())
-    
+
     payload = struct.pack("<8sffffffI", drone_id, lat, lon, alt, vel, hdg, sig, ts)
-    
+
     parsed = TelemetryParser.parse_binary_kinematics(payload)
     assert parsed.drone_id == "UAV-001"
     assert parsed.latitude == 45.0
@@ -128,12 +128,12 @@ def test_edge_node_add_peer():
 def test_edge_node_get_manifest(tmp_path):
     cache_mock = MagicMock()
     cache_mock.root = tmp_path
-    
+
     # Create fake metadata.json
     d = tmp_path / "a" / "b" / "c"
     d.mkdir(parents=True)
     (d / "metadata.json").write_text('{"snapshot_id": "snap1"}')
-    
+
     node = EdgeNode("node1", cache_mock)
     manifest = node.get_manifest()
     assert manifest.peer_id == "node1"
@@ -143,18 +143,18 @@ def test_edge_node_get_manifest(tmp_path):
 async def test_edge_node_sync_with_peer_success():
     cache_mock = MagicMock()
     node = EdgeNode("node1", cache_mock)
-    
+
     mock_response_manifest = MagicMock()
     mock_response_manifest.status_code = 200
     mock_response_manifest.json.return_value = {"peer_id": "peer1", "snapshot_ids": ["snap1"]}
-    
+
     mock_response_sync = MagicMock()
     mock_response_sync.status_code = 200
     mock_response_sync.json.return_value = {
         "metadata": {"source_id": "src1", "url": "url1", "content_type": "text/plain"},
         "payload": "payload_data"
     }
-    
+
     async def mock_get(url):
         if url.endswith("/manifest"):
             return mock_response_manifest
@@ -179,10 +179,10 @@ async def test_edge_node_loop_start_stop():
 async def test_edge_node_sync_manifest_error():
     cache_mock = MagicMock()
     node = EdgeNode("node1", cache_mock)
-    
+
     mock_response = MagicMock()
     mock_response.status_code = 500
-    
+
     async def mock_get(url):
         return mock_response
 
@@ -195,7 +195,7 @@ async def test_edge_node_sync_request_error():
     import httpx
     cache_mock = MagicMock()
     node = EdgeNode("node1", cache_mock)
-    
+
     with patch("httpx.AsyncClient.get", side_effect=httpx.RequestError("err")):
         await node._sync_with_peer("http://peer1")
         # should catch error and continue

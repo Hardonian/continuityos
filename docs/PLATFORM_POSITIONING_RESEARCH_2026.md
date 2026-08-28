@@ -1,7 +1,7 @@
 # ContinuityOS positioning research
 
-**As of:** 2026-07-23  
-**Scope:** serious alternatives/adjacent systems and standards for a Canadian/EU-compatible governed continuity data platform.  
+**As of:** 2026-07-23
+**Scope:** serious alternatives/adjacent systems and standards for a Canadian/EU-compatible governed continuity data platform.
 **Evidence convention:** “Verified” means stated in a current public product document, legal document, regulation, or standards body publication. Vendor capability descriptions are still vendor claims; they are not independent assurance or proof that every deployment/configuration has the capability.
 
 ## Executive conclusion

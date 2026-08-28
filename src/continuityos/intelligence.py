@@ -44,11 +44,11 @@ class ModelDistiller:
         applying per-layer embeddings to compress into <16MB.
         """
         import hashlib
-        
+
         # Simulate an intensive quantization operation
         simulated_hex = hashlib.sha256(f"{base_model}-{task_domain}".encode()).hexdigest() * 1024
         vocab_hex = hashlib.sha256(b"vocab").hexdigest() * 128
-        
+
         payload = ModelPayload(
             model_id=f"{base_model}_{task_domain}_q4",
             version="1.0.0",
@@ -56,7 +56,7 @@ class ModelDistiller:
             vocabulary_hex=vocab_hex[:1000],
             target_architecture="esp32-s3"
         )
-        
+
         return DistillationResult(
             model_id=payload.model_id,
             target_architecture=payload.target_architecture,

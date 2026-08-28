@@ -1,5 +1,5 @@
-## Canadian procurement and program signals relevant to ContinuityOS  
-**Research window: 2025–2026; authoritative government sources prioritized.**  
+## Canadian procurement and program signals relevant to ContinuityOS
+**Research window: 2025–2026; authoritative government sources prioritized.**
 **Interpretation:** “Buyer/use-case implication” is an inference from the stated requirement, not evidence of buyer interest or endorsement.
 
 ### 1. Arctic and maritime situational awareness
@@ -36,7 +36,7 @@
 
 ### 4. Defence procurement modernization and market access
 
-- **May 27, 2026 — Defence Investment Agency (DIA) / CANSEC backgrounder:** Canada announced a Strategic Partnership Framework, Defence Advisory Forum, Defence Concierge Service, and ITB modernization intended to improve industry access, procurement agility, domestic capacity, and resilient supply chains. The page explicitly says the framework is selective and need-driven; the Defence Advisory Forum’s inaugural meeting was anticipated for September 2026.  
+- **May 27, 2026 — Defence Investment Agency (DIA) / CANSEC backgrounder:** Canada announced a Strategic Partnership Framework, Defence Advisory Forum, Defence Concierge Service, and ITB modernization intended to improve industry access, procurement agility, domestic capacity, and resilient supply chains. The page explicitly says the framework is selective and need-driven; the Defence Advisory Forum’s inaugural meeting was anticipated for September 2026.
   Source: [DIA CANSEC 2026 backgrounder](https://www.canada.ca/en/defence-investment-agency/news/2026/05/backgrounder-canada-is-strengthening-defence-sovereignty-and-industrial-capacity-through-investments-and-partnerships.html)
 
 - The same backgrounder states that proposed ITB changes would incentivize **critical infrastructure, new facilities, IP transfer, Canadian SMB participation, workforce development, and sovereign capabilities**. This supports a Canadian-industry / dual-use narrative, but does not guarantee eligibility for any particular program.
@@ -47,15 +47,15 @@
   - **$10.9B over five years** for DND, CAF, and CSE digital infrastructure;
   - **$6.6B over five years** for the Defence Industrial Strategy;
   - **$1B over four years** for the Arctic Infrastructure Fund;
-  - **$5B over seven years** for the Trade Diversification Corridors Fund, including digital infrastructure.  
+  - **$5B over seven years** for the Trade Diversification Corridors Fund, including digital infrastructure.
   Source: [Budget 2025, Chapter 4](https://budget.canada.ca/2025/report-rapport/chap4-en.html) and [Chapter 2](https://budget.canada.ca/2025/report-rapport/chap2-en.html)
 
 ## Positioning recommendations for ContinuityOS
 
-1. **Lead with operational continuity, not generic “AI for national security.”**  
+1. **Lead with operational continuity, not generic “AI for national security.”**
    Stronger language: *“A secure coordination and evidence layer for continuity, incident response, exercises, recovery, and cross-organization readiness.”*
 
-2. **Target the seams between existing systems.**  
+2. **Target the seams between existing systems.**
    The procurement evidence points to GIS, AIS, radar, SIEM, sensors, infrastructure, and engineering systems already being bought. ContinuityOS should complement these systems by coordinating:
    - incidents and decisions;
    - dependencies and critical services;
