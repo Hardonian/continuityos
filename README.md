@@ -1,4 +1,8 @@
 # Aegis Continuity (Sovereign Edition)
+
+<!-- BEGIN: REPO HERO -->
+![continuityos — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
 *(Powered by the ContinuityOS Open-Core Engine)*
 
 Sovereign Resilience-as-Code and cyber-physical continuity assurance for critical maritime corridors, NATO logistics, Arctic operations, and defense supply chains.
