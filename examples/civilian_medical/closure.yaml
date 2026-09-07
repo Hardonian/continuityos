@@ -1,0 +1,32 @@
+apiVersion: continuity.io/v1
+kind: ClosureAssessmentInput
+metadata:
+  name: container-port-closure-eval
+spec:
+  resource_ref: port/maritime-container
+  physically_accessible: true
+  physical_capacity_ratio: 0.8
+  navigation_available: true
+  navigation_trust: 0.95
+  communications_available: false
+  communications_trust: 0.30
+  escort_available: true
+  escort_dependent: false
+  weather_safe: true
+  insurance_available: true
+  insurance_coverage: 1.0
+  carrier_capacity_available: false
+  carrier_capacity_ratio: 0.0
+  commercial_viability: 0.40
+  data_integrity: 0.90
+  observation_confidence: 0.85
+  source_diversity: 2
+  recovery_backlog_active: true
+  policy_violations:
+    - "POL-PORT-01: Terminal handling throughput stalled due to labor strike"
+    - "POL-COMM-02: Cellular telemetry backhaul offline"
+  dependency_trace:
+    - "port/maritime-container -> Regional Cellular Towers -> Offline"
+    - "port/maritime-container -> Crane Operator Union -> Labor Action"
+  evidence_refs:
+    - "evidence://ledger/record/rec-port-labor-01"

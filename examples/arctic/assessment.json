@@ -1,0 +1,43 @@
+{
+  "theater_id": "NORAD-ARCTIC-SECTOR-01",
+  "overall_continuity": 0.58,
+  "inventory_reserve_days": 12.0,
+  "corridor_state": "open_but_uninsurable",
+  "corridor_id": "corridor/nsr",
+  "assessment": {
+    "assessment_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "corridor_id": "corridor/nsr",
+    "generated_at": "2026-09-07T12:00:00Z",
+    "overall_risk": 0.72,
+    "confidence": 0.88,
+    "state": "open_but_uninsurable",
+    "factors": [
+      {
+        "factor": "commercial",
+        "risk": 0.95,
+        "confidence": 0.90,
+        "evidence_ids": ["c1b2c3d4-e5f6-7890-abcd-ef1234567891"],
+        "rationale": "Lloyd's JWC listed area exclusion (JWLA-032) active"
+      },
+      {
+        "factor": "cyber",
+        "risk": 0.82,
+        "confidence": 0.85,
+        "evidence_ids": ["c1b2c3d4-e5f6-7890-abcd-ef1234567892"],
+        "rationale": "GNSS L5 spoofing and pseudorange distortion detected in Kara Strait"
+      },
+      {
+        "factor": "communications",
+        "risk": 0.65,
+        "confidence": 0.80,
+        "evidence_ids": ["c1b2c3d4-e5f6-7890-abcd-ef1234567893"],
+        "rationale": "High-latitude SATCOM degradation due to space weather"
+      }
+    ],
+    "missing_required_metrics": [],
+    "caveats": [
+      "JWC Listed Area exclusion notice active",
+      "GNSS spoofing detected in Kara Strait"
+    ]
+  }
+}

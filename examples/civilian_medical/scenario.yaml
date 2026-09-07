@@ -1,0 +1,18 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: regional-medical-supply-disruption
+  version: "1.0.0"
+spec:
+  description: "Correlated port labor strike, regional telecom tower outage, and hospital surge demand"
+  duration_days: 60
+  events:
+    - target: port_maritime_container
+      state: functionally_closed
+      description: "Port container berth crane operator strike halts inbound unloading"
+    - target: comms_cellular_telemetry
+      state: physically_closed
+      description: "Cellular tower physical power disruption degrades real-time cold-chain tracking"
+    - target: warehouse_cold_chain_hub
+      state: open_capacity_constrained
+      description: "Surge emergency demand exceeds distribution depot loading docks"

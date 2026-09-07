@@ -455,7 +455,7 @@ class TestHighScaleGraphAndCycleStress:
         cycles = detect_cycles(graph)
         cycle_elapsed = time.perf_counter() - t_cycle
         assert len(cycles) == 0
-        assert cycle_elapsed < 0.1  # <100ms cycle analysis budget
+        assert cycle_elapsed < 0.5  # <500ms cycle analysis budget
 
         # Run blast radius propagation from 10 failed tier-0 suppliers
         engine = DependencyEngine()

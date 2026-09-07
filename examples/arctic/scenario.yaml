@@ -1,0 +1,21 @@
+apiVersion: continuity.io/v1
+kind: Scenario
+metadata:
+  name: arctic-multi-chokepoint-failure
+  version: "1.0.0"
+spec:
+  description: "Correlated multi-event disruption across high-latitude SATCOM, NSR icebreaker escort, and canal chokepoints"
+  duration_days: 90
+  events:
+    - target: satcom_iridium
+      state: open_but_communications_degraded
+      description: "Severe geomagnetic disturbance causing high-latitude SATCOM degradation"
+    - target: icebreaker_50let
+      state: physically_closed
+      description: "Propulsion maintenance failure disabling nuclear icebreaker escort"
+    - target: route_nsr
+      state: open_but_navigation_untrusted
+      description: "GNSS spoofing active across Kara Sea transit chokepoint"
+    - target: port_murmansk
+      state: functionally_closed
+      description: "Port OT SCADA cyber outage preventing container berth operations"

@@ -1174,6 +1174,70 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return res.model_dump(mode="json")
 
     @app.post(
+        "/v1/assurance/evaluate",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def evaluate_assurance_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.assurance import AssuranceObservedState, evaluate_assurance
+        from continuityos.dsl import AssurancePolicySpec
+
+        policy_spec = AssurancePolicySpec.model_validate(
+            payload.get("policy", payload.get("spec", payload))
+        )
+        state_data = payload.get("observed_state", {})
+        state = (
+            AssuranceObservedState.model_validate(state_data)
+            if state_data
+            else AssuranceObservedState()
+        )
+        policy_name = str(
+            payload.get("policy_name", payload.get("metadata", {}).get("name", "assurance-policy"))
+        )
+        res = evaluate_assurance(policy_spec, state, policy_name=policy_name)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/substitution/compile",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def compile_substitution_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.substitution import (
+            RouteSubstitutionCandidate,
+            compile_route_substitution,
+        )
+
+        candidate = RouteSubstitutionCandidate.model_validate(
+            payload.get("candidate", payload.get("spec", payload))
+        )
+        res = compile_route_substitution(candidate)
+        return res.model_dump(mode="json")
+
+    @app.post(
+        "/v1/independence/analyze",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def analyze_independence_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.graph import DependencyGraph
+        from continuityos.independence import ProviderIndependenceAnalyzer
+
+        graph_data = payload.get("graph", payload)
+        graph = DependencyGraph.model_validate(graph_data)
+        analyzer = ProviderIndependenceAnalyzer(graph)
+        report = analyzer.analyze_graph(graph)
+        return report.model_dump(mode="json")
+
+    @app.post(
+        "/v1/closure/assess",
+        dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
+    )
+    async def assess_closure_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        from continuityos.closure import ClosureInput, assess_closure
+
+        inp = ClosureInput.model_validate(payload.get("input", payload.get("spec", payload)))
+        res = assess_closure(inp)
+        return res.model_dump(mode="json")
+
+    @app.post(
         "/v1/threats/scan",
         dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
     )

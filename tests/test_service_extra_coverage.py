@@ -235,3 +235,112 @@ def test_database_evidence_query_endpoint(
     data = resp.json()
     assert "total_count" in data
     assert "records" in data
+
+
+def test_assurance_evaluate_endpoint(auth_client: tuple[TestClient, dict[str, str]]) -> None:
+    """Test POST /v1/assurance/evaluate endpoint."""
+    client, headers = auth_client
+    payload = {
+        "policy_name": "arctic-defense-assurance",
+        "policy": {
+            "budgets": {"critical_shortage_days": 7, "downtime_hours": 24.0},
+            "tolerances": {"max_consecutive_degraded_days": 3},
+            "gates": {"minimum_continuity": 0.95},
+        },
+        "observed_state": {
+            "critical_shortage_days": 2,
+            "downtime_hours": 12.0,
+            "consecutive_degraded_days": 1,
+            "continuity_score": 0.96,
+        },
+    }
+    resp = client.post("/v1/assurance/evaluate", json=payload, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["policy_name"] == "arctic-defense-assurance"
+    assert data["overall_compliant"] is True
+
+
+def test_substitution_compile_endpoint(auth_client: tuple[TestClient, dict[str, str]]) -> None:
+    """Test POST /v1/substitution/compile endpoint."""
+    client, headers = auth_client
+    payload = {
+        "candidate": {
+            "primary_route_id": "route-nsr",
+            "alternative_route_id": "route-atlantic",
+            "cargo_type": "critical_fuel",
+            "quantity_tons": 10000.0,
+            "critical_inventory_exhaustion_days": 40,
+            "alternative_transit_days": 22,
+        }
+    }
+    resp = client.post("/v1/substitution/compile", json=payload, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["effective_substitution"] in {"PASS", "DEGRADED", "FAIL"}
+    assert "geographically_viable" in data
+
+
+def test_independence_analyze_endpoint(auth_client: tuple[TestClient, dict[str, str]]) -> None:
+    """Test POST /v1/independence/analyze endpoint."""
+    client, headers = auth_client
+    payload = {
+        "graph": {
+            "graph_id": "graph-satcom-redundancy",
+            "nodes": [
+                {
+                    "node_id": "satcom_iridium",
+                    "name": "Iridium SATCOM",
+                    "node_type": "satcom",
+                    "provider_id": "iridium",
+                },
+                {
+                    "node_id": "satcom_inmarsat",
+                    "name": "Inmarsat SATCOM",
+                    "node_type": "satcom",
+                    "provider_id": "inmarsat",
+                },
+                {
+                    "node_id": "gateway_earth_station",
+                    "name": "Shared Earth Gateway",
+                    "node_type": "facility",
+                    "provider_id": "shared_ground",
+                },
+            ],
+            "edges": [
+                {
+                    "source": "satcom_iridium",
+                    "target": "gateway_earth_station",
+                    "kind": "connects",
+                },
+                {
+                    "source": "satcom_inmarsat",
+                    "target": "gateway_earth_station",
+                    "kind": "connects",
+                },
+            ],
+        }
+    }
+    resp = client.post("/v1/independence/analyze", json=payload, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["overall_valid"] is True
+    assert "results" in data
+
+
+def test_closure_assess_endpoint(auth_client: tuple[TestClient, dict[str, str]]) -> None:
+    """Test POST /v1/closure/assess endpoint."""
+    client, headers = auth_client
+    payload = {
+        "input": {
+            "resource_ref": "corridor/nsr",
+            "physically_accessible": True,
+            "insurance_available": False,
+            "insurance_coverage": 0.0,
+        }
+    }
+    resp = client.post("/v1/closure/assess", json=payload, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["effective_state"] == "open_but_uninsurable"
+    assert "uninsurable" in data["reason_codes"]

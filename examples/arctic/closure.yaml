@@ -1,0 +1,33 @@
+apiVersion: continuity.io/v1
+kind: ClosureAssessmentInput
+metadata:
+  name: nsr-functional-closure-eval
+spec:
+  resource_ref: corridor/nsr
+  physically_accessible: true
+  physical_capacity_ratio: 1.0
+  navigation_available: true
+  navigation_trust: 0.45
+  communications_available: true
+  communications_trust: 0.50
+  escort_available: true
+  escort_dependent: true
+  weather_safe: true
+  insurance_available: false
+  insurance_coverage: 0.0
+  carrier_capacity_available: false
+  carrier_capacity_ratio: 0.0
+  commercial_viability: 0.20
+  data_integrity: 0.85
+  observation_confidence: 0.50
+  source_diversity: 2
+  recovery_backlog_active: true
+  policy_violations:
+    - "POL-INS-01: Lloyd's JWC listed area exclusion active"
+    - "POL-NAV-02: GNSS spoofing detected; trust score 0.45 < 0.70"
+  dependency_trace:
+    - "corridor/nsr -> Underwriters (JWC JWLA-032) -> Insurance Withdrawn"
+    - "corridor/nsr -> GNSS L5 Emitters -> Spoofed Residuals (119m)"
+  evidence_refs:
+    - "evidence://ledger/record/rec-nsr-jwc-01"
+    - "evidence://ledger/record/rec-nsr-ew-02"

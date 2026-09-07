@@ -1,0 +1,15 @@
+{
+  "resource_ref": "corridor/nsr-kara-strait",
+  "gnss_residuals": [65.4, 82.1, 94.2, 71.8],
+  "cno_ratios": [22.5, 24.1, 21.8, 23.2],
+  "clock_drift_ppm": 3.85,
+  "scada_cmd_rate": 68.5,
+  "unauthorized_fc": [16, 23, 43],
+  "untrusted_ips": 4,
+  "plc_hashes": {
+    "PLC-PUMP-01": "e4c3b2a1f09876543210fedcba987654",
+    "PLC-VALVE-02": "d3c2b1a0f9876543210fedcba987653"
+  },
+  "expected_plc_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "ais_coords": [70.5, 35.0, 70.85, 35.8, 1800.0]
+}
