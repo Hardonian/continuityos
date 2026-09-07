@@ -1,0 +1,166 @@
+{
+  "$defs": {
+    "AssuranceCommercialSpec": {
+      "properties": {
+        "insurance_required": {
+          "default": true,
+          "title": "Insurance Required",
+          "type": "boolean"
+        },
+        "minimum_carrier_options": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Carrier Options",
+          "type": "integer"
+        }
+      },
+      "title": "AssuranceCommercialSpec",
+      "type": "object"
+    },
+    "AssuranceEvidenceSpec": {
+      "properties": {
+        "minimum_independent_environmental_sources": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Independent Environmental Sources",
+          "type": "integer"
+        },
+        "minimum_independent_navigation_sources": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Independent Navigation Sources",
+          "type": "integer"
+        },
+        "minimum_independent_operational_sources": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Minimum Independent Operational Sources",
+          "type": "integer"
+        }
+      },
+      "title": "AssuranceEvidenceSpec",
+      "type": "object"
+    },
+    "AssuranceInventorySpec": {
+      "properties": {
+        "minimum_assured_replenishment_cycles": {
+          "default": 1,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Minimum Assured Replenishment Cycles",
+          "type": "integer"
+        },
+        "minimum_reserve_days": {
+          "default": 30,
+          "maximum": 3650,
+          "minimum": 0,
+          "title": "Minimum Reserve Days",
+          "type": "integer"
+        }
+      },
+      "title": "AssuranceInventorySpec",
+      "type": "object"
+    },
+    "AssuranceObjectiveSpec": {
+      "properties": {
+        "minimum": {
+          "default": 0.95,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Minimum",
+          "type": "number"
+        }
+      },
+      "title": "AssuranceObjectiveSpec",
+      "type": "object"
+    },
+    "AssuranceRecoverySpec": {
+      "properties": {
+        "verify_backlog_clearance": {
+          "default": true,
+          "title": "Verify Backlog Clearance",
+          "type": "boolean"
+        },
+        "verify_carrier_return": {
+          "default": true,
+          "title": "Verify Carrier Return",
+          "type": "boolean"
+        },
+        "verify_reserve_restoration": {
+          "default": true,
+          "title": "Verify Reserve Restoration",
+          "type": "boolean"
+        }
+      },
+      "title": "AssuranceRecoverySpec",
+      "type": "object"
+    },
+    "AssuranceToleranceSpec": {
+      "properties": {
+        "communication_provider_loss": {
+          "default": 1,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Communication Provider Loss",
+          "type": "integer"
+        },
+        "corridor_loss": {
+          "default": 1,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Corridor Loss",
+          "type": "integer"
+        },
+        "navigation_source_loss": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Navigation Source Loss",
+          "type": "integer"
+        },
+        "observation_source_loss": {
+          "default": 1,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Observation Source Loss",
+          "type": "integer"
+        },
+        "port_loss": {
+          "default": 1,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Port Loss",
+          "type": "integer"
+        }
+      },
+      "title": "AssuranceToleranceSpec",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "commercial": {
+      "$ref": "#/$defs/AssuranceCommercialSpec"
+    },
+    "continuity_objective": {
+      "$ref": "#/$defs/AssuranceObjectiveSpec"
+    },
+    "evidence": {
+      "$ref": "#/$defs/AssuranceEvidenceSpec"
+    },
+    "inventory": {
+      "$ref": "#/$defs/AssuranceInventorySpec"
+    },
+    "recovery": {
+      "$ref": "#/$defs/AssuranceRecoverySpec"
+    },
+    "tolerate": {
+      "$ref": "#/$defs/AssuranceToleranceSpec"
+    }
+  },
+  "title": "AssurancePolicySpec",
+  "type": "object"
+}

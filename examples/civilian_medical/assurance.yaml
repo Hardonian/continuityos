@@ -1,0 +1,28 @@
+apiVersion: continuity.io/v1
+kind: AssurancePolicy
+metadata:
+  name: regional-medical-assurance-policy
+  namespace: healthcare-continuity
+spec:
+  continuity_objective:
+    minimum: 0.98
+  tolerance:
+    corridor_loss: 1
+    port_loss: 1
+    communication_provider_loss: 1
+    navigation_source_loss: 1
+    observation_source_loss: 1
+  evidence:
+    minimum_independent_operational_sources: 2
+    minimum_independent_navigation_sources: 2
+    minimum_independent_environmental_sources: 2
+  commercial:
+    minimum_carrier_options: 2
+    insurance_required: true
+  inventory:
+    minimum_reserve_days: 30
+    minimum_assured_replenishment_cycles: 1
+  recovery:
+    verify_carrier_return: true
+    verify_backlog_clearance: true
+    verify_reserve_restoration: true

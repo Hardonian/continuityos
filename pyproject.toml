@@ -3,13 +3,13 @@ requires = ["setuptools==83.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "continuityos-reference"
-version = "0.1.0"
-description = "Sovereign Resilience-as-Code & Cyber-Physical Corridor Assurance Engine"
+name = "continuityos"
+version = "1.0.0"
+description = "Continuity-as-Code & Resilience-as-Code Engine"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
-authors = [{ name = "ContinuityOS Reference Architecture" }]
+authors = [{ name = "ContinuityOS Contributors" }]
 dependencies = [
   "fastapi==0.139.2",
   "httpx==0.28.1",
@@ -52,6 +52,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -41,6 +41,15 @@ class ResourceKind(StrEnum):
     EVIDENCE = "Evidence"
     OBSERVATION = "Observation"
     REMEDIATION = "Remediation"
+    ASSURANCE_POLICY = "AssurancePolicy"
+    ROUTE_SUBSTITUTION = "RouteSubstitution"
+    STRATEGIC_INVENTORY = "StrategicInventory"
+    RECOVERY_STATE = "RecoveryState"
+    UNCREWED_SYSTEM = "UncrewedSystem"
+    SENSOR_NODE = "SensorNode"
+    RELAY_NODE = "RelayNode"
+    OBSERVATION_PLATFORM = "ObservationPlatform"
+    COUNTER_UAS_COVERAGE = "CounterUASCoverage"
 
 
 class ResourceMetadata(BaseModel):
@@ -175,6 +184,163 @@ class ScenarioSpec(BaseModel):
     description: str | None = None
 
 
+# --- AssurancePolicy spec ---
+
+
+class AssuranceObjectiveSpec(BaseModel):
+    minimum: Score = 0.95
+
+
+class AssuranceToleranceSpec(BaseModel):
+    corridor_loss: int = Field(default=1, ge=0, le=50)
+    port_loss: int = Field(default=1, ge=0, le=50)
+    communication_provider_loss: int = Field(default=1, ge=0, le=20)
+    navigation_source_loss: int = Field(default=2, ge=0, le=20)
+    observation_source_loss: int = Field(default=1, ge=0, le=20)
+
+
+class AssuranceEvidenceSpec(BaseModel):
+    minimum_independent_operational_sources: int = Field(default=2, ge=1, le=20)
+    minimum_independent_navigation_sources: int = Field(default=3, ge=1, le=20)
+    minimum_independent_environmental_sources: int = Field(default=2, ge=1, le=20)
+
+
+class AssuranceCommercialSpec(BaseModel):
+    minimum_carrier_options: int = Field(default=2, ge=1, le=20)
+    insurance_required: bool = True
+
+
+class AssuranceInventorySpec(BaseModel):
+    minimum_reserve_days: int = Field(default=30, ge=0, le=3650)
+    minimum_assured_replenishment_cycles: int = Field(default=1, ge=0, le=50)
+
+
+class AssuranceRecoverySpec(BaseModel):
+    verify_carrier_return: bool = True
+    verify_backlog_clearance: bool = True
+    verify_reserve_restoration: bool = True
+
+
+class AssurancePolicySpec(BaseModel):
+    continuity_objective: AssuranceObjectiveSpec = Field(default_factory=AssuranceObjectiveSpec)
+    tolerate: AssuranceToleranceSpec = Field(default_factory=AssuranceToleranceSpec)
+    evidence: AssuranceEvidenceSpec = Field(default_factory=AssuranceEvidenceSpec)
+    commercial: AssuranceCommercialSpec = Field(default_factory=AssuranceCommercialSpec)
+    inventory: AssuranceInventorySpec = Field(default_factory=AssuranceInventorySpec)
+    recovery: AssuranceRecoverySpec = Field(default_factory=AssuranceRecoverySpec)
+
+    @classmethod
+    def from_camel_or_snake(cls, data: dict[str, Any]) -> AssurancePolicySpec:
+        """Helper to normalize camelCase YAML keys from declarative specs."""
+        mapping: dict[str, Any] = {}
+        if "continuityObjective" in data or "continuity_objective" in data:
+            raw_obj = data.get("continuityObjective") or data.get("continuity_objective") or {}
+            mapping["continuity_objective"] = AssuranceObjectiveSpec(**raw_obj)
+        if "tolerate" in data:
+            raw_tol = data["tolerate"]
+            mapping["tolerate"] = AssuranceToleranceSpec(
+                corridor_loss=raw_tol.get("corridorLoss", raw_tol.get("corridor_loss", 1)),
+                port_loss=raw_tol.get("portLoss", raw_tol.get("port_loss", 1)),
+                communication_provider_loss=raw_tol.get(
+                    "communicationProviderLoss", raw_tol.get("communication_provider_loss", 1)
+                ),
+                navigation_source_loss=raw_tol.get(
+                    "navigationSourceLoss", raw_tol.get("navigation_source_loss", 2)
+                ),
+                observation_source_loss=raw_tol.get(
+                    "observationSourceLoss", raw_tol.get("observation_source_loss", 1)
+                ),
+            )
+        if "evidence" in data:
+            raw_ev = data["evidence"]
+            mapping["evidence"] = AssuranceEvidenceSpec(
+                minimum_independent_operational_sources=raw_ev.get(
+                    "minimumIndependentOperationalSources",
+                    raw_ev.get("minimum_independent_operational_sources", 2),
+                ),
+                minimum_independent_navigation_sources=raw_ev.get(
+                    "minimumIndependentNavigationSources",
+                    raw_ev.get("minimum_independent_navigation_sources", 3),
+                ),
+                minimum_independent_environmental_sources=raw_ev.get(
+                    "minimumIndependentEnvironmentalSources",
+                    raw_ev.get("minimum_independent_environmental_sources", 2),
+                ),
+            )
+        if "commercial" in data:
+            raw_com = data["commercial"]
+            mapping["commercial"] = AssuranceCommercialSpec(
+                minimum_carrier_options=raw_com.get(
+                    "minimumCarrierOptions", raw_com.get("minimum_carrier_options", 2)
+                ),
+                insurance_required=raw_com.get(
+                    "insuranceRequired", raw_com.get("insurance_required", True)
+                ),
+            )
+        if "inventory" in data:
+            raw_inv = data["inventory"]
+            mapping["inventory"] = AssuranceInventorySpec(
+                minimum_reserve_days=raw_inv.get(
+                    "minimumReserveDays", raw_inv.get("minimum_reserve_days", 30)
+                ),
+                minimum_assured_replenishment_cycles=raw_inv.get(
+                    "minimumAssuredReplenishmentCycles",
+                    raw_inv.get("minimum_assured_replenishment_cycles", 1),
+                ),
+            )
+        if "recovery" in data:
+            raw_rec = data["recovery"]
+            mapping["recovery"] = AssuranceRecoverySpec(
+                verify_carrier_return=raw_rec.get(
+                    "verifyCarrierReturn", raw_rec.get("verify_carrier_return", True)
+                ),
+                verify_backlog_clearance=raw_rec.get(
+                    "verifyBacklogClearance", raw_rec.get("verify_backlog_clearance", True)
+                ),
+                verify_reserve_restoration=raw_rec.get(
+                    "verifyReserveRestoration", raw_rec.get("verify_reserve_restoration", True)
+                ),
+            )
+        return cls(**mapping)
+
+
+# --- RouteSubstitution spec ---
+
+
+class RouteSubstitutionSpec(BaseModel):
+    primary_route_id: str = Field(min_length=1, max_length=128)
+    alternative_route_id: str = Field(min_length=1, max_length=128)
+    cargo_type: str = Field(default="general")
+    quantity: float = Field(gt=0)
+    required_arrival_days: int = Field(ge=1, le=365)
+    vessel_class_required: str | None = None
+    ice_class_required: bool = False
+    max_acceptable_delay_days: int = Field(default=14, ge=0, le=365)
+
+    @classmethod
+    def from_camel_or_snake(cls, data: dict[str, Any]) -> RouteSubstitutionSpec:
+        return cls(
+            primary_route_id=data.get("primaryRouteId", data.get("primary_route_id", "")),
+            alternative_route_id=data.get(
+                "alternativeRouteId", data.get("alternative_route_id", "")
+            ),
+            cargo_type=data.get("cargoType", data.get("cargo_type", "general")),
+            quantity=float(data.get("quantity", 1000.0)),
+            required_arrival_days=int(
+                data.get("requiredArrivalDays", data.get("required_arrival_days", 30))
+            ),
+            vessel_class_required=data.get(
+                "vesselClassRequired", data.get("vessel_class_required")
+            ),
+            ice_class_required=bool(
+                data.get("iceClassRequired", data.get("ice_class_required", False))
+            ),
+            max_acceptable_delay_days=int(
+                data.get("maxAcceptableDelayDays", data.get("max_acceptable_delay_days", 14))
+            ),
+        )
+
+
 # --- Resource envelope ---
 
 
@@ -211,6 +377,16 @@ class Resource(BaseModel):
         if self.kind != ResourceKind.SCENARIO:
             raise ValueError(f"expected Scenario, got {self.kind}")
         return ScenarioSpec.model_validate(self.spec)
+
+    def assurance_policy_spec(self) -> AssurancePolicySpec:
+        if self.kind != ResourceKind.ASSURANCE_POLICY:
+            raise ValueError(f"expected AssurancePolicy, got {self.kind}")
+        return AssurancePolicySpec.from_camel_or_snake(self.spec)
+
+    def route_substitution_spec(self) -> RouteSubstitutionSpec:
+        if self.kind != ResourceKind.ROUTE_SUBSTITUTION:
+            raise ValueError(f"expected RouteSubstitution, got {self.kind}")
+        return RouteSubstitutionSpec.from_camel_or_snake(self.spec)
 
 
 class ValidationError(BaseModel):
@@ -263,6 +439,10 @@ def validate_resource(resource: Resource) -> list[ValidationError]:
             resource.continuity_policy_spec()
         elif resource.kind == ResourceKind.SCENARIO:
             resource.scenario_spec()
+        elif resource.kind == ResourceKind.ASSURANCE_POLICY:
+            resource.assurance_policy_spec()
+        elif resource.kind == ResourceKind.ROUTE_SUBSTITUTION:
+            resource.route_substitution_spec()
     except Exception as exc:
         errors.append(
             ValidationError(

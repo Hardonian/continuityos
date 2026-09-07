@@ -1,0 +1,29 @@
+name: New Disruption Scenario Proposal
+description: Contribute a new reference supply network or correlated disruption scenario
+labels: ["scenario", "documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ContinuityOS maintains a library of realistic disruption scenarios for testing defensive resilience.
+  - type: input
+    id: scenario-name
+    attributes:
+      label: Scenario Name
+      placeholder: Panama Canal Drought / Semiconductor Supply Chain Disruption
+    validations:
+      required: true
+  - type: textarea
+    id: sector
+    attributes:
+      label: Sector & Domain
+      placeholder: Maritime logistics, regional healthcare supplies, telecommunications, energy distribution
+    validations:
+      required: true
+  - type: textarea
+    id: events
+    attributes:
+      label: Correlated Failure Events
+      description: Describe the primary chokepoint failure and cascading downstream dependencies.
+    validations:
+      required: true

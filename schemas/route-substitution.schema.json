@@ -1,0 +1,64 @@
+{
+  "properties": {
+    "alternative_route_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Alternative Route Id",
+      "type": "string"
+    },
+    "cargo_type": {
+      "default": "general",
+      "title": "Cargo Type",
+      "type": "string"
+    },
+    "ice_class_required": {
+      "default": false,
+      "title": "Ice Class Required",
+      "type": "boolean"
+    },
+    "max_acceptable_delay_days": {
+      "default": 14,
+      "maximum": 365,
+      "minimum": 0,
+      "title": "Max Acceptable Delay Days",
+      "type": "integer"
+    },
+    "primary_route_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Primary Route Id",
+      "type": "string"
+    },
+    "quantity": {
+      "exclusiveMinimum": 0,
+      "title": "Quantity",
+      "type": "number"
+    },
+    "required_arrival_days": {
+      "maximum": 365,
+      "minimum": 1,
+      "title": "Required Arrival Days",
+      "type": "integer"
+    },
+    "vessel_class_required": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Vessel Class Required"
+    }
+  },
+  "required": [
+    "primary_route_id",
+    "alternative_route_id",
+    "quantity",
+    "required_arrival_days"
+  ],
+  "title": "RouteSubstitutionSpec",
+  "type": "object"
+}

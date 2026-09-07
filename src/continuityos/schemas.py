@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from continuityos.dsl import (
+    AssurancePolicySpec,
     ContinuityPolicySpec,
     DependencyTrustSpec,
     Resource,
+    RouteSubstitutionSpec,
     ScenarioSpec,
     SupplyNetworkSpec,
 )
@@ -40,6 +42,16 @@ def get_scenario_schema() -> dict[str, Any]:
     return ScenarioSpec.model_json_schema()
 
 
+def get_assurance_policy_schema() -> dict[str, Any]:
+    """Return JSON Schema for AssurancePolicySpec."""
+    return AssurancePolicySpec.model_json_schema()
+
+
+def get_route_substitution_schema() -> dict[str, Any]:
+    """Return JSON Schema for RouteSubstitutionSpec."""
+    return RouteSubstitutionSpec.model_json_schema()
+
+
 def export_all_schemas(output_dir: Path) -> dict[str, Path]:
     """Export all JSON Schema files to a target directory."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -49,6 +61,8 @@ def export_all_schemas(output_dir: Path) -> dict[str, Path]:
         "continuity-policy.schema.json": get_continuity_policy_schema(),
         "dependency-trust.schema.json": get_dependency_trust_schema(),
         "scenario.schema.json": get_scenario_schema(),
+        "assurance-policy.schema.json": get_assurance_policy_schema(),
+        "route-substitution.schema.json": get_route_substitution_schema(),
     }
     paths: dict[str, Path] = {}
     for filename, schema_dict in schemas.items():

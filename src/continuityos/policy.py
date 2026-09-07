@@ -23,6 +23,8 @@ class PolicyAssertion(BaseModel):
     minimum_continuity: float | None = None
     maximum_single_dependency_concentration: float | None = None
     minimum_trust_score: float | None = None
+    trust_dimension_thresholds: dict[str, float] = Field(default_factory=dict)
+    trust_dimension_required: dict[str, bool] = Field(default_factory=dict)
 
 
 class PolicyRule(BaseModel):
@@ -51,6 +53,7 @@ class ObservedState(BaseModel):
     overall_continuity: Score = 0.0
     dependency_concentration: dict[str, float] = Field(default_factory=dict)
     trust_scores: dict[str, float] = Field(default_factory=dict)
+    dimensional_trust_scores: dict[str, dict[str, float]] = Field(default_factory=dict)
 
 
 class PolicyViolation(BaseModel):
@@ -104,6 +107,15 @@ def _check_rule(rule: PolicyRule, state: ObservedState) -> PolicyViolation | Non
     assertion = rule.assertion
 
     if assertion.minimum_providers is not None:
+        if not state.provider_counts:
+            return PolicyViolation(
+                rule_id=rule.rule_id,
+                description=rule.description,
+                severity=rule.severity,
+                expected=f">= {assertion.minimum_providers} providers",
+                observed="0 providers (UNKNOWN/MISSING)",
+                deficit=f"{assertion.minimum_providers} additional required",
+            )
         for category, count in state.provider_counts.items():
             if count < assertion.minimum_providers:
                 return PolicyViolation(
@@ -116,6 +128,15 @@ def _check_rule(rule: PolicyRule, state: ObservedState) -> PolicyViolation | Non
                 )
 
     if assertion.minimum_reserve_days is not None:
+        if not state.reserve_days:
+            return PolicyViolation(
+                rule_id=rule.rule_id,
+                description=rule.description,
+                severity=rule.severity,
+                expected=f">= {assertion.minimum_reserve_days} days",
+                observed="0 days (UNKNOWN/MISSING)",
+                deficit=f"{assertion.minimum_reserve_days} days short",
+            )
         for resource, days in state.reserve_days.items():
             if days < assertion.minimum_reserve_days:
                 return PolicyViolation(
@@ -156,6 +177,15 @@ def _check_rule(rule: PolicyRule, state: ObservedState) -> PolicyViolation | Non
         )
 
     if assertion.minimum_trust_score is not None:
+        if not state.trust_scores:
+            return PolicyViolation(
+                rule_id=rule.rule_id,
+                description=rule.description,
+                severity=rule.severity,
+                expected=f">= {assertion.minimum_trust_score:.2f} trust score",
+                observed="0 trust scores (UNKNOWN/MISSING)",
+                deficit="Missing trust score telemetry",
+            )
         for dep, score in state.trust_scores.items():
             if score < assertion.minimum_trust_score:
                 return PolicyViolation(
@@ -166,5 +196,34 @@ def _check_rule(rule: PolicyRule, state: ObservedState) -> PolicyViolation | Non
                     observed=f"{score:.2f}",
                     deficit=f"{assertion.minimum_trust_score - score:.2f} below threshold",
                 )
+
+    if assertion.trust_dimension_thresholds:
+        for dim, min_val in assertion.trust_dimension_thresholds.items():
+            for dep, dims in state.dimensional_trust_scores.items():
+                actual_val = dims.get(dim)
+                if actual_val is not None and actual_val < min_val:
+                    return PolicyViolation(
+                        rule_id=rule.rule_id,
+                        description=rule.description,
+                        severity=rule.severity,
+                        expected=f">= {min_val:.2f} {dim} ({dep})",
+                        observed=f"{actual_val:.2f}",
+                        deficit=f"{min_val - actual_val:.2f} below threshold",
+                    )
+
+    if assertion.trust_dimension_required:
+        for dim, required in assertion.trust_dimension_required.items():
+            if required:
+                for dep, dims in state.dimensional_trust_scores.items():
+                    actual_val = dims.get(dim, 0.0)
+                    if actual_val <= 0.0:
+                        return PolicyViolation(
+                            rule_id=rule.rule_id,
+                            description=rule.description,
+                            severity=rule.severity,
+                            expected=f"required active {dim} ({dep})",
+                            observed="unavailable",
+                            deficit="required but missing or unavailable",
+                        )
 
     return None

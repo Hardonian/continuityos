@@ -1,0 +1,40 @@
+name: New Data Provider Proposal
+description: Propose or contribute a new data provider adapter (SATCOM, AIS, Weather, Ice, Port, etc.)
+labels: ["provider", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose a new authoritative or operational data provider integration.
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider Name
+      description: Name of the external data source or API.
+      placeholder: Copernicus Sentinel-1 STAC / MarineTraffic AIS
+    validations:
+      required: true
+  - type: dropdown
+    id: provider-type
+    attributes:
+      label: Provider Classification
+      options:
+        - Authoritative Public (NOAA, ECMWF, NSIDC, ECCC)
+        - Commercial Satellite / LEO (Starlink, Iridium, Planet)
+        - Commercial Maritime / Port (AIS, Lloyd's, WPI)
+        - Operator Telemetry / OT Sensor
+        - Simulated / Mock
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Data Normalized
+      description: What ContinuityOS metrics and observations will this provider map into?
+    validations:
+      required: true
+  - type: textarea
+    id: airgap
+    attributes:
+      label: Air-Gap & Offline Support
+      description: Does this provider support cached snapshots or offline execution?

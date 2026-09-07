@@ -1,0 +1,25 @@
+apiVersion: continuity.io/v1
+kind: RouteSubstitution
+metadata:
+  name: medical-maritime-to-air-substitution
+  namespace: healthcare-continuity
+spec:
+  substitution_id: sub-medical-maritime-to-air
+  primary_route_id: route_maritime_inbound
+  alternative_route_id: route_express_air_ground
+  cargo_type: temperature_controlled_pharmaceuticals
+  quantity_tons: 85.0
+  critical_inventory_exhaustion_days: 18
+  alternative_transit_days: 3
+  inland_rail_days: 1
+  ice_class_required: NONE
+  alternative_ice_class_available: NONE
+  origin_supplier_capacity_tons: 500.0
+  port_throughput_capacity_tons: 350.0
+  inland_transport_fluidity: HEALTHY
+  bunkering_fuel_available: true
+  storage_capacity_available: true
+  carrier_availability: AVAILABLE
+  marine_war_risk_insurance: AVAILABLE
+  communications_integrity: 0.99
+  navigation_integrity: 0.99

@@ -1,0 +1,28 @@
+apiVersion: continuity.io/v1
+kind: StrategicInventory
+metadata:
+  name: regional-icu-pharmaceuticals
+  namespace: healthcare-continuity
+spec:
+  resource_id: inv_regional_icu_pharma
+  name: Critical ICU Pharmaceuticals & Antibiotics
+  category: medical
+  current_quantity: 12000.0
+  unit: doses
+  normal_daily_burn: 400.0
+  degraded_daily_burn: 650.0
+  emergency_daily_burn: 900.0
+  minimum_reserve: 3600.0
+  critical_reserve: 1800.0
+  storage_capacity: 25000.0
+  incoming_shipments:
+    - shipment_id: ship_med_inbound_01
+      quantity: 5000.0
+      scheduled_day: 10
+      arrival_day: 10
+      status: in_transit
+    - shipment_id: ship_med_inbound_02
+      quantity: 5000.0
+      scheduled_day: 24
+      arrival_day: 24
+      status: confirmed

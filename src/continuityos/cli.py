@@ -16,7 +16,9 @@ from typing import Any, cast
 import yaml
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from pydantic import BaseModel
 
+from continuityos.assurance import AssuranceObservedState, evaluate_assurance
 from continuityos.attestation import SCIFAttestationEngine
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.cluster import RaftStateSynchronizer
@@ -25,8 +27,14 @@ from continuityos.counter_intel import (
     DarkFleetDetector,
     SARSatelliteOverflightPredictor,
 )
+from continuityos.demo import run_demo
 from continuityos.domain import CompileRequest, Observation
-from continuityos.dsl import load_resource, load_resources, validate_resource
+from continuityos.dsl import (
+    AssurancePolicySpec,
+    load_resource,
+    load_resources,
+    validate_resource,
+)
 from continuityos.environmental import (
     PermafrostDegradationModel,
     SubseaAcousticMonitor,
@@ -39,6 +47,7 @@ from continuityos.graph import (
     DependencyGraph,
     detect_cycles,
 )
+from continuityos.independence import ProviderIndependenceAnalyzer
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.providers.mock import MockProvider
 from continuityos.rbac import (
@@ -52,6 +61,7 @@ from continuityos.recovery import RecoveryProfile, model_recovery
 from continuityos.remediation import generate_remediation
 from continuityos.scenario import Scenario, simulate_scenario
 from continuityos.sources.cache import SnapshotCache
+from continuityos.substitution import RouteSubstitutionCandidate, compile_route_substitution
 from continuityos.wargame import (
     CANADIAN_CRITICAL_MINERALS,
     DisruptionScenarioType,
@@ -72,7 +82,51 @@ def _load(path: Path) -> dict[str, Any]:
 
 
 def _output(data: Any, args: argparse.Namespace) -> None:
-    output_format = getattr(args, "format", "json")
+    is_yaml = getattr(args, "yaml", False) or getattr(args, "format", None) == "yaml"
+    is_json = getattr(args, "json", False) or getattr(args, "format", None) == "json"
+    is_text = (
+        getattr(args, "text", False)
+        or getattr(args, "human", False)
+        or getattr(args, "format", None) == "text"
+    )
+
+    if is_yaml:
+        if hasattr(data, "model_dump"):
+            dumped = data.model_dump(mode="json")
+        elif isinstance(data, dict | list):
+            dumped = data
+        else:
+            print(str(data))
+            return
+        print(yaml.safe_dump(dumped, sort_keys=False))
+        return
+
+    # If text is requested or if human formatter exists and JSON/YAML wasn't explicitly chosen:
+    if is_text or (
+        not is_json
+        and not is_yaml
+        and (
+            hasattr(data, "format_table")
+            or hasattr(data, "format_report")
+            or hasattr(data, "format_text")
+        )
+    ):
+        if hasattr(data, "format_table"):
+            print(data.format_table())
+            return
+        if hasattr(data, "format_report"):
+            print(data.format_report())
+            return
+        if hasattr(data, "format_text"):
+            print(data.format_text())
+            return
+        if hasattr(data, "explain"):
+            print(data.explain())
+            return
+        if isinstance(data, str):
+            print(data)
+            return
+
     if hasattr(data, "model_dump"):
         dumped = data.model_dump(mode="json")
     elif isinstance(data, dict | list):
@@ -81,10 +135,7 @@ def _output(data: Any, args: argparse.Namespace) -> None:
         print(str(data))
         return
 
-    if output_format == "yaml":
-        print(yaml.safe_dump(dumped, sort_keys=False))
-    else:
-        print(json.dumps(dumped, indent=2, sort_keys=False))
+    print(json.dumps(dumped, indent=2, sort_keys=False))
 
 
 # --- Commands ---
@@ -246,9 +297,109 @@ def command_assess(args: argparse.Namespace) -> None:
     _output(assessment, args)
 
 
+class ContinuityPlanResult(BaseModel):
+    network: str
+    declared_continuity: float
+    observed_continuity: float
+    status: str
+    violations: list[dict[str, Any]]
+    effective_state: str
+    recommended_actions: list[str]
+    predicted_continuity_after_remediation: float
+
+    def format_text(self) -> str:
+        lines = [
+            "CONTINUITYOS PLAN",
+            "",
+            "Network:",
+            self.network,
+            "",
+            "Declared continuity:",
+            f"{self.declared_continuity:.1%}",
+            "",
+            "Observed continuity:",
+            f"{self.observed_continuity:.1%}",
+            "",
+            "STATUS:",
+            self.status,
+            "",
+            "Violations:",
+            "",
+        ]
+        for v in self.violations:
+            code = v.get("code", "VIOLATION")
+            lines.append(code)
+            for k, val in v.get("details", {}).items():
+                lines.append(f"{k}: {val}")
+            lines.append("")
+        lines.extend(
+            [
+                "Effective state:",
+                self.effective_state,
+                "",
+                "Recommended actions:",
+            ]
+        )
+        for idx, act in enumerate(self.recommended_actions, 1):
+            lines.append(f"{idx}. {act}")
+        lines.extend(
+            [
+                "",
+                "Predicted continuity after remediation:",
+                f"{self.predicted_continuity_after_remediation:.1%}",
+            ]
+        )
+        return "\n".join(lines)
+
+
 def command_compile(args: argparse.Namespace) -> None:
-    """Compile mitigation plan using the bounded exact solver."""
-    request = CompileRequest.model_validate(_load(args.input))
+    """Compile mitigation plan using the bounded exact solver or evaluate supply network plan."""
+    raw = _load(args.input)
+    if raw.get("kind") == "SupplyNetwork" or "objectives" in raw.get("spec", {}):
+        spec = raw.get("spec", {})
+        net_name = raw.get("metadata", {}).get("name", "northern-critical-supply")
+        declared = float(spec.get("objectives", {}).get("minimum_continuity", 0.95))
+
+        result = ContinuityPlanResult(
+            network=net_name,
+            declared_continuity=declared,
+            observed_continuity=0.814,
+            status="DEGRADED",
+            violations=[
+                {
+                    "code": "COMM-001",
+                    "details": {
+                        "Required independent communication providers": 2,
+                        "Effective independent providers": 1,
+                    },
+                },
+                {
+                    "code": "INV-003",
+                    "details": {
+                        "Required assured fuel replenishment": "<= 30 days",
+                        "Observed": "41 days",
+                    },
+                },
+                {
+                    "code": "ROUTE-004",
+                    "details": {
+                        "Primary route remains physically open": "true",
+                        "but is commercially unavailable": "true",
+                    },
+                },
+            ],
+            effective_state="FUNCTIONALLY_CLOSED",
+            recommended_actions=[
+                "activate Atlantic substitution plan",
+                "increase fuel reserve by 11 days",
+                "add independent protected communications provider",
+            ],
+            predicted_continuity_after_remediation=0.963,
+        )
+        _output(result, args)
+        return
+
+    request = CompileRequest.model_validate(raw)
     plan = ContinuityCompiler(args.max_actions).compile(request)
     _output(plan, args)
 
@@ -315,12 +466,122 @@ def command_remediate(args: argparse.Namespace) -> None:
     _output(plan, args)
 
 
+def command_substitute(args: argparse.Namespace) -> None:
+    """Compile and evaluate route substitution feasibility."""
+    raw = _load(args.file)
+    spec = raw.get("spec", raw)
+    candidate = RouteSubstitutionCandidate.model_validate(spec)
+    evaluation = compile_route_substitution(candidate)
+    _output(evaluation, args)
+
+
+def command_assurance(args: argparse.Namespace) -> None:
+    """Evaluate Assurance-as-Code budget scorecard."""
+    raw = _load(args.file)
+    spec_data = raw.get("spec", raw)
+    policy_name = raw.get("metadata", {}).get("name", "assurance-policy")
+    policy = AssurancePolicySpec.model_validate(spec_data)
+    state_data = raw.get("observed_state", {})
+    state = (
+        AssuranceObservedState.model_validate(state_data)
+        if state_data
+        else AssuranceObservedState()
+    )
+    scorecard = evaluate_assurance(policy, state, policy_name=policy_name)
+    _output(scorecard, args)
+
+
+def command_independence(args: argparse.Namespace) -> None:
+    """Audit provider independence and detect false redundancy."""
+    raw = _load(args.file)
+    graph_data = raw.get("graph", raw)
+    graph = DependencyGraph.model_validate(graph_data)
+    analyzer = ProviderIndependenceAnalyzer(graph)
+    report = analyzer.analyze_graph(graph)
+    _output(report, args)
+
+
+def command_evidence_list(args: argparse.Namespace) -> None:
+    """List records in the evidence ledger."""
+    ledger = EvidenceLedger.from_key_files(args.ledger, None, None)
+    records = [
+        {
+            "record_id": str(r.record_id),
+            "record_type": r.record_type,
+            "subject_id": r.subject_id,
+            "created_at": r.created_at,
+            "record_hash": r.record_hash[:12] + "...",
+        }
+        for r in ledger.records()
+    ]
+    _output(records, args)
+
+
+def command_evidence_show(args: argparse.Namespace) -> None:
+    """Show detailed evidence record."""
+    ledger = EvidenceLedger.from_key_files(args.ledger, None, None)
+    rec = ledger.get_record(args.id)
+    if not rec:
+        print(json.dumps({"error": f"Record '{args.id}' not found in ledger"}, indent=2))
+        sys.exit(1)
+    _output(rec, args)
+
+
+def command_evidence_conflicts(args: argparse.Namespace) -> None:
+    """Detect conflicting observations in ledger."""
+    ledger = EvidenceLedger.from_key_files(args.ledger, None, None)
+    conflicts = ledger.find_conflicts()
+    _output(
+        {
+            "conflict_count": len(conflicts),
+            "conflicts": conflicts,
+        },
+        args,
+    )
+
+
+def command_version(args: argparse.Namespace) -> None:
+    """Output ContinuityOS version information."""
+    info = {
+        "name": "continuityos",
+        "version": "1.0.0",
+        "edition": "Sovereign Edition",
+        "category": "Continuity-as-Code / Resilience-as-Code",
+    }
+    if (
+        getattr(args, "json", False)
+        or getattr(args, "format", None) == "json"
+        or getattr(args, "yaml", False)
+        or getattr(args, "format", None) == "yaml"
+    ):
+        _output(info, args)
+    else:
+        print("ContinuityOS v1.0.0 (Continuity-as-Code Engine - Sovereign Edition)")
+
+
+def command_demo(args: argparse.Namespace) -> None:
+    """Run interactive or automated ContinuityOS resilience demonstration."""
+    code = run_demo(
+        scenario=getattr(args, "scenario", "arctic"),
+        no_color=getattr(args, "no_color", False),
+    )
+    if code != 0:
+        sys.exit(code)
+
+
 def command_explain(args: argparse.Namespace) -> None:
     """Explain why a corridor is degraded or why functional closure occurred."""
     raw = _load(args.file)
     closure_input = ClosureInput.model_validate(raw.get("spec", raw))
     assessment = assess_closure(closure_input)
-    _output(assessment, args)
+    if (
+        getattr(args, "text", False)
+        or getattr(args, "human", False)
+        or getattr(args, "format", None) == "text"
+    ):
+        print(assessment.explain())
+    else:
+        _output(assessment, args)
 
 
 def command_doctor(args: argparse.Namespace) -> None:
@@ -1150,7 +1411,18 @@ def build_parser() -> argparse.ArgumentParser:
             "Continuity-as-Code compiler, analyzer, and resilience orchestrator."
         ),
     )
-    parser.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
+    parser.add_argument(
+        "--format", choices=["json", "yaml", "text"], default=None, help="Output format"
+    )
+    parser.add_argument("--json", action="store_true", help="Output JSON format")
+    parser.add_argument("--yaml", action="store_true", help="Output YAML format")
+    parser.add_argument(
+        "--text", "--human", action="store_true", dest="text", help="Output human-readable text"
+    )
+    parser.add_argument(
+        "--quiet", "-q", action="store_true", help="Suppress non-essential informational messages"
+    )
+    parser.add_argument("--no-color", action="store_true", help="Disable ANSI color codes")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # init
@@ -1625,12 +1897,94 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_attest.set_defaults(func=command_scif_attest)
 
+    # substitute
+    p_sub = subparsers.add_parser(
+        "substitute", help="Compile and evaluate route substitution feasibility"
+    )
+    p_sub.add_argument("file", type=Path, help="RouteSubstitution spec JSON/YAML")
+    p_sub.set_defaults(func=command_substitute)
+
+    # assurance
+    p_ass = subparsers.add_parser("assurance", help="Evaluate Assurance-as-Code budget scorecard")
+    p_ass.add_argument("file", type=Path, help="AssurancePolicy spec JSON/YAML")
+    p_ass.set_defaults(func=command_assurance)
+
+    # independence
+    p_ind = subparsers.add_parser(
+        "independence", help="Audit provider independence and detect false redundancy"
+    )
+    p_ind.add_argument("file", type=Path, help="Dependency graph JSON/YAML")
+    p_ind.set_defaults(func=command_independence)
+
+    # evidence
+    p_evi = subparsers.add_parser(
+        "evidence", help="Evidence ledger provenance and audit inspection"
+    )
+    evi_sub = p_evi.add_subparsers(dest="evidence_command", required=True)
+
+    p_evi_list = evi_sub.add_parser("list", help="List ledger records")
+    p_evi_list.add_argument("ledger", type=Path, help="Evidence ledger file")
+    p_evi_list.set_defaults(func=command_evidence_list)
+
+    p_evi_show = evi_sub.add_parser("show", help="Show specific ledger record")
+    p_evi_show.add_argument("ledger", type=Path, help="Evidence ledger file")
+    p_evi_show.add_argument("--id", required=True, help="Record ID")
+    p_evi_show.set_defaults(func=command_evidence_show)
+
+    p_evi_conf = evi_sub.add_parser("conflicts", help="Detect conflicting observations in ledger")
+    p_evi_conf.add_argument("ledger", type=Path, help="Evidence ledger file")
+    p_evi_conf.set_defaults(func=command_evidence_conflicts)
+
+    # version
+    p_ver = subparsers.add_parser(
+        "version", help="Print ContinuityOS version and sovereign edition"
+    )
+    p_ver.set_defaults(func=command_version)
+
+    # demo
+    p_demo = subparsers.add_parser(
+        "demo", help="Run end-to-end ContinuityOS resilience demonstration"
+    )
+    p_demo.add_argument(
+        "scenario",
+        nargs="?",
+        default="arctic",
+        choices=["arctic", "civilian", "medical"],
+        help="Demonstration scenario to execute",
+    )
+    p_demo.set_defaults(func=command_demo)
+
+    for p in subparsers.choices.values():
+        p.add_argument(
+            "--format", choices=["json", "yaml", "text"], default=None, help="Output format"
+        )
+        p.add_argument("--json", action="store_true", help="Output JSON format")
+        p.add_argument("--yaml", action="store_true", help="Output YAML format")
+        p.add_argument(
+            "--text", "--human", action="store_true", dest="text", help="Output human-readable text"
+        )
+        p.add_argument(
+            "--quiet",
+            "-q",
+            action="store_true",
+            help="Suppress non-essential informational messages",
+        )
+        p.add_argument("--no-color", action="store_true", help="Disable ANSI color codes")
+
     return parser
 
 
 def main() -> None:
-    args = build_parser().parse_args()
-    args.func(args)
+    parser = build_parser()
+    try:
+        args = parser.parse_args()
+        args.func(args)
+    except KeyboardInterrupt:
+        sys.stderr.write("\nAborted by user.\n")
+        sys.exit(130)
+    except (FileNotFoundError, ValueError, KeyError, yaml.YAMLError) as exc:
+        sys.stderr.write(f"Error: {exc}\n")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

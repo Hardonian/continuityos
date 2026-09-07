@@ -23,7 +23,16 @@
         "RecoveryObjective",
         "Evidence",
         "Observation",
-        "Remediation"
+        "Remediation",
+        "AssurancePolicy",
+        "RouteSubstitution",
+        "StrategicInventory",
+        "RecoveryState",
+        "UncrewedSystem",
+        "SensorNode",
+        "RelayNode",
+        "ObservationPlatform",
+        "CounterUASCoverage"
       ],
       "title": "ResourceKind",
       "type": "string"

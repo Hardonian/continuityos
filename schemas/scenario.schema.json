@@ -60,14 +60,11 @@
         "$ref": "#/$defs/ScenarioEvent"
       },
       "maxItems": 200,
-      "minItems": 1,
+      "minItems": 0,
       "title": "Events",
       "type": "array"
     }
   },
-  "required": [
-    "events"
-  ],
   "title": "ScenarioSpec",
   "type": "object"
 }

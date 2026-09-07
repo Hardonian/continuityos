@@ -116,7 +116,13 @@ class DependencyEngine:
     another healthy member of the same substitute group exists.
     """
 
-    def analyze(self, graph: DependencyGraph, failed_nodes: set[str]) -> GraphAssessment:
+    def analyze(
+        self,
+        graph: DependencyGraph,
+        failed_nodes: set[str],
+        *,
+        calculate_spof: bool = True,
+    ) -> GraphAssessment:
         nodes = {node.node_id: node for node in graph.nodes}
         unknown = failed_nodes - nodes.keys()
         if unknown:
@@ -166,7 +172,9 @@ class DependencyEngine:
         ]
         impacted.sort(key=lambda item: (-item.weighted_impact, item.node_id))
 
-        single_points = self._single_points(graph, nodes)
+        single_points = (
+            self._single_points_fast(nodes, outgoing, substitute_members) if calculate_spof else []
+        )
         return GraphAssessment(
             graph_id=graph.graph_id,
             failed_nodes=sorted(failed_nodes),
@@ -176,16 +184,43 @@ class DependencyEngine:
             single_points_of_failure=single_points,
         )
 
-    def _single_points(self, graph: DependencyGraph, nodes: dict[str, DependencyNode]) -> list[str]:
+    def _single_points_fast(
+        self,
+        nodes: dict[str, DependencyNode],
+        outgoing: dict[str, list[DependencyEdge]],
+        substitute_members: dict[str, set[str]],
+    ) -> list[str]:
+        """Fast single point of failure detection with early-exit."""
         result: list[str] = []
-        for candidate in sorted(nodes):
-            assessment = self.analyze_without_spof(graph, {candidate})
-            affected_critical = [
-                item
-                for item in assessment
-                if nodes[item.node_id].criticality >= 0.8 and item.impact_probability >= 0.7
-            ]
-            if affected_critical and any(item.node_id != candidate for item in affected_critical):
+        # Only candidates with outgoing edges can cause downstream cascade
+        candidates = [nid for nid in sorted(nodes) if outgoing.get(nid)]
+        for candidate in candidates:
+            probability = {candidate: 1.0}
+            queue: deque[str] = deque([candidate])
+            found_spof = False
+            while queue and not found_spof:
+                curr = queue.popleft()
+                for edge in outgoing.get(curr, []):
+                    attenuation = 1.0
+                    if edge.substitutable and edge.substitute_group:
+                        healthy = substitute_members[edge.substitute_group] - {candidate, curr}
+                        if healthy:
+                            attenuation = 0.25
+                    propagated = probability[curr] * edge.dependency_strength * attenuation
+                    existing = probability.get(edge.target, 0.0)
+                    combined = 1.0 - (1.0 - existing) * (1.0 - propagated)
+                    if combined > existing + 1e-9:
+                        probability[edge.target] = min(1.0, combined)
+                        # Check critical impact condition
+                        if (
+                            edge.target != candidate
+                            and nodes[edge.target].criticality >= 0.8
+                            and probability[edge.target] >= 0.7
+                        ):
+                            found_spof = True
+                            break
+                        queue.append(edge.target)
+            if found_spof:
                 result.append(candidate)
         return result
 

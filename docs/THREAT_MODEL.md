@@ -1,81 +1,93 @@
-# Threat Model
+# Aegis ContinuityOS — Comprehensive Threat Model (STRIDE)
 
-## Protected outcomes
+This document formalizes the security architecture, adversary models, threat surfaces, and defensive countermeasures of the **ContinuityOS** Resilience-as-Code platform for v1.0.
 
-- Integrity of corridor assessments and continuity plans
-- Confidentiality of customer supply dependencies and inventory
-- Availability of the decision-support service
-- Provenance and non-repudiation of evidence records
-- Separation of public context from authenticated operational assertions
-- Prevention of unauthorized action execution
+---
 
-## Principal threats
+## 1. System Architecture & Trust Boundaries
 
-### Data poisoning and false context
+```text
+[ UNTRUSTED EXTERNAL TELEMETRY ]  --> [ AIS / Weather / SAR / Satellite Feeds ]
+                                                  │
+                                                  ▼
+                                      ┌──────────────────────┐
+                                      │  Sources & Adapters  │  (Input Sanitization & Decay)
+                                      └──────────┬───────────┘
+                                                 │
+═════════════════════════════════════════════════╪══════════════════════════════════════
+TRUST BOUNDARY 1: INGESTION                      │ Normalized Observation
+═════════════════════════════════════════════════╪══════════════════════════════════════
+                                                 ▼
+[ DECLARATIVE POLICY & NETWORK ] ───► ┌──────────────────────┐ ◄─── [ OPERATOR OVERRIDES ]
+                                      │   Continuity Engine  │
+                                      │  (Closure, Policy,   │
+                                      │   Trust, Reconcile)  │
+                                      └──────────┬───────────┘
+                                                 │
+═════════════════════════════════════════════════╪══════════════════════════════════════
+TRUST BOUNDARY 2: IMMUTABLE AUDIT & EXECUTION    │
+═════════════════════════════════════════════════╪══════════════════════════════════════
+                                                 ▼
+                                      ┌──────────────────────┐
+                                      │   Evidence Ledger    │  (SHA-256 + Ed25519)
+                                      │  (Zero-Trust Audit)  │
+                                      └──────────┬───────────┘
+                                                 │
+                                                 ▼
+                                      [ ADVISORY REMEDIATION ]
+                                      (Human-in-the-Loop)
+```
 
-An attacker may inject false AIS, geospatial, weather, satellite, or analyst inputs. Controls:
+---
 
-- source registry and assertion allow-lists;
-- immutable payload hashes;
-- confidence and freshness scoring;
-- independent-source comparison;
-- missing-data penalties;
-- explicit caveats;
-- no automatic execution.
+## 2. Adversary Taxonomy & Threat Scenarios
 
-### Operator telemetry spoofing or replay
+| Threat Actor | Motivation | Attack Vectors |
+| :--- | :--- | :--- |
+| **Sophisticated Nation-State (EW/Cyber)** | Disruption of maritime logistics, GNSS spoofing | AIS kinematic spoofing, false telemetry injection, LEO jamming |
+| **Commercial Competitor / Insider** | Market manipulation, route delay coverup | Forged bills of lading, false port throughput reports |
+| **Hostile Network Intermediary** | Tampering with air-gapped transit packages | Man-in-the-Middle (MitM) alterations, hash collision attacks |
+| **Accidental / Environmental Failure** | Unintentional telemetry dropouts | Geomagnetic solar storms, fiber cuts, underwriter withdrawal |
 
-Controls:
+---
 
-- HMAC-SHA256 canonical body signatures;
-- five-minute timestamp window;
-- tenant and asset scoping in metadata;
-- production secret requirements;
-- recommended sequence-number replay store in production.
+## 3. STRIDE Threat Analysis & Countermeasures
 
-The reference implementation validates timestamps and signatures but does not persist replay sequence state. That is a documented production requirement.
+### 3.1 Spoofing Identity & Source Telemetry
+- **Threat**: Adversary transmits falsified AIS vessel positions or synthetic open navigation status over a closed chokepoint.
+- **Countermeasure**: Multi-dimensional `DependencyTrust` engine with multi-factor risk fusion. Observations require independent source qualification (minimum 2 independent observation platforms). High-trust authoritative feeds override single commercial streams.
 
-### Evidence tampering
+### 3.2 Tampering with Evidence & State History
+- **Threat**: Malicious actor alters historical disruption logs or falsifies compliance status to avoid regulatory fines or insurance surcharges.
+- **Countermeasure**: Append-only `EvidenceLedger` protected by cryptographic SHA-256 block hash chaining and Ed25519 digital signatures. Any retrospective modification breaks the cryptographic hash chain and fails `continuity verify-ledger`.
 
-Controls:
+### 3.3 Repudiation of Operational Directives
+- **Threat**: Operators or providers dispute having received disruption alerts or issued emergency route diversions.
+- **Countermeasure**: Cryptographically signed immutable ledger entries record every observation, policy evaluation, and advisory remediation recommendation with millisecond UTC timestamps and operator keys.
 
-- SHA-256 hash chain;
-- optional Ed25519 signatures;
-- atomic writes;
-- independent public-key verification;
-- recommended external WORM replication or transparency anchoring in production.
+### 3.4 Information Disclosure & Enclave Leakage
+- **Threat**: Sensitive defense prime supply routes or critical national stockpile levels leak across enclaves or over unencrypted internet connections.
+- **Countermeasure**: 
+  - Zero cloud phone-home mechanisms.
+  - Cross-domain sanitize filtering (`continuity cross-domain-filter`) strips classified compartment metadata when transitioning from Secret to Unclassified enclaves.
+  - Post-Quantum ML-KEM sealed intel envelopes protect sensitive payloads.
 
-### Dependency graph disclosure
+### 3.5 Denial of Service (Resource Exhaustion)
+- **Threat**: Adversary provides malicious recursive YAML files, cycles in dependency graphs, or astronomical scenario durations to exhaust CPU/memory.
+- **Countermeasure**:
+  - Safe YAML parsing with strict recursion depth limits (max 50) and file size caps (10MB).
+  - Graph cycle detection algorithms (`detect_cycles()`) detect and abort infinite traversal loops.
+  - Pydantic v2 schemas enforce bounded constraints on integer durations and array lengths.
 
-A detailed graph can reveal critical infrastructure concentration. Controls required in production:
+### 3.6 Elevation of Privilege & Autonomous Dispatch
+- **Threat**: Software autonomously routes ships into hostile waters or dispatches physical assets without human commander authorization.
+- **Countermeasure**: Non-negotiable architectural boundary: All plan compilations, substitution options, and reconciliations are strictly **advisory**. Automated kinetic dispatch is architecturally prohibited in the open-core runtime.
 
-- tenant isolation;
-- attribute-based authorization;
-- field-level encryption for sensitive attributes;
-- export controls;
-- immutable access audit;
-- data minimization.
+---
 
-### Solver manipulation
+## 4. Zero-Cloud & Air-Gapped Verification
 
-Controls:
-
-- bounded deterministic solver;
-- explicit action prerequisites and incompatibilities;
-- versioned action catalogue;
-- budget constraints;
-- objective and residual-risk reporting;
-- mandatory human approval.
-
-### Denial of service
-
-Production controls should include request limits, payload limits, queue isolation, bounded graph size, execution deadlines, backpressure, circuit breakers, and degraded offline operation.
-
-## Out of scope
-
-- offensive cyber operations;
-- targeting or interdiction;
-- autonomous control of OT, vessels, drones, or weapons;
-- classified intelligence ingestion;
-- attribution of hostile activity;
-- tactical force employment.
+ContinuityOS v1.0 guarantees:
+1. **Network Independence**: The entire test suite, demo commands, and CLI operations execute with network interfaces disabled.
+2. **Local Mock Providers**: All external data sources (NOAA, Sentinel, AIS, SATCOM) have offline mock implementations (`MockProvider`) for SCIF and air-gap deployments.
+3. **No Dynamic Code Execution**: The DSL is purely declarative YAML; no arbitrary Python `exec()`, `eval()`, or untrusted WASM execution is permitted.

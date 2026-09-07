@@ -48,12 +48,15 @@ class RecoveryProfile(BaseModel):
     resource_ref: str = Field(min_length=1, max_length=256)
     incident_description: str = Field(min_length=1, max_length=512)
 
-    # Phase durations
+    # Phase durations and independent recovery factors
     physical_reopening_days: int = Field(default=0, ge=0, le=365)
+    communications_restoration_days: int = Field(default=3, ge=0, le=365)
     port_backlog_days: int = Field(default=7, ge=0, le=365)
     vessel_repositioning_days: int = Field(default=14, ge=0, le=365)
+    crew_availability_days: int = Field(default=14, ge=0, le=365)
     carrier_return_days: int = Field(default=21, ge=0, le=365)
     insurance_normalization_days: int = Field(default=30, ge=0, le=365)
+    supplier_restart_days: int = Field(default=21, ge=0, le=365)
     inventory_replenishment_days: int = Field(default=45, ge=0, le=365)
     equipment_availability_days: int = Field(default=10, ge=0, le=365)
     warehouse_recovery_days: int = Field(default=14, ge=0, le=365)
@@ -72,6 +75,9 @@ class RecoveryTimeline(BaseModel):
     recovery_progress: Score
     bottleneck: str | None
     summary: str
+    is_healthy: bool = False
+    reopened_but_not_healthy: bool = False
+    independent_factors: dict[str, int] = Field(default_factory=dict)
 
 
 def model_recovery(
@@ -127,15 +133,17 @@ def model_recovery(
     t3_days = t2_days + max(
         profile.vessel_repositioning_days,
         profile.port_backlog_days,
+        profile.crew_availability_days,
         profile.equipment_availability_days,
     )
     milestones.append(
         RecoveryMilestone(
             phase=RecoveryPhase.T3_LOGISTICS_NORMALIZATION,
-            description="Vessels repositioned, port backlog cleared, schedules resume",
+            description="Vessels repositioned, crew sourced, port backlog cleared, schedules resume",
             estimated_days=t3_days,
             dependencies=[
                 "vessel_repositioning",
+                "crew_availability",
                 "port_backlog_clearance",
                 "schedule_normalization",
                 "equipment_restoration",
@@ -148,14 +156,20 @@ def model_recovery(
     t4_days = t3_days + max(
         profile.inventory_replenishment_days,
         profile.warehouse_recovery_days,
+        profile.supplier_restart_days,
         profile.production_restart_days,
     )
     milestones.append(
         RecoveryMilestone(
             phase=RecoveryPhase.T4_INVENTORY_REPLENISHMENT,
-            description="Strategic reserves rebuilt to policy-required levels",
+            description="Strategic reserves rebuilt to policy-required levels and suppliers restarted",
             estimated_days=t4_days,
-            dependencies=["supply_flow", "warehouse_capacity", "production_capacity"],
+            dependencies=[
+                "supply_flow",
+                "supplier_restart",
+                "warehouse_capacity",
+                "production_capacity",
+            ],
             confidence=0.4,
         )
     )
@@ -183,6 +197,10 @@ def model_recovery(
     # Calculate progress
     progress = min(1.0, days_since_incident / total_days) if total_days > 0 else 0.0
 
+    # Invariant 8: Route reopening != network healthy
+    is_healthy = current == RecoveryPhase.T5_FULL_RESTORATION or days_since_incident >= total_days
+    reopened_but_not_healthy = (days_since_incident >= t1_days) and not is_healthy
+
     # Find bottleneck (longest phase transition)
     phase_durations = [
         (RecoveryPhase.T1_PHYSICAL_REOPENING, t1_days),
@@ -193,6 +211,20 @@ def model_recovery(
     bottleneck_phase, bottleneck_days = max(phase_durations, key=lambda x: x[1])
     bottleneck = f"{bottleneck_phase}: {bottleneck_days} days"
 
+    independent_factors = {
+        "physical_reopening_days": profile.physical_reopening_days,
+        "communications_restoration_days": profile.communications_restoration_days,
+        "insurance_normalization_days": profile.insurance_normalization_days,
+        "carrier_return_days": profile.carrier_return_days,
+        "port_backlog_days": profile.port_backlog_days,
+        "vessel_repositioning_days": profile.vessel_repositioning_days,
+        "crew_availability_days": profile.crew_availability_days,
+        "supplier_restart_days": profile.supplier_restart_days,
+        "warehouse_recovery_days": profile.warehouse_recovery_days,
+        "inventory_replenishment_days": profile.inventory_replenishment_days,
+        "production_restart_days": profile.production_restart_days,
+    }
+
     summary_parts = [
         f"Incident: {profile.incident_description}",
         f"Physical reopening: day {t1_days}",
@@ -201,6 +233,7 @@ def model_recovery(
         f"Inventory replenishment: day {t4_days}",
         f"Full restoration: day {t5_days}",
         f"Bottleneck: {bottleneck}",
+        f"System Healthy: {'YES' if is_healthy else 'NO'}",
     ]
     if days_since_incident > 0:
         summary_parts.append(f"Current phase: {current} (day {days_since_incident})")
@@ -214,4 +247,7 @@ def model_recovery(
         recovery_progress=round(progress, 6),
         bottleneck=bottleneck,
         summary="; ".join(summary_parts),
+        is_healthy=is_healthy,
+        reopened_but_not_healthy=reopened_but_not_healthy,
+        independent_factors=independent_factors,
     )

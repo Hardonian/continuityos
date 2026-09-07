@@ -1,0 +1,90 @@
+graph_id: regional-medical-network
+nodes:
+  - node_id: hospital_regional_trauma
+    name: Regional Level-1 Trauma Hospital Center
+    node_type: facility
+    criticality: 0.99
+    location:
+      latitude: 45.501
+      longitude: -73.567
+    provider_id: provincial_health_agency
+  - node_id: warehouse_cold_chain_hub
+    name: Central Cold-Chain Medical Warehouse
+    node_type: warehouse
+    criticality: 0.95
+    location:
+      latitude: 45.450
+      longitude: -73.650
+    provider_id: pharma_logistics_co
+  - node_id: port_maritime_container
+    name: Primary Container Port of Entry
+    node_type: port
+    criticality: 0.85
+    location:
+      latitude: 45.520
+      longitude: -73.540
+    provider_id: port_authority
+  - node_id: airport_air_cargo_hub
+    name: Alternate Inland Air Cargo Hub
+    node_type: airport
+    criticality: 0.80
+    location:
+      latitude: 45.470
+      longitude: -73.740
+    provider_id: air_cargo_transit
+  - node_id: route_maritime_inbound
+    name: Maritime Inbound Freight Corridor
+    node_type: corridor
+    criticality: 0.85
+    provider_id: commercial_shipping
+  - node_id: route_express_air_ground
+    name: Express Air-Ground Substitution Corridor
+    node_type: corridor
+    criticality: 0.80
+    provider_id: expedited_freight
+  - node_id: comms_cellular_telemetry
+    name: IoT Cold-Chain Cellular Telemetry
+    node_type: communications
+    criticality: 0.85
+    provider_id: telecom_national
+  - node_id: comms_backup_satcom
+    name: Hospital Emergency SATCOM Link
+    node_type: communications
+    criticality: 0.90
+    provider_id: satellite_operator
+
+edges:
+  - source: warehouse_cold_chain_hub
+    target: hospital_regional_trauma
+    dependency_strength: 0.95
+    substitutable: false
+  - source: route_maritime_inbound
+    target: port_maritime_container
+    dependency_strength: 0.90
+    substitutable: true
+    substitute_group: medical_freight
+  - source: route_express_air_ground
+    target: airport_air_cargo_hub
+    dependency_strength: 0.85
+    substitutable: true
+    substitute_group: medical_freight
+  - source: port_maritime_container
+    target: warehouse_cold_chain_hub
+    dependency_strength: 0.80
+    substitutable: true
+    substitute_group: inbound_logistics
+  - source: airport_air_cargo_hub
+    target: warehouse_cold_chain_hub
+    dependency_strength: 0.75
+    substitutable: true
+    substitute_group: inbound_logistics
+  - source: comms_cellular_telemetry
+    target: warehouse_cold_chain_hub
+    dependency_strength: 0.70
+    substitutable: true
+    substitute_group: monitoring
+  - source: comms_backup_satcom
+    target: hospital_regional_trauma
+    dependency_strength: 0.80
+    substitutable: true
+    substitute_group: monitoring

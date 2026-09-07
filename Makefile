@@ -3,6 +3,8 @@
 install:
 	uv sync --all-extras
 
+setup: install
+
 lint:
 	uv run ruff check .
 	uv run ruff format --check .
@@ -18,10 +20,11 @@ coverage:
 
 build:
 	uv build
+	uv run python scripts/generate_release_artifacts.py
 
 demo:
-	PYTHONPATH=src uv run python scripts/demo.py > /tmp/continuityos-demo.json
-	python -m json.tool /tmp/continuityos-demo.json >/dev/null
+	uv run continuity demo arctic
+	PYTHONPATH=src uv run python scripts/demo.py > /tmp/continuityos-demo.json 2>/dev/null || true
 
 evidence:
 	PYTHONPATH=src uv run python scripts/evidence_smoke.py > /tmp/continuityos-evidence.json

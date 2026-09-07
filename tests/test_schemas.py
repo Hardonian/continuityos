@@ -24,9 +24,11 @@ class TestSchemas:
 
     def test_export_all_schemas(self, tmp_path: Path) -> None:
         paths = export_all_schemas(tmp_path / "schemas_test")
-        assert len(paths) == 5
+        assert len(paths) == 7
         assert (tmp_path / "schemas_test" / "resource.schema.json").exists()
         assert (tmp_path / "schemas_test" / "supply-network.schema.json").exists()
         assert (tmp_path / "schemas_test" / "continuity-policy.schema.json").exists()
         assert (tmp_path / "schemas_test" / "dependency-trust.schema.json").exists()
         assert (tmp_path / "schemas_test" / "scenario.schema.json").exists()
+        assert (tmp_path / "schemas_test" / "assurance-policy.schema.json").exists()
+        assert (tmp_path / "schemas_test" / "route-substitution.schema.json").exists()

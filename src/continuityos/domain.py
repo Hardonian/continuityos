@@ -343,3 +343,206 @@ class RecoveryObjective(BaseModel):
     minimum_service_level: Score = 0.5
     maximum_data_loss_hours: int = Field(default=24, ge=0, le=8760)
     priority: int = Field(default=1, ge=1, le=5)
+
+
+# --- Composable Corridor State Dimensions ---
+
+
+class PhysicalStateEnum(StrEnum):
+    OPEN = "open"
+    CAPACITY_CONSTRAINED = "capacity_constrained"
+    PHYSICALLY_CLOSED = "physically_closed"
+    UNKNOWN = "unknown"
+
+
+class OperationalState(BaseModel):
+    navigation: str = "healthy"  # healthy, degraded, untrusted, unavailable
+    communications: str = "healthy"  # healthy, degraded, unavailable
+    escort_service: str = "available"  # available, unavailable, dependent
+    weather_clearance: str = "clear"  # clear, degraded, severe
+
+
+class CommercialState(BaseModel):
+    carrier_capacity: str = "available"  # available, constrained, unavailable
+    insurance: str = "available"  # available, uninsurable, withdrawn
+    commercial_viability: Score = 1.0
+
+
+class DigitalTrustState(BaseModel):
+    navigation_integrity: Score = 1.0
+    communications_integrity: Score = 1.0
+    cyber_integrity: Score = 1.0
+    data_integrity: Score = 1.0
+
+
+class RecoveryStateEnum(StrEnum):
+    NORMAL = "normal"
+    INCIDENT_T0 = "incident_t0"
+    PHYSICAL_REOPENED_T1 = "physical_reopened_t1"
+    COMMERCIAL_NORMALIZED_T2 = "commercial_normalized_t2"
+    LOGISTICS_NORMALIZED_T3 = "logistics_normalized_t3"
+    INVENTORY_REPLENISHED_T4 = "inventory_replenished_t4"
+    FULL_RESTORATION_T5 = "full_restoration_t5"
+    BACKLOG_ACTIVE = "backlog_active"
+
+
+class RecoveryState(BaseModel):
+    phase: RecoveryStateEnum = RecoveryStateEnum.NORMAL
+    backlog_active: bool = False
+    days_elapsed: int = 0
+    estimated_full_restoration_days: int = 0
+
+
+class EffectiveCorridorState(BaseModel):
+    physical_state: PhysicalStateEnum = PhysicalStateEnum.OPEN
+    operational_state: OperationalState = Field(default_factory=OperationalState)
+    commercial_state: CommercialState = Field(default_factory=CommercialState)
+    digital_trust_state: DigitalTrustState = Field(default_factory=DigitalTrustState)
+    recovery_state: RecoveryState = Field(default_factory=RecoveryState)
+    effective_state: CorridorState = CorridorState.OPEN
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+# --- Communication Tiers ---
+
+
+class CommunicationTier(StrEnum):
+    COMMERCIAL_LEO = "commercial_leo"
+    GOVERNMENT_SATCOM = "government_satcom"
+    PROTECTED_SATCOM = "protected_satcom"
+    TERRESTRIAL_FALLBACK = "terrestrial_fallback"
+    HF = "hf"
+    VHF = "vhf"
+    MESH = "mesh"
+    STORE_AND_FORWARD = "store_and_forward"
+
+
+# --- Drone, Sensor & Counter-Drone Representation (Defensive Only) ---
+
+
+class UncrewedSystem(BaseModel):
+    system_id: str
+    name: str
+    system_type: str = "UAS"  # UAS, USV, UUV, UGV
+    coverage_radius_km: float = Field(default=50.0, ge=0.0)
+    availability: Score = 1.0
+    endurance_hours: float = Field(default=8.0, ge=0.0)
+    communications_link: str = "secure_mesh"
+    environmental_limits: dict[str, float] = Field(default_factory=dict)
+    sensor_types: list[str] = Field(default_factory=lambda: ["EO_IR", "RF_SNIFFER"])
+    confidence: Score = 0.9
+    maintenance_state: str = "operational"
+
+
+class SensorNode(BaseModel):
+    node_id: str
+    name: str
+    modality: str  # RF, RADAR, EO_IR, ACOUSTIC, AIS, BUOY
+    location: GeoPoint | None = None
+    confidence: Score = 0.95
+    status: str = "operational"
+
+
+class RelayNode(BaseModel):
+    relay_id: str
+    name: str
+    throughput_mbps: float = 100.0
+    latency_ms: float = 25.0
+    redundancy_level: int = 1
+
+
+class ObservationPlatform(BaseModel):
+    platform_id: str
+    name: str
+    platform_type: str  # ORBITAL_LEO, ORBITAL_GEO, HAPS, MARITIME_PATROL, SENSOR_BUOY
+    sensors: list[str] = Field(default_factory=list)
+    confidence: Score = 0.9
+
+
+class CounterUASCoverage(BaseModel):
+    coverage_id: str
+    protected_area_id: str
+    detection_radius_km: float = 10.0
+    identification_confidence: Score = 0.95
+    track_fusion_health: Score = 1.0
+    authorization_state: str = "defensive_standby"  # defensive_standby, alert, authorized
+    coverage_continuity: Score = 1.0
+
+
+# --- Strategic Inventory Domain Model ---
+
+
+class StrategicInventory(BaseModel):
+    inventory_id: str
+    name: str
+    commodity: str  # FUEL, MEDICINE, CRITICAL_SPARES, GRAIN, MINERALS
+    starting_quantity: float = Field(gt=0)
+    unit: str = "liters"
+    minimum_reserve_days: int = 30
+    critical_reserve_days: int = 15
+    normal_burn_rate: float = Field(gt=0)
+    degraded_burn_rate: float | None = None
+    emergency_burn_rate: float | None = None
+    current_reserve_days: float = 0.0
+    assured_replenishment_days: int = 0
+    storage_constraints_capacity: float | None = None
+
+
+# --- Assurance Policy & Route Substitution Models ---
+
+
+class AssuranceObjectiveSpec(BaseModel):
+    minimum: Score = 0.95
+
+
+class AssuranceToleranceSpec(BaseModel):
+    corridor_loss: int = 1
+    port_loss: int = 1
+    communication_provider_loss: int = 1
+    navigation_source_loss: int = 2
+    observation_source_loss: int = 1
+
+
+class AssuranceEvidenceSpec(BaseModel):
+    minimum_independent_operational_sources: int = 2
+    minimum_independent_navigation_sources: int = 3
+    minimum_independent_environmental_sources: int = 2
+
+
+class AssuranceCommercialSpec(BaseModel):
+    minimum_carrier_options: int = 2
+    insurance_required: bool = True
+
+
+class AssuranceInventorySpec(BaseModel):
+    minimum_reserve_days: int = 30
+    minimum_assured_replenishment_cycles: int = 1
+
+
+class AssuranceRecoverySpec(BaseModel):
+    verify_carrier_return: bool = True
+    verify_backlog_clearance: bool = True
+    verify_reserve_restoration: bool = True
+
+
+class AssurancePolicy(BaseModel):
+    policy_id: str
+    name: str
+    continuity_objective: AssuranceObjectiveSpec = Field(default_factory=AssuranceObjectiveSpec)
+    tolerate: AssuranceToleranceSpec = Field(default_factory=AssuranceToleranceSpec)
+    evidence: AssuranceEvidenceSpec = Field(default_factory=AssuranceEvidenceSpec)
+    commercial: AssuranceCommercialSpec = Field(default_factory=AssuranceCommercialSpec)
+    inventory: AssuranceInventorySpec = Field(default_factory=AssuranceInventorySpec)
+    recovery: AssuranceRecoverySpec = Field(default_factory=AssuranceRecoverySpec)
+
+
+class RouteSubstitution(BaseModel):
+    substitution_id: str
+    name: str
+    primary_route_id: str
+    alternative_route_id: str
+    cargo_type: str
+    quantity: float
+    required_arrival_days: int
+    vessel_class_required: str | None = None
+    ice_class_required: bool = False

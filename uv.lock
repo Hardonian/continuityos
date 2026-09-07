@@ -470,8 +470,8 @@ wheels = [
 ]
 
 [[package]]
-name = "continuityos-reference"
-version = "0.1.0"
+name = "continuityos"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },

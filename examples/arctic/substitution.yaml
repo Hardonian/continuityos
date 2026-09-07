@@ -1,0 +1,25 @@
+apiVersion: continuity.io/v1
+kind: RouteSubstitution
+metadata:
+  name: arctic-nsr-atlantic-substitution
+  namespace: arctic-operations
+spec:
+  substitution_id: sub-arctic-nsr-atlantic
+  primary_route_id: route_nsr
+  alternative_route_id: route_atlantic
+  cargo_type: bulk_fuel_and_liquids
+  quantity_tons: 45000.0
+  critical_inventory_exhaustion_days: 28
+  alternative_transit_days: 16
+  inland_rail_days: 5
+  ice_class_required: NONE
+  alternative_ice_class_available: ARC4
+  origin_supplier_capacity_tons: 60000.0
+  port_throughput_capacity_tons: 50000.0
+  inland_transport_fluidity: HEALTHY
+  bunkering_fuel_available: true
+  storage_capacity_available: true
+  carrier_availability: AVAILABLE
+  marine_war_risk_insurance: AVAILABLE
+  communications_integrity: 0.95
+  navigation_integrity: 0.95

@@ -1,304 +1,401 @@
-# Aegis Continuity (Sovereign Edition)
+# ContinuityOS (v1.0)
 
 <!-- BEGIN: REPO HERO -->
-![continuityos — hero generated locally on the GPU stack](assets/repo-hero.png)
+![ContinuityOS — Continuity-as-Code Engine](assets/repo-hero.png)
 <!-- END: REPO HERO -->
-*(Powered by the ContinuityOS Open-Core Engine)*
 
-Sovereign Resilience-as-Code and cyber-physical continuity assurance for critical maritime corridors, NATO logistics, Arctic operations, and defense supply chains.
+[![CI](https://github.com/Hardonian/continuityos/actions/workflows/ci.yml/badge.svg)](https://github.com/Hardonian/continuityos/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Coverage](https://img.shields.io/badge/coverage-93.8%25-brightgreen.svg)](https://github.com/Hardonian/continuityos)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 
-Aegis Continuity is a deterministic, air-gapped Reference Architecture designed for Ministries of Defense and Tier-1 Defense Primes. It is **not** an autonomous controller or a kinetic command system. It ingests bounded observations, enforces source-assertion policy, estimates corridor operability, maps cyber failures to physical supply consequences, compiles a cost-constrained continuity plan, and writes tamper-evident decision evidence to a post-quantum secure ledger.
+> **Declare resilience. Detect drift. Prove continuity.**
 
-## What is implemented
-
-- **Sovereign assertion policy:** source, metric, and assertion-class combinations are strictly enforced (e.g., commercial orbiters cannot assert SCIF availability).
-- **Air-gapped open-data snapshots:** content-addressed cache with hashes and atomic writes for offline SCIF operations.
-- **Deterministic fusion engine:** explicit replay time, factor-level risk, confidence, freshness decay, missing-data penalties, and explicit NATO APP-6D caveats.
-- **Functional closure classification:** open, degraded, functionally closed, or physically closed.
-- **Cyber-physical dependency graph:** downstream blast radius, provider concentration, substitution attenuation, and single-point-of-failure detection.
-- **Continuity compiler:** exact bounded deterministic action selection under budget, prerequisites, incompatibilities, and human-in-the-loop approvals.
-- **Evidence ledger:** append-only SHA-256 chain with optional Ed25519 signing and verification.
-- **Authenticated telemetry:** HMAC-SHA256 canonical webhook for operator assertions.
-- **FastAPI service and CLI:** documented endpoints, health checks, source registry, assessment, graph analysis, plan compilation, evidence verification, snapshot import, and key generation.
-- **Offline-first controls:** outbound HTTP disabled by default; cached snapshots remain reproducible without network access.
-
-## Why this is different
-
-Most systems stop at alerts, maps, or route recommendations. ContinuityOS connects:
-
-```text
-source-qualified observation
-→ cyber-physical dependency impact
-→ operational corridor state
-→ feasible mitigation set
-→ costed continuity plan
-→ signed decision and outcome evidence
-```
-
-The reference implementation makes that chain testable and deterministic. The defensible product moat would come from validated customer dependency graphs, operator telemetry integrations, decision-outcome history, policy packs, and accreditation—not from public datasets alone.
-
-## Safety, Authority, and ROE Boundary
-
-Aegis Continuity acts strictly as an advisory intelligence overlay. It does **not**:
-
-- execute autonomous kinetic actions, weapons targeting, or interdiction operations;
-- control operational technology (OT), port SCADA, or maritime uncrewed surface vessels (USVs);
-- treat public satellite catalogues as proof of secure communications availability;
-- infer current strategic port capacity from static geospatial intelligence (GEOINT);
-- execute any consequential mitigations without explicit, accountable human-in-the-loop authorization.
-
-## Quick start
-
-### Local
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-make verify
-make demo
-uvicorn continuityos.service:app --host 127.0.0.1 --port 8080
-```
-
-### Docker
-
-```bash
-bash scripts/docker_bootstrap.sh
-docker compose build
-docker compose up
-curl http://127.0.0.1:8080/healthz
-```
-
-The container has no outbound data access unless `CONTINUITYOS_OUTBOUND_HTTP_ENABLED=true` is explicitly set.
-
-## Live reference deployment
-
-The current EPYC-hosted reference surface is available at `https://aiautomatedsystems.ca/continuityos/`.
-It is intentionally an evaluation/reference API, not a tenant-isolated customer control plane. Health and source metadata are public; assessment, compilation, and evidence routes require `X-Continuity-API-Key`. Run `CONTINUITYOS_API_KEY=... bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos` to verify authenticated integrity, or omit the key to verify that protected evidence is rejected. Deployment files and rollback notes are in [`deploy/README.md`](deploy/README.md).
-
-## API
-
-### Assess a corridor
-
-`POST /v1/assess` (requires `X-Continuity-API-Key`)
-
-```json
-{
-  "corridor_id": "northwest-passage-west",
-  "observations": []
-}
-```
-
-Observations must pass the registry rules in `src/continuityos/sources/registry.py`.
-
-### Analyze cyber-physical blast radius
-
-`POST /v1/graph/analyze?failed_nodes=shared-idp&failed_nodes=satcom-a` (requires `X-Continuity-API-Key`)
-
-Body: a `DependencyGraph` such as `examples/arctic_dependency_graph.yaml` converted to JSON.
-
-### Compile a continuity plan
-
-`POST /v1/compile` (requires `X-Continuity-API-Key`)
-
-The compiler is exact for up to 24 actions by default. It rejects larger unbounded plans rather than silently using a heuristic. A production OR-Tools adapter can implement the same evidence contract for larger action sets.
-
-### Generate a complete decision packet
-
-`POST /v1/decision-packets` (requires `X-Continuity-API-Key`)
-
-This is the high-leverage orchestration surface: one bounded, idempotent request produces a corridor assessment, dependency blast-radius analysis, deterministic mitigation plan, evidence manifest, approval requirement, and explicit human-action boundary. It records the packet and component results in the signed evidence ledger. It never executes, dispatches, or authorizes consequential actions.
-
-### Strategic signal analysis
-
-`POST /v1/strategic/analyze` (requires `X-Continuity-API-Key`)
-
-This protected, idempotent surface computes a freshness- and confidence-weighted multivariate heatmap, ranked explainable alerts, and human-gated coordination recommendations from current observations. Supplying a provenance-bearing regression dataset adds the existing temporal-holdout ridge result. Predictive status remains explicit; no output is represented as causal truth, validated forecasting, autonomous coordination, or dispatch.
-
-The latest persisted report is available as a bounded Server-Sent Events stream:
-
-```text
-GET /v1/strategic/stream?duration_seconds=15
-POST /v1/strategic/alerts/{alert_key}/ack
-POST /v1/strategic/alerts/{alert_key}/unack
-```
-
-The stream emits heartbeats and at most one snapshot per report identity. Alert state is durable across restarts, with stable alert keys, cooldown suppression, acknowledgement state, escalation deadlines, and source-freshness flags.
-
-A fail-soft user timer runs `/home/scott/ai-workspace/repos/continuityos/scripts/strategic_watchdog.py` every five minutes. It checks stream availability, missing snapshots, and stale sources; it emits only state transitions into the existing operator inbox and never dispatches external alerts or performs remediation.
-
-A separate five-minute producer timer runs `/home/scott/ai-workspace/repos/continuityos/scripts/strategic_ingest.py`. It verifies the signed evidence hash chain, maps only approved public-data indicator IDs into typed observations, preserves ledger record/snapshot provenance, deduplicates semantic replays, caps the newest window at 800 observations, and refuses request bodies above 900 KiB. Unknown indicators are skipped and counted; they are never guessed.
-
-### Operator telemetry authentication
-
-Clients serialize payload JSON with sorted keys, then sign:
-
-```text
-HMAC-SHA256(secret, "<unix_timestamp>.<canonical_json_body>")
-```
-
-Headers:
-
-```text
-X-Continuity-Timestamp: 1784820000
-X-Continuity-Signature: sha256=<hex digest>
-```
-
-Production requires a secret of at least 32 characters and Ed25519 evidence keys.
-
-### Multivariate continuity analysis
-
-`POST /v1/analysis/regression` accepts a time-aligned, provenance-bearing dataset of normalized multidisciplinary indicators and returns a temporal-holdout ridge-regression result. It is associational exploratory analysis only—not causal inference, intelligence, operational forecasting, or autonomous control. The endpoint requires the API key and writes the model result to the evidence ledger. See [`docs/MULTIVARIATE_ANALYSIS.md`](docs/MULTIVARIATE_ANALYSIS.md).
-
-### National-security posture
-
-The Aegis Continuity Sovereign Edition is designed as an embedded Commercial-Off-The-Shelf (COTS) engine for Defense System Integrators (SIs) and "Shadow Prime" contracts. It provides unclassified continuity evidence and decision-support for critical infrastructure, Arctic logistics, maritime corridors, communications resilience, and supply-chain dependencies. While engineered to MIL-SPEC resilience standards, the base open-core does not claim active classified readiness or autonomous authority over operational systems until deployed in a customer SCIF. See [`docs/NATIONAL_SECURITY_POSTURE.md`](docs/NATIONAL_SECURITY_POSTURE.md), [`docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md`](docs/CONTRACT_AND_SYSTEM_POSITIONING_2026.md), [`docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md`](docs/CANADIAN_PROCUREMENT_RESEARCH_2026.md), and [`docs/PLATFORM_POSITIONING_RESEARCH_2026.md`](docs/PLATFORM_POSITIONING_RESEARCH_2026.md).
-### Operational endpoints
-
-- `GET /livez` is a cheap process liveness check for a supervisor.
-- `GET /readyz` checks runtime evidence storage, production key files, and ledger integrity.
-- `GET /healthz` preserves the public compatibility response and includes readiness/integrity details.
-- `GET /metrics` exposes minimal Prometheus-compatible counters; place it behind the existing private ingress or firewall in a customer deployment.
-- `GET /v1/public-data/sources` requires the API key and lists the allow-listed public source manifests, freshness policy, parser, and key requirement.
-- `POST /v1/public-data/snapshots` requires the API key and fetches only an allow-listed source; it returns HTTP 503 when outbound HTTP is disabled and stores successful responses as immutable content-addressed snapshots.
-- `POST /v1/public-data/indicators` requires the API key and serves normalized ECCC GeoMet alert indicators or DFO IWLS water-level observations. ECCC returns alert-event values with expiration/geometry/confidence flags; DFO returns station/data snapshot IDs, source-native units, and QC/review flags. It serves cached snapshots when outbound HTTP is disabled and returns HTTP 503 only when the requested evidence is absent.
-- `GET /v1/interoperability` requires the API key and returns the machine-readable standards capability manifest. It distinguishes implemented, source-consumer, contract-only, and planned boundaries.
-- `POST /v1/integrations/cloudevents` accepts a signed CloudEvents 1.0 envelope for the approved `com.continuityos.operator.observation.v1` type. The event is HMAC-verified, tenant/asset/sequence-validated, idempotent, and written to the evidence ledger; unknown event types are rejected.
-- `POST /v1/integrations/cap` accepts protected CAP 1.2 XML metadata, rejects DOCTYPE/ENTITY payloads, preserves alert lifecycle/area fields, and records the normalized alert in the ledger. It does not dispatch or retransmit alerts.
-- `GET /v1/ogc/collections` and `GET /v1/ogc/collections/evidence/items` expose a protected, bounded OGC-style GeoJSON evidence projection. This is an interoperability surface, not an OGC conformance claim.
-- `GET /v1/exports/evidence/manifest` returns a versioned content-hashed export manifest; `GET /v1/exports/evidence/geopackage` returns a read-only GeoPackage SQLite snapshot for GIS/offline workflows.
-- `GET /v1/exports/evidence/ndjson` returns deterministic signed ledger records for data-lake, SIEM, and ITSM staging; it performs no outbound delivery.
-- `GET /v1/stac/catalog` returns a metadata-only STAC 1.0 catalog for evidence exports; imagery assets and STAC conformance are not implied.
-- `scripts/public_data_probe.py --enable-outbound` performs an explicit operator-run source probe; it never runs as a hidden background job.
-- `scripts/public_indicator_probe.py --enable-outbound` exercises the ECCC and DFO normalizers against real endpoints and emits sanitized provenance/QC output only.
-- `scripts/public_indicator_probe.py --enable-outbound --include-cdd` also parses the official Public Safety Canada CDD XLSX. The CDD is historical aggregated context only; its indicators carry `aggregated_secondary_source` and `not_primary_source` flags.
-- `scripts/validate_regression_dataset.py` validates a provenance-bearing JSON dataset before it is submitted to `/v1/analysis/regression`; rows also carry normalization method, quality flags, review state, label definition, and licence declaration.
-- `GET /v1/evidence/verify` and `GET /v1/evidence?offset=0&limit=100` require the API key and are bounded/paginated.
-- Mutating routes accept `Idempotency-Key`; a same-key same-payload retry returns the original response, while a changed payload returns HTTP 409.
-- Operator telemetry requires timestamped HMAC and monotonically increasing tenant/asset sequence numbers; replay returns HTTP 409.
-- Every response includes `X-Request-ID`; clients may provide one for correlation.
-- Requests larger than `CONTINUITYOS_MAX_REQUEST_BYTES` are rejected before parsing. Protected routes use a process-local rate limit suitable for the single-worker reference service.
-- `bash scripts/iac_verify.sh` validates provider-free Terraform, Docker Compose configuration, shell syntax, and the plan-only local deployment. `terraform -chdir=infra/terraform apply -var='apply_local=true'` is an explicit opt-in deployment action.
-
-## Open-source and public data plane
-
-Implemented adapters and boundaries include:
-
-- NOAA@NSIDC Sea Ice Index daily extent CSV
-- Environment and Climate Change Canada GeoMet OGC API normalization boundary
-- Copernicus Data Space Ecosystem Sentinel-1 STAC metadata search
-- ECMWF open-data registry and licensing boundary
-- CelesTrak GP JSON for orbital geometry context only
-- NGA World Port Index for port geolocation and published characteristics only
-- MarineCadastre.gov historical AIS import boundary
-- UN Comtrade trade-exposure boundary
-- authenticated operator telemetry for live availability, capacity, cyber health, and insurance access
-- structured analyst assessments for geopolitical and policy judgments
-
-See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md), [`docs/PUBLIC_DATA_CATALOG_2026.md`](docs/PUBLIC_DATA_CATALOG_2026.md), [`docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md`](docs/PUBLIC_DATA_TERMS_AND_CONTROL_MAP_2026.md), [`docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md`](docs/CUSTOMER_TELEMETRY_AND_LABEL_CONTRACT_2026.md), [`docs/INTEROPERABILITY_PROFILE_2026.md`](docs/INTEROPERABILITY_PROFILE_2026.md), and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md).
-
-A release validation against the official NSIDC daily file is recorded in
-[`validation/open_data_validation.json`](validation/open_data_validation.json). The derived
-Arctic-wide extent anomaly is deliberately marked context-only and cannot lower a live
-corridor-risk score. Reproduce it with:
-
-```bash
-PYTHONPATH=src python scripts/validate_nsidc_snapshot.py /path/to/N_seaice_extent_daily_v4.0.csv
-```
-
-The expanded maritime logistics graph in
-[`examples/arctic_maritime_logistics.yaml`](examples/arctic_maritime_logistics.yaml) models
-ice-service data, weather, satellite diversity, escort scheduling, an icebreaker, an
-ice-capable carrier, fuel, port cyber dependencies, inventory, and a dependent community.
-
-## Verification
-
-```bash
-make verify
-```
-
-Runs:
-
-- Ruff linting
-- mypy strict type checking
-- pytest
-- coverage report
-- package build
-- demo execution
-- evidence-ledger verification path
-
-For a repeatable operator setup, run `bash scripts/install.sh`. For day-two operations use `bash scripts/status.sh`, `bash scripts/backup_data.sh`, and the restore command documented in [`deploy/README.md`](deploy/README.md).
-
-## Repository map
-
-```text
-src/continuityos/
-  compiler.py       deterministic continuity compiler
-  config.py         fail-closed production settings
-  domain.py         validated domain contracts
-  evidence.py       signed append-only evidence chain
-  fusion.py         source-qualified risk fusion
-  graph.py          cyber-physical blast-radius engine
-  ingest.py         cache-first open-source ingestion
-  service.py        FastAPI application
-  telemetry.py      authenticated operator observations
-  sources/          adapters, cache, policy, registry
-
-docs/
-  ARCHITECTURE.md
-  DATA_SOURCES.md
-  NOVELTY.md
-  THREAT_MODEL.md
-  DEPLOYMENT.md
-  PRIOR_ART.md
-
-examples/
-  arctic_dependency_graph.yaml
-  arctic_maritime_logistics.yaml
-
-validation/
-  open_data_validation.json
-
-RELEASE_REPORT.md
-```
-
-## Production limitations
-
-This is a reference implementation. A production deployment still requires:
-
-- customer-specific identity, authorization, tenant isolation, and data-retention controls;
-- Postgres or another transactional evidence index around the immutable ledger;
-- enterprise key management or HSM-backed Ed25519 signing;
-- schema versioning and migration governance;
-- validated domain transforms for local ice concentration, weather, AIS, port capacity, and inventory;
-- security accreditation, red-team testing, disaster recovery, and operational runbooks;
-- legal review of data licences, export controls, privacy, and procurement requirements;
-- model calibration against real decision and outcome data.
-
-No claim of patentability is made. See [`docs/NOVELTY.md`](docs/NOVELTY.md), [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md), and [`RELEASE_REPORT.md`](RELEASE_REPORT.md).
+**ContinuityOS** is an open-source **Continuity-as-Code / Resilience-as-Code** engine for modeling cyber-physical dependencies, simulating correlated multi-event disruptions, detecting functional infrastructure closures, calculating assured replenishment timelines, and continuously proving whether critical operations remain resilient.
 
 ---
 
+## At a Glance (First 60 Seconds)
+
+### What is ContinuityOS?
+The first open-core declarative policy and reconciliation runtime for cyber-physical supply chains, maritime corridors, critical infrastructure, and distributed logistics networks.
+
+### Why does it exist?
+Traditional Infrastructure-as-Code (Terraform, OpenTofu) asks: *"Is my infrastructure configured as intended?"*  
+Kubernetes asks: *"Is my workload converging toward desired state?"*  
+**ContinuityOS asks:** *"Can the organization still function when physical, digital, commercial, logistical, regulatory, communications, navigation, or geopolitical dependencies fail?"*
+
+### Why isn't monitoring enough?
+Monitoring alerts you when a link is down. It cannot tell you that an open route is commercially dead because underwriters withdrew war-risk insurance, or that two satellite providers share the same vulnerable teleport, or that emergency burn rates will exhaust critical fuel 11 days before the first viable replacement ship arrives.
+
+### What does Continuity-as-Code mean?
+Defining operational resilience targets, minimum reserve days, provider diversity rules, and contingency routes in declarative YAML (`apiVersion: continuity.io/v1`), versioning them in Git, evaluating them against real-world multi-factor observations, and reconciling desired resilience against observed state in CI/CD.
+
 ---
 
-## Related Hardonia projects
+## 5-Minute Quickstart
 
-<p align="center">
-  <a href="https://aiautomatedsystems.ca"><img src="https://img.shields.io/badge/AI_Automated_Systems-Visit-0f766e?style=for-the-badge&logo=cloudflare" alt="AI Automated Systems" /></a>
-  <a href="https://github.com/Hardonian/ollama-router"><img src="https://img.shields.io/badge/ollama--router-181717?style=for-the-badge&logo=github" alt="ollama-router" /></a>
-  <a href="https://github.com/Hardonian/ai-lab-audit-api"><img src="https://img.shields.io/badge/ai--lab--audit--api-181717?style=for-the-badge&logo=github" alt="ai-lab-audit-api" /></a>
-  <a href="https://github.com/Hardonian/ai-lab-command-center"><img src="https://img.shields.io/badge/command--center-181717?style=for-the-badge&logo=github" alt="ai-lab-command-center" /></a>
-  <a href="https://github.com/Hardonian/storefront"><img src="https://img.shields.io/badge/storefront-181717?style=for-the-badge&logo=github" alt="storefront" /></a>
-</p>
+ContinuityOS is **100% offline-capable** and requires **zero cloud dependencies**.
 
-<p align="center"><strong>Part of the <a href="https://aiautomatedsystems.ca">Hardonia</a> open-source + services stack.</strong></p>
+```bash
+# 1. Clone & install
+git clone https://github.com/Hardonian/continuityos.git
+cd continuityos
+uv sync --all-extras
 
-<p align="center">
-  <a href="https://aiautomatedsystems.ca/p/repo-rescue-saas-audit"><img src="https://img.shields.io/badge/Get_a-SaaS_Repo_Rescue_Audit-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="SaaS Repo Rescue Audit" /></a>
-</p>
+# 2. Run system doctor
+uv run continuity doctor
 
-<details>
-<summary>What this audit covers</summary>
+# 3. Validate declarative resilience policy
+uv run continuity validate examples/arctic/network.yaml
 
-A fixed-scope review of **auth, billing, RLS, and webhook** correctness — the bugs that cost you customers and chargebacks. Runs locally on your infrastructure. See the <a href="https://aiautomatedsystems.ca/p/repo-rescue-saas-audit">product page</a>.
-</details>
+# 4. Compile a bounded mitigation plan against observed disruption
+uv run continuity plan examples/arctic/network.yaml
+
+# 5. Run the complete interactive demonstration
+uv run continuity demo arctic
+```
+
+### Terminal Output: `continuity plan`
+
+```text
+================================================================================
+CONTINUITYOS PLAN
+================================================================================
+
+Network:
+  northern-critical-supply
+
+Declared Continuity: 95.0%
+Observed Continuity: 81.4%
+STATUS: DEGRADED
+
+VIOLATIONS:
+
+[COMM-001]
+  Required independent communication providers: 2
+  Effective independent providers: 1 (Shared ground station: gateway/tromso-uplink)
+
+[INV-003]
+  Required assured fuel replenishment: <= 30 days
+  Observed: 41 days (Critical reserve breach in 22 days)
+
+[ROUTE-004]
+  Primary route (corridor/nsr) physically OPEN
+  Operational State: DEGRADED (Navigation integrity 0.65 < 0.90)
+  Commercial State: UNAVAILABLE (War-risk insurance suspended)
+  Effective State: FUNCTIONALLY_CLOSED
+
+RECOMMENDED ACTIONS:
+  1. [SUB-01] Activate Atlantic Corridor substitution route (viability: 88.0%)
+  2. [INV-02] Increase regional fuel reserve buffer by 11 days
+  3. [COMM-03] Provision independent protected UHF/SATCOM fallback
+
+PREDICTED CONTINUITY AFTER REMEDIATION: 96.3%
+================================================================================
+```
+
+---
+
+## The 10 Core Invariants
+
+ContinuityOS enforces 10 strict architectural invariants:
+
+1. **Physical availability is not effective availability**: Infrastructure physically clear is unusable if uninsurable, carrier-denied, or navigation-untrusted.
+2. **`UNKNOWN` never silently becomes `HEALTHY`**: Incomplete data or provider timeouts produce conservative degraded or unknown states, never assumed compliance.
+3. **External state must preserve provenance**: Every observation tracks source qualification, cryptographic hash, timestamp, and signature status.
+4. **Deterministic evaluation**: Given identical graph topology and observations, policy and compiler results are bit-for-bit reproducible.
+5. **Graceful provider degradation**: Provider failure or timeout degrades confidence scores without crashing runtime execution.
+6. **Every effective-state decision is explainable**: No black-box decisions; every closure or drift generates clear factor-level reason codes.
+7. **Correlated failures are explicitly representable**: Multi-corridor, multi-modal cascading disruptions are modeled as first-class `Scenario` resources.
+8. **Recovery is separate from reopening**: Physical reopening ($T1$) does not equate to operational health ($T5$) due to vessel repositioning and port backlog lag.
+9. **Nominal redundancy must be tested for shared dependencies**: Redundant systems sharing upstream teleports, power grids, or carriers are flagged as invalid redundancy.
+10. **Machine-readable and versionable**: Policies are declarative, portable, testable, and commit-ready in standard Git workflows.
+
+---
+
+## Architecture & Workflows
+
+### 1. System Architecture Loop
+
+```mermaid
+flowchart TD
+    subgraph Declarative ["1. Declarative Specifications (Git)"]
+        SN[SupplyNetwork]
+        CP[ContinuityPolicy]
+        AP[AssurancePolicy]
+        DT[DependencyTrust]
+    end
+
+    subgraph Observations ["2. Provenance-Bearing Ingestion"]
+        PUB[Authoritative Public Data<br/>NOAA, NSIDC, ECCC, AIS]
+        TEL[Authenticated Telemetry<br/>HMAC-SHA256 Operator Data]
+        MOCK[Offline MockProvider]
+    end
+
+    subgraph CoreEngine ["3. Continuity-as-Code Engine"]
+        GRAPH[Dependency Graph &<br/>Blast-Radius Engine]
+        IND[Provider Independence<br/>Analyzer]
+        FC[Functional Closure<br/>Decomposition Engine]
+        REC[Reconciliation Engine<br/>Desired vs Actual]
+        SUB[Route Substitution<br/>Compiler]
+        INV[Strategic Inventory &<br/>Assured Replenishment]
+        REC_LAG[Recovery Lag Engine<br/>T0 to T5 Timeline]
+    end
+
+    subgraph Outputs ["4. Bounded Decisions & Audit"]
+        PLAN[Deterministic Bounded Plan]
+        LEDGER[(Signed Evidence Ledger<br/>Ed25519 Chain)]
+        CLI[CLI & REST API<br/>Status / Drift / Explain]
+    end
+
+    Declarative --> REC
+    Observations --> CoreEngine
+    GRAPH --> REC
+    IND --> REC
+    FC --> REC
+    REC --> PLAN
+    SUB --> PLAN
+    INV --> REC
+    REC_LAG --> REC
+    PLAN --> LEDGER
+    PLAN --> CLI
+```
+
+---
+
+### 2. Dependency Graph & Blast-Radius Modeling
+
+```mermaid
+flowchart LR
+    PNT[GNSS / PNT Constellation] -->|navigation| CORR[Primary Maritime Corridor]
+    SAT[Commercial LEO SATCOM] -->|telemetry| PORT[Deepwater Container Port]
+    ICE[Icebreaker Service Fleet] -->|escort| CORR
+    CORR -->|transit| PORT
+    PORT -->|intermodal rail| FAC[Strategic Assembly Facility]
+    PORT -->|pipeline| FUEL[Regional Fuel Storage]
+    FUEL -->|energy| FAC
+
+    style PNT fill:#f96,stroke:#333,stroke-width:2px
+    style CORR fill:#fbb,stroke:#333,stroke-width:2px
+    style PORT fill:#fbb,stroke:#333,stroke-width:2px
+    style FAC fill:#bfb,stroke:#333,stroke-width:2px
+```
+
+---
+
+### 3. Functional Closure: 4-Layer Decomposition
+
+Resilience is multi-dimensional. A corridor is only functionally open when all four layers pass:
+
+```mermaid
+graph TB
+    subgraph PhysicalLayer ["Layer 1: Physical Availability"]
+        P1[Waterway Depth / Ice Clearance]
+        P2[Port Berth Availability]
+    end
+
+    subgraph OperationalLayer ["Layer 2: Operational Integrity"]
+        O1[Navigation / PNT Integrity >= 0.90]
+        O2[SATCOM / Telemetry Availability]
+        O3[Pilotage & Vessel Traffic Control]
+    end
+
+    subgraph CommercialLayer ["Layer 3: Commercial Viability"]
+        C1[War-Risk Insurance Underwriting]
+        C2[Commercial Carrier Vessel Capacity]
+        C3[Fuel Bunker Contract Viability]
+    end
+
+    subgraph TrustLayer ["Layer 4: Digital Trust & Provenance"]
+        T1[Source Qualification & Freshness]
+        T2[Cryptographic Ledger Verification]
+        T3[Operator Telemetry Confidence]
+    end
+
+    PhysicalLayer --> EFF{Effective State}
+    OperationalLayer --> EFF
+    CommercialLayer --> EFF
+    TrustLayer --> EFF
+
+    EFF -->|All Valid| OPEN[OPEN]
+    EFF -->|Insurance Suspended| UNINSURABLE[OPEN_BUT_UNINSURABLE]
+    EFF -->|PNT Spoofed| UNTRUSTED[OPEN_BUT_NAVIGATION_UNTRUSTED]
+    EFF -->|Multiple Degraded| CLOSED[FUNCTIONALLY_CLOSED]
+```
+
+---
+
+### 4. Recovery Lag Timeline ($T0 \to T5$)
+
+Reopening a route does **not** instantly restore network continuity. ContinuityOS explicitly models the multi-stage lag:
+
+```mermaid
+timeline
+    title Critical Corridor Recovery Lifecycle
+    T0 : Incident Occurrence : Route disrupted / blocked
+    T1 : Physical Clearance : Debris/ice cleared : Physical route open
+    T2 : Commercial Return : Underwriters restore coverage : Insurable
+    T3 : Logistics Realignment : Port backlog clears : Vessel repositioning
+    T4 : Inventory Replenishment : Assured replenishment shipments arrive
+    T5 : Resilience Objective Restored : Reserve buffers normal : Fully Compliant
+```
+
+---
+
+### 5. Multi-Constraint Route Substitution Compiler
+
+ContinuityOS does not merely draw an alternative line on a map; it compiles multi-constraint supply configurations:
+
+```mermaid
+flowchart TD
+    TRIGGER[Primary Route Disrupted] --> CAND[Evaluate Candidate Alternate Route]
+    CAND --> CHK_GEO{Geographically Navigable?}
+    CHK_GEO -->|No| REJ1[REJECT: Infeasible path]
+    CHK_GEO -->|Yes| CHK_INS{Commercial Insurance Available?}
+    CHK_INS -->|No| REJ2[REJECT: Commercially uninsurable]
+    CHK_INS -->|Yes| CHK_PORT{Port Berth Capacity Sufficient?}
+    CHK_PORT -->|No| REJ3[REJECT: Port handling bottleneck]
+    CHK_PORT -->|Yes| CHK_TIME{Arrival <= Assured Replenishment Deadline?}
+    CHK_TIME -->|No| REJ4[REJECT: Arrival exceeds critical inventory date]
+    CHK_TIME -->|Yes| APPROVE[APPROVE: Viable Route Substitution Plan]
+```
+
+---
+
+## Declarative Resource Specifications (`continuity.io/v1`)
+
+### `AssurancePolicy` (Quantified Resilience Budget)
+```yaml
+apiVersion: continuity.io/v1
+kind: AssurancePolicy
+metadata:
+  name: northern-critical-supply
+spec:
+  continuityObjective:
+    minimum: 0.95
+  tolerate:
+    corridorLoss: 1
+    portLoss: 1
+    communicationProviderLoss: 1
+    navigationSourceLoss: 2
+    observationSourceLoss: 1
+  evidence:
+    minimumIndependentOperationalSources: 2
+    minimumIndependentNavigationSources: 3
+  commercial:
+    minimumCarrierOptions: 2
+    insuranceRequired: true
+  inventory:
+    minimumReserveDays: 30
+    minimumAssuredReplenishmentCycles: 1
+  recovery:
+    verifyCarrierReturn: true
+    verifyBacklogClearance: true
+    verifyReserveRestoration: true
+```
+
+### `RouteSubstitution` (Alternate Logistics Configuration)
+```yaml
+apiVersion: continuity.io/v1
+kind: RouteSubstitution
+metadata:
+  name: arctic-atlantic-contingency
+spec:
+  primaryRouteId: corridor/nsr
+  alternateRouteId: corridor/atlantic
+  candidateName: North Atlantic Maritime Route
+  requiredVesselClass: Ice-Class 1A
+  originCapacityTonnes: 500000.0
+  routeCapacityTonnes: 450000.0
+  portHandlingCapacityTonnes: 380000.0
+  inlandRailCapacityTonnes: 320000.0
+  carrierAvailable: true
+  insuranceAvailable: true
+  fuelBunkerAvailable: true
+  transitDays: 28.0
+  criticalArrivalDeadlineDays: 35.0
+```
+
+---
+
+## CLI Command Reference
+
+ContinuityOS includes 26 commands across core resilience, assurance, simulation, and audit:
+
+| Command | Description |
+| :--- | :--- |
+| `continuity init <dir>` | Scaffold a new Continuity-as-Code workspace with starter manifests |
+| `continuity validate <file>` | Validate declarative specs against JSON Schemas |
+| `continuity plan <file>` | Compile deterministic bounded mitigation plans with predicted recovery |
+| `continuity drift <file>` | Reconcile declared resilience policy against observed reality |
+| `continuity simulate <scenario>` | Simulate correlated cascade disruptions over time ($N$ days) |
+| `continuity explain <resource>` | Decompose functional closure root causes across 4 architectural layers |
+| `continuity assurance <policy>` | Evaluate comprehensive resilience budget scorecard |
+| `continuity substitute <spec>` | Compile and validate multi-constraint route substitution feasibility |
+| `continuity graph <file>` | Analyze dependency topology, cycles, SPOFs, and blast radius |
+| `continuity observe [--mock]` | Ingest live authoritative data or run offline mock observations |
+| `continuity inventory <file>` | Forecast time-series depletion, burn rates, and assured replenishment |
+| `continuity recovery <file>` | Model T0-T5 recovery lag timeline and critical path delays |
+| `continuity evidence <subcmd>` | Inspect, list, verify, and detect conflicts in the signed evidence ledger |
+| `continuity demo [scenario]` | Run interactive deterministic offline demonstration (`arctic` / `civilian`) |
+| `continuity doctor` | Run full diagnostic suite (Python 3.12, Ed25519, schemas, offline data) |
+| `continuity sovereign-audit` | Verify air-gap readiness, cryptographic key isolation, and SCIF controls |
+| `continuity version` | Display engine version and build metadata |
+
+---
+
+## Open-Core vs. Enterprise Boundary
+
+ContinuityOS is committed to a robust open-source core:
+
+| Feature / Capability | Open-Source Core | Enterprise / Sovereign Edition |
+| :--- | :---: | :---: |
+| Declarative DSL (`continuity.io/v1`) | Yes | Yes |
+| Full Dependency Graph & Blast-Radius Engine | Yes | Yes |
+| 12-State Functional Closure Decomposition | Yes | Yes |
+| 9-Dimensional DependencyTrust Engine | Yes | Yes |
+| Correlated Disruption Simulator | Yes | Yes |
+| Assured Replenishment & Inventory Depletion | Yes | Yes |
+| Multi-Constraint Route Substitution Compiler | Yes | Yes |
+| Provider Independence Upstream Analyzer | Yes | Yes |
+| Signed SHA-256 / Ed25519 Evidence Ledger | Yes | Yes |
+| CLI & Local Offline-First Runtime | Yes | Yes |
+| Distributed HA Control Plane & Multi-Tenancy | Roadmap | Yes |
+| Enterprise RBAC & Single Sign-On (SAML/OIDC) | Roadmap | Yes |
+| Private Sovereign Satellite & Radar Connectors | DIY / SDK | Included |
+| Real-Time Commercial Carrier & Insurance Feeds | External | Certified Connectors |
+| Multi-Domain Guard / SCIF Cross-Domain Data Diode | Specification | Turnkey Appliance |
+
+---
+
+## Defensive-Only ROE & Legal Boundary
+
+ContinuityOS is engineered strictly for **defensive resilience planning, business continuity, critical infrastructure protection, civil logistics, and disaster recovery**.
+
+- **No Offensive Targeting**: We do not implement kinetic strike planning, weapon routing, or offensive cyber operations.
+- **No Autonomous Kinetic Control**: The runtime is strictly advisory. Every mitigation, substitution, and recovery action requires explicit human authorization.
+- **Privacy & Civil Protections**: Data collection focuses exclusively on infrastructure health, asset telemetry, and macro-environmental feeds.
+
+---
+
+## Documentation Index
+
+- [Architecture & Invariants](docs/ARCHITECTURE.md)
+- [Policy Language Reference](docs/POLICY_LANGUAGE.md)
+- [Provider SDK & Adapters](docs/PROVIDER_SDK.md)
+- [Scenario Modeling Guide](docs/SCENARIOS.md)
+- [Performance Benchmarks](docs/BENCHMARKS.md)
+- [Deployment & Air-Gapped Operation](docs/DEPLOYMENT.md)
+- [Threat Model & Security Policy](SECURITY.md)
+- [Product Positioning & GTM Strategy](docs/gtm/product-positioning.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+
+---
+
+## License
+
+ContinuityOS is released under the [Apache 2.0 License](LICENSE).  
+Copyright (c) 2026 ContinuityOS Contributors & Hardonia AI Systems.
