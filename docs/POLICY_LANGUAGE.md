@@ -261,7 +261,56 @@ spec:
 
 ---
 
-## 3. CLI Validation & Evaluation
+## 3. Defense Readiness & Electronic Warfare Policy Declarations
+
+ContinuityOS supports declaring military operational readiness gates and cyber-physical electronic warfare thresholds.
+
+### 3.1 Security Classification & Dissemination Metadata
+Specs can enforce mandatory classification labels, compartment tags, and five-eyes / NATO dissemination caveats:
+
+```yaml
+apiVersion: continuity.io/v1
+kind: ContinuityPolicy
+metadata:
+  name: tactical-mission-resilience
+  labels:
+    classification: "SECRET"
+    compartments: ["SOVEREIGN_LOGISTICS", "ARCTIC_NORAD"]
+    disseminationControls: ["CANADIAN_EYES_ONLY", "NOFORN"]
+    ownerNation: "CAN"
+spec:
+  targetNetworkId: arctic-defense-resupply
+  minimumContinuityScore: 0.95
+```
+
+### 3.2 Defense Readiness (DRRS) & C-Level Rule
+Declares mandatory defense readiness thresholds evaluated against live supply line states:
+
+```yaml
+    - id: DRRS-001
+      description: "Unit resupply corridor must maintain at least C-2 Substantially Mission Capable status"
+      targetCategory: readiness
+      assertion: minimum_drrs_rating
+      threshold: "C-2_substantially_capable"
+      severity: CRITICAL
+```
+
+### 3.3 Electronic Warfare & PNT Spoofing Tolerance Rule
+Sets hard limits on acceptable GNSS / PNT signal degradation before automated navigation is marked untrusted:
+
+```yaml
+    - id: EW-PNT-002
+      description: "PNT telemetry must not exceed 6.0 dB C/N0 drop or 10.0m pseudorange variance"
+      targetCategory: navigation
+      assertion: max_ew_pnt_degradation
+      maxCnoDropDb: 6.0
+      maxPseudorangeVarianceM: 10.0
+      severity: HIGH
+```
+
+---
+
+## 4. CLI Validation & Evaluation
 
 Validate specs against schemas:
 ```bash
@@ -279,4 +328,11 @@ continuity assurance examples/arctic/assurance.yaml
 Run substitution compilation:
 ```bash
 continuity substitute examples/arctic/substitution.yaml
+```
+
+Run defense readiness and threat audit:
+```bash
+continuity readiness examples/arctic/assessment.json
+continuity threat-scan examples/arctic/telemetry.json
+continuity sovereign-audit
 ```

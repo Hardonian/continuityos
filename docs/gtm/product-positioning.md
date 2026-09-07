@@ -1,69 +1,82 @@
-# ContinuityOS — Strategic Product Positioning & Category Definition
+# Aegis Continuity / ContinuityOS — Sovereign Product Positioning & Category Definition
 
-> **Category**: Continuity-as-Code / Resilience-as-Code  
-> **Headline**: *Declare resilience. Detect drift. Prove continuity.*
-
----
-
-## 1. The Core Thesis
-
-Infrastructure-as-Code (Terraform) asks:
-> *Is my infrastructure configured as intended?*
-
-Container Orchestration (Kubernetes) asks:
-> *Is my application converging toward desired state?*
-
-**ContinuityOS asks:**
-> *Can the organization still function when physical, digital, commercial, logistical, regulatory, supplier, communications, navigation, or geopolitical dependencies degrade?*
+> **Category**: Sovereign Resilience-as-Code / Continuity-as-Code  
+> **Headline**: *Declare resilience. Detect drift. Prove continuity.*  
+> **Sovereign Profile**: *Aegis Continuity (Defense & Critical Infrastructure Edition)*
 
 ---
 
-## 2. Strategic Differentiation: What ContinuityOS Is NOT
+## 1. Executive Summary & Market Thesis
 
-| Paradigm | What it does | Why ContinuityOS is fundamentally different |
+Modern nation-states, critical infrastructure operators, and allied defense forces face an unprecedented threat environment:
+- Multi-domain electronic warfare (GNSS spoofing, PNT denial, SATCOM jamming).
+- Coordinated cyber-physical sabotage against port SCADA systems and pipeline intermodal hubs.
+- Geopolitical chokepoint interdiction (Red Sea, Strait of Malacca, Bab-el-Mandeb, Northern Sea Route).
+- Marine insurance withdrawal (Lloyd's Joint War Committee listed area exclusions).
+- Concentrated supply chain dependencies across critical minerals, active pharmaceutical ingredients (APIs), and defense microelectronics.
+
+Traditional enterprise software fails because it is architecturally disjointed:
+- **Dashboards** display lagging historical telemetry without understanding downstream dependency consequences.
+- **Digital Twins** model 3D CAD geometries without evaluating commercial insurance or regulatory transit viability.
+- **Monitoring Tools** alert on link loss without determining if strategic reserves will survive before contingency shipments arrive.
+
+**Aegis Continuity / ContinuityOS** introduces the **Continuity-as-Code** category:
+> The continuous, declarative reconciliation of real-world cyber-physical, commercial, and operational status against declared mission resilience policies, verified by deterministic solvers and post-quantum cryptographic audit ledgers.
+
+---
+
+## 2. Definitive Category Differentiation
+
+| Operational Dimension | Status Quo Enterprise / Defense Tools | Aegis Continuity (Sovereign Edition) |
 | :--- | :--- | :--- |
-| **Supply Chain Dashboard** | Shows pins on a map and historical delivery delays. | **ContinuityOS evaluates declared desired state and policy compliance.** Dashboards report historical events; ContinuityOS reconciles live state against machine-readable resilience objectives. |
-| **Digital Twin** | Simulates 3D physics or CAD layout of a facility. | **ContinuityOS performs declarative reconciliation.** It treats entire cyber-physical supply webs as code in Git, detecting policy drift and proving substitution feasibility. |
-| **Risk Scoring Tool** | Generates opaque single-number "risk indexes" (e.g. 7.2/10). | **ContinuityOS traces exact dependency consequences across 4 functional layers** (Physical, Operational, Commercial, Digital Trust) with deterministic causal provenance. |
-| **Discrete Event Simulation** | Models generic queueing probabilities. | **ContinuityOS simulation is tied to machine-readable policy assertions and cryptographically verified evidence ledger records.** |
-| **Network Monitoring** | Pings hosts and measures bandwidth. | **ContinuityOS detects Functional Closure**: infrastructure that is technically pingable/open, but commercially or operationally unusable. |
+| **Operational State Model** | Binary `OPEN` vs `CLOSED` | **12-State Operational Taxonomy**: Distinguishes physically open routes from `OPEN_BUT_UNINSURABLE`, `OPEN_BUT_NAVIGATION_UNTRUSTED`, and `OPEN_BUT_NO_CARRIER_CAPACITY`. |
+| **Redundancy Analysis** | Nominal provider count (e.g. "We have 2 satellite vendors") | **Upstream Topological Independence**: Discovers hidden single points of failure (shared downlink teleports, power substations, or sole-source carriers). |
+| **Contingency Routing** | Shortest-path GIS geometric lines on maps | **Multi-Constraint Route Substitution Compiler**: Mathematically verifies 9 concurrent constraints (ice class, port crane draft, inland rail capacity, insurance, and arrival deadline). |
+| **Inventory Resilience** | Static reserve days ($\text{Stock} / \text{Avg Burn}$) | **Assured Replenishment Days ($\text{ARD}$)**: Models dynamic crisis burn surges and proves whether replacement shipments arrive before critical depot exhaustion. |
+| **Recovery Modeling** | Assumes network is healthy when route reopens | **$T0 \to T5$ Recovery Lag Lifecycle**: Models port backlog clearing and vessel repositioning, preventing premature declaration of mission readiness. |
+| **Defense Readiness** | Manual, periodic quarterly self-assessments | **Continuous DRRS / NATO C-Level Mapping**: Automatically maps supply degradation into real-time C-1 through C-5 capability ratings with Mission Limiting Factors. |
+| **Audit & Non-Repudiation** | Mutating relational database audit tables | **Post-Quantum Evidence Ledger**: Cryptographically sealed using NIST FIPS 204 ML-DSA-65 (Dilithium) hybrid signatures and zero-knowledge Merkle proofs. |
+| **Deployment Boundary** | Commercial public SaaS with internet egress | **100% Air-Gapped & Zero-Cloud**: Verified for disconnected SCIF deployment, edge gateways, and expeditionary DDIL cluster consensus. |
 
 ---
 
-## 3. The 6 Differentiators
+## 3. Strategic Buyer Personas
 
-1. **Functional Closure Engine**: Recognizes 12 composable states (e.g. `OPEN_BUT_UNINSURABLE`, `OPEN_BUT_NO_CARRIER_CAPACITY`, `OPEN_BUT_NAVIGATION_UNTRUSTED`).
-2. **Provider Independence Analyzer**: Uncovers hidden single points of failure where nominally redundant providers share the same satellite earth station, power grid, or backhaul fiber.
-3. **Route Substitution Compiler**: Goes beyond drawing lines on maps to mathematically prove whether alternate routes satisfy port throughput, rail fluidity, vessel ice class, and inventory deadlines.
-4. **Assured Replenishment Days KPI**: Calculates when the next credible replacement shipment actually arrives under degraded burn rates, preventing premature reserve exhaustion.
-5. **Recovery-Lag Engine ($T0 \to T5$)**: Enforces Invariant 8 (*Recovery is separate from Reopening*). A reopened route remains degraded until carrier return, port backlogs, and inventory buffers normalize.
-6. **Immutable Provenance Ledger**: Every observation, policy evaluation, and mitigation plan is chained in an append-only SHA-256 evidence ledger signed with Ed25519 keys.
+### 1. Defense & Sovereign Commands (National Security)
+- **Target Roles**: J4 Logistics Directors, Combatant Command Operations Officers, Defense Readiness Reporting System (DRRS) Managers, Naval Logistics Planners.
+- **Primary Pain Point**: Inability to quantify how commercial maritime chokepoints or cyber-physical sensor degradation impact actual troop/materiel readiness (C-1 vs C-4).
+- **ContinuityOS Solution**: Automated MIL-STD-2525D Common Operating Picture (COP) export, DRRS C-Level rating calculation, and mission-limiting chokepoint analysis.
 
----
+### 2. Tier-1 Defense Primes & System Integrators
+- **Target Roles**: Vice President of Defense Supply Chains, Chief Information Security Officer (CISO), Mission Assurance Directors (Lockheed Martin, General Dynamics, BAE Systems, Raytheon, Saab).
+- **Primary Pain Point**: Defense Federal Acquisition Regulation Supplement (DFARS), CMMC 2.0 Level 3, and Canadian CPCSC mandates requiring verifiable supply chain survivability.
+- **ContinuityOS Solution**: Multi-tier Bill-of-Materials (BOM) single-source auditing, critical mineral dependence tracking, and air-gapped evidence ledgers.
 
-## 4. Target Personas
-
-### Technical Users (The Implementers)
-- **Resilience Engineers & Site Reliability Engineers (SREs)**: Managing mission-critical physical/digital failover.
-- **Platform Engineers & Enterprise Architects**: Codifying supply-chain topologies as declarative YAML in Git repos.
-- **Supply Chain Logistics Architects**: Designing failover corridors, multi-modal routing, and strategic inventory buffers.
-- **Critical Infrastructure Engineers**: Ensuring compliance with government resilience mandates (e.g., NIS2, DORA, CIRCIA).
-
-### Economic Buyers (The Decision Makers)
-- **Chief Risk Officer (CRO)**: Demanding explainable, deterministic risk posture backed by auditable evidence.
-- **Chief Operating Officer (COO)**: Preventing multi-million-dollar plant shutdowns caused by chokepoint blockages.
-- **VP Global Supply Chain & Procurement**: Seeking provable alternative supply corridors before crises hit.
-- **Chief Resilience Officer / Continuity Director**: Transitioning from static PDF disaster recovery binders to Continuous Resilience-as-Code.
-- **Government Logistics & Defense Program Directors**: Ensuring sovereign supply assurance for critical supplies, energy, and defense logistics.
+### 3. Critical Infrastructure Protection Agencies
+- **Target Roles**: Chief Resilience Officers, Critical Infrastructure Directors (CISA, Public Safety Canada, ENISA, ANSSI).
+- **Primary Pain Point**: Ensuring continuity across 16 critical infrastructure sectors (energy grids, water authorities, port facilities, telecommunications backbones) under hybrid cyber-physical conflict.
+- **ContinuityOS Solution**: Continuous policy reconciliation, provider independence analysis, and cross-sector cascade failure modeling.
 
 ---
 
-## 5. Target Adoption Markets
+## 4. Priority Adoption Markets
 
-1. **Energy & Utilities**: Fuel supply continuity, grid transformer replenishment, pipeline logistics failovers.
-2. **Critical Minerals & Refining**: Tracking battery-grade lithium, cobalt, and rare earths through volatile maritime corridors.
-3. **Pharmaceutical & Cold-Chain Distribution**: Assured replenishment timelines for vaccines and ICU medications with shelf-life degradation.
-4. **Maritime Logistics & Ports**: Port congestion forecasting, inland rail fluidity modeling, and war-risk underwriter contingency planning.
-5. **Telecommunications**: Multi-orbit satellite redundancy, terrestrial fiber backhaul resilience, and ground station independence.
-6. **Industrial Manufacturing**: Automotive, aerospace, and semiconductor just-in-time component continuity.
-7. **Government & Humanitarian Logistics**: Disaster relief corridors, island community supply assurance, and remote polar operations.
+1. **Maritime Logistics & Strategic Corridors**:
+   - Chokepoints: Northern Sea Route, Northwest Passage, Bab-el-Mandeb, Strait of Hormuz, Malacca, Panama Canal.
+   - Operations: Real-time war-risk insurance tracking, icebreaker escort dependencies, dark-fleet AIS anomaly detection.
+2. **North American & Allied Critical Minerals**:
+   - Tracking 31 critical minerals (lithium, cobalt, nickel, rare earth elements) from northern mines to sovereign refining facilities, evaluating rail and port chokepoints.
+3. **Defense Aerospace & Munitions Industrial Base**:
+   - Modeling tier-1 through tier-4 supplier survivability, energetic materials stockpiles, and assured replenishment lead times.
+4. **Telecommunications & Space Architecture**:
+   - Multi-orbit SATCOM resilience (LEO/MEO/GEO), ground station teleport diversity, and solar geomagnetic storm ($K_p \ge 8.0$) failover modeling.
+5. **Expeditionary Logistics & Remote Community Supply**:
+   - Island and high-latitude energy/food security, fuel depot burn tracking, and sealift contingency compilation.
+
+---
+
+## 5. Procurement Pathways & Sovereign Alignment
+
+- **Canada**: CanadaBuys procurement, DND IDEaS (Innovation for Defence Excellence and Security), Canadian Critical Minerals Strategy, Transport Canada EMSA-SaaS continuity layer.
+- **United States**: Defense Innovation Unit (DIU), Title III Defense Production Act (DPA), CISA Critical Infrastructure Resilience Planning, US Navy Naval Supply Systems Command (NAVSUP).
+- **NATO & Allies**: NATO DIANA (Defence Innovation Accelerator for the North Atlantic), NATO Data-Centric Reference Architecture (DCRA), UK DASA (Defence and Security Accelerator).

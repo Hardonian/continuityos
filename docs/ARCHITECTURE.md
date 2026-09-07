@@ -1,98 +1,109 @@
-# ContinuityOS Architecture Specification (v1.0)
+# Aegis Continuity / ContinuityOS Architecture Specification (v1.0)
 
-## 1. Architectural Philosophy
+## 1. Architectural Philosophy & National Security Mandate
 
-Traditional Infrastructure-as-Code (Terraform, Pulumi) operates on the premise of desired configuration:
+Traditional Infrastructure-as-Code (Terraform, OpenTofu) operates on the premise of desired static configuration:
 > *Is resource X provisioned with configuration Y?*
 
-Kubernetes operates on desired workload convergence:
-> *Are N replicas of pod Z running and passing readiness checks?*
+Kubernetes operates on desired software workload convergence:
+> *Are N replicas of pod Z running and passing health checks?*
 
-**ContinuityOS operates on desired operational resilience:**
-> *Will critical supply lines, logistical corridors, and operational capabilities function when primary physical, digital, commercial, or regulatory dependencies degrade or fail?*
+**ContinuityOS operates on desired sovereign resilience & mission survivability:**
+> *Will critical supply lines, logistical corridors, power grids, defense industrial networks, and expeditionary operational capabilities continue to function when primary physical, digital, commercial, communications, navigation, or geopolitical dependencies degrade or fail?*
 
-The core runtime evaluates continuous state reconciliation:
+The core runtime evaluates continuous, closed-loop cyber-physical state reconciliation:
 
 ```text
-DECLARED RESILIENCE POLICY (Git)
+DECLARED RESILIENCE & MISSION CAPABILITY POLICY (Git / SCIF Enclave)
              ↓
-MULTI-FACTOR DEPENDENCY GRAPH
+MULTI-FACTOR CYBER-PHYSICAL DEPENDENCY GRAPH
              ↓
-PROVENANCE-QUALIFIED OBSERVATIONS (Public Data + Operator Telemetry)
+PROVENANCE-QUALIFIED OBSERVATIONS (Public Adapters + Authenticated OT Telemetry)
+             ↓
+MULTI-VECTOR THREAT DETECTION (GNSS EW Spoofing, Port SCADA Anomaly, Dark Fleet AIS)
              ↓
 DEPENDENCY TRUST EVALUATION (9-Dimensional Matrix)
              ↓
-FUNCTIONAL CLOSURE CLASSIFICATION (Physical, Operational, Commercial, Trust)
+FUNCTIONAL CLOSURE CLASSIFICATION (Physical, Operational, Commercial, Digital Trust)
              ↓
-RECONCILIATION & DRIFT DETECTION
-             ↓
-COMPLIANT / DRIFT / DEGRADED / FUNCTIONALLY_CLOSED / UNKNOWN
+RECONCILIATION & DEFENSE READINESS ASSESSMENT (DRRS C-1 to C-5 Ratings)
              ↓
 DETERMINISTIC MITIGATION COMPILER (Exact-Solver Bounded Search)
              ↓
-MULTI-CONSTRAINT ROUTE SUBSTITUTION
+MULTI-CONSTRAINT ROUTE SUBSTITUTION (9 Operational Constraints Verified)
              ↓
-TIME-TO-RESTORE & RECOVERY VERIFICATION (T0 -> T5)
+TIME-TO-RESTORE & RECOVERY VERIFICATION (T0 -> T5 Lag Timeline)
              ↓
-SIGNED EVIDENCE LEDGER (Ed25519 Cryptographic Chain)
+TACTICAL COMMON OPERATING PICTURE (MIL-STD-2525D / NATO APP-6D GeoJSON)
+             ↓
+POST-QUANTUM SIGNED EVIDENCE LEDGER (Ed25519 + NIST ML-DSA-65 Hybrid Chain)
 ```
 
 ---
 
-## 2. Core Subsystems & Component Topology
+## 2. Component Topology & Sovereign Security Boundaries
 
 ```mermaid
 flowchart TD
-    subgraph DeclarativeLayer ["Declarative Specifications (continuity.io/v1)"]
-        SN[SupplyNetwork]
-        CP[ContinuityPolicy]
-        AP[AssurancePolicy]
-        RS[RouteSubstitution]
-        SC[Scenario]
-        DT[DependencyTrust]
+    subgraph EnclaveClassified ["Classified / Sovereign SCIF Enclave"]
+        subgraph DeclarativeSpecs ["1. Declarative Specifications (continuity.io/v1)"]
+            SN[SupplyNetwork Spec]
+            CP[ContinuityPolicy Spec]
+            AP[AssurancePolicy Spec]
+            RS[RouteSubstitution Spec]
+            SC[Scenario Spec]
+        end
+
+        subgraph CoreRuntime ["2. ContinuityOS Sovereign Engine"]
+            GRAPH[Dependency Graph &<br/>Blast Radius Engine]
+            IND[Provider Independence<br/>Analyzer]
+            CLOSURE[Functional Closure<br/>Decomposition Engine]
+            TRUST[9D Dependency Trust<br/>Engine]
+            THREAT[Electronic Warfare &<br/>Threat Anomaly Engine]
+            INV[Strategic Inventory &<br/>Replenishment Engine]
+            REC_LAG[Recovery Lag Engine<br/>T0 to T5 Timeline]
+            RECON[Reconciliation &<br/>DRRS C-Level Engine]
+            SOLVER[Deterministic Exact<br/>Mitigation Compiler]
+        end
+
+        subgraph CryptographicStore ["3. Cryptographic Storage & Audit"]
+            LEDGER[(Post-Quantum Evidence Ledger<br/>NIST ML-DSA-65 + Ed25519)]
+            MERKLE[Zero-Knowledge Merkle<br/>Inclusion Proof Engine]
+            CONSENSUS[Raft DDIL Edge Consensus<br/>Peer-to-Peer State Log]
+        end
+
+        subgraph TacticalCOP ["4. Mission Export & Display"]
+            COP[MIL-STD-2525D / NATO APP-6D<br/>GeoJSON COP Exporter]
+            DRRS[DRRS Capability Briefing<br/>Mission Limiting Factors]
+        end
     end
 
-    subgraph IngestionLayer ["Sensing & Provenance Layer"]
-        ADAPT[Public Adapters<br/>NOAA, NSIDC, ECCC, AIS]
-        SNAP[(Snapshot Cache)]
+    subgraph CrossDomainDiode ["Cross-Domain Security Boundary"]
+        FILTER[CrossDomainFilter &<br/>One-Way Data Diode]
+    end
+
+    subgraph PublicUnclassified ["Unclassified Ingestion & Telemetry"]
+        ADAPT[Public Data Adapters<br/>NOAA, NSIDC, ECCC, AIS]
+        SNAP[(Immutable Snapshot Cache)]
         TELEM[Operator Telemetry<br/>HMAC-SHA256 Signed]
         MOCK[Offline MockProvider]
     end
 
-    subgraph AnalyticalLayer ["Continuity-as-Code Engine"]
-        GRAPH[Dependency Graph &<br/>Blast Radius Engine]
-        IND[Provider Independence<br/>Analyzer]
-        CLOSURE[Functional Closure<br/>Engine]
-        TRUST[9D Dependency Trust<br/>Engine]
-        INV[Strategic Inventory &<br/>Replenishment Engine]
-        REC_LAG[Recovery Lag Engine<br/>T0 to T5 Lifecycle]
-    end
-
-    subgraph DecisionLayer ["Decision & Solver Layer"]
-        RECON[Reconciliation Engine]
-        SOLVER[Deterministic Bounded<br/>Compiler]
-        SUB_COMP[Route Substitution<br/>Compiler]
-    end
-
-    subgraph AuditLayer ["Cryptographic Audit & Interoperability"]
-        LEDGER[(Signed Evidence Ledger<br/>Ed25519 Hash Chain)]
-        EXPORT[GeoJSON / GeoPackage /<br/>NDJSON STAC Exporters]
-        CLI[CLI & FastAPI Service]
-    end
-
-    DeclarativeLayer --> RECON
-    IngestionLayer --> AnalyticalLayer
-    AnalyticalLayer --> RECON
+    PublicUnclassified --> FILTER
+    FILTER --> CoreRuntime
+    DeclarativeSpecs --> RECON
+    CoreRuntime --> RECON
     RECON --> SOLVER
-    RECON --> SUB_COMP
-    SOLVER --> AuditLayer
-    SUB_COMP --> AuditLayer
-    RECON --> AuditLayer
+    SOLVER --> LEDGER
+    RECON --> DRRS
+    RECON --> COP
+    LEDGER --> MERKLE
+    LEDGER --> CONSENSUS
 ```
 
 ---
 
-## 3. The 12-State Operational Model
+## 3. The 12-State Operational Taxonomy
 
 Resilience in complex physical-digital networks is non-binary. Infrastructure can remain physically intact while becoming completely unusable. ContinuityOS evaluates effective operational state across a 12-state taxonomy:
 
@@ -102,7 +113,7 @@ Resilience in complex physical-digital networks is non-binary. Infrastructure ca
 4. **`OPEN_BUT_UNINSURABLE`**: Waterway physically navigable, but marine insurers or war-risk syndicates have withdrawn coverage.
 5. **`OPEN_BUT_NO_CARRIER_CAPACITY`**: Infrastructure open, but commercial container/bulk shipping operators have diverted vessels.
 6. **`OPEN_BUT_NAVIGATION_UNTRUSTED`**: Geographic coordinates accessible, but GNSS spoofing or PNT jamming renders automated navigation unsafe.
-7. **`OPEN_BUT_COMMUNICATIONS_DEGRADED`**: Physical route open, but solar storms or cyber disruption sever SATCOM links.
+7. **`OPEN_BUT_COMMUNICATIONS_DEGRADED`**: Physical route open, but solar storms or cyber denial severs SATCOM links.
 8. **`OPEN_BUT_SERVICE_DEPENDENT`**: Passage open only with specialized external escort (e.g., sole-source icebreaker or harbor tugs).
 9. **`RECOVERY_BACKLOGGED`**: Physical route reopened, but severe port congestion and vessel displacement prevents normal transit.
 10. **`FUNCTIONALLY_CLOSED`**: Multi-layer operational, commercial, or trust failures render infrastructure unusable despite physical status.
@@ -111,219 +122,115 @@ Resilience in complex physical-digital networks is non-binary. Infrastructure ca
 
 ---
 
-## 4. Functional Closure Decomposition Engine (`closure.py`)
+## 4. Defense Readiness (DRRS) & NATO C-Level Capability Mapping
 
-Functional closure decomposes complex cyber-physical assets across four orthogonal layers:
+ContinuityOS translates complex dependency failures into standard military operational readiness ratings:
 
-```mermaid
-graph TB
-    subgraph L1 ["Physical Layer"]
-        P1[Draft Clearance]
-        P2[Ice Concentration]
-        P3[Berth Availability]
-    end
-
-    subgraph L2 ["Operational Layer"]
-        O1[Navigation / PNT Trust]
-        O2[SATCOM Telemetry Health]
-        O3[Pilotage & Vessel Traffic Control]
-    end
-
-    subgraph L3 ["Commercial Layer"]
-        C1[War-Risk Insurance Status]
-        C2[Commercial Carrier Availability]
-        C3[Bunker Fuel Contract Access]
-    end
-
-    subgraph L4 ["Digital Trust Layer"]
-        T1[Observation Provenance]
-        T2[Cryptographic Ledger State]
-        T3[Source Diversity Threshold]
-    end
-
-    L1 --> DERIVE{Effective State Derivation}
-    L2 --> DERIVE
-    L3 --> DERIVE
-    L4 --> DERIVE
-
-    DERIVE -->|All Layers Compliant| S1[OPEN]
-    DERIVE -->|Insurance Denied| S2[OPEN_BUT_UNINSURABLE]
-    DERIVE -->|PNT Compromised| S3[OPEN_BUT_NAVIGATION_UNTRUSTED]
-    DERIVE -->|Multiple Failures| S4[FUNCTIONALLY_CLOSED]
-```
-
-### Deterministic Derivation Rules
-- If physical barrier exists $\to$ `PHYSICALLY_CLOSED`.
-- If physical route is open, but commercial insurance is withdrawn $\to$ `OPEN_BUT_UNINSURABLE`.
-- If navigation trust $< \text{threshold}$ $\to$ `OPEN_BUT_NAVIGATION_UNTRUSTED`.
-- If communications trust $< \text{threshold}$ $\to$ `OPEN_BUT_COMMUNICATIONS_DEGRADED`.
-- If carrier capacity unavailable $\to$ `OPEN_BUT_NO_CARRIER_CAPACITY`.
-- If recovery backlog is active $\to$ `RECOVERY_BACKLOGGED`.
-- If two or more operational/commercial failures coincide $\to$ `FUNCTIONALLY_CLOSED`.
-
----
-
-## 5. Dependency Trust Matrix (`trust.py`)
-
-Rather than condensing trust into a single lossy scalar, `DependencyTrust` maintains nine independent dimensions:
-
-| Dimension | Description | Minimum Valid Policy Assertion |
-| :--- | :--- | :---: |
-| `physical_availability` | Concrete physical accessibility and capacity | 0.0 – 1.0 |
-| `cyber_integrity` | Cryptographic integrity, firmware state, and network health | 0.0 – 1.0 |
-| `legal_availability` | Sanctions compliance, cabotage laws, and regulatory clearance | 0.0 – 1.0 |
-| `commercial_availability` | Market capacity and charter availability | 0.0 – 1.0 |
-| `communications_integrity` | SATCOM/telemetry bit-error rate and jamming resistance | 0.0 – 1.0 |
-| `navigation_integrity` | GNSS dilution of precision, spoofing detection, and PNT trust | 0.0 – 1.0 |
-| `insurance_availability` | Underwriting syndicate coverage and war-risk rate stability | 0.0 – 1.0 |
-| `operator_confidence` | Verified on-scene operator reporting confidence | 0.0 – 1.0 |
-| `information_confidence` | Cross-source corroboration and sensor freshness | 0.0 – 1.0 |
-
-Trust aggregation supports three explicit strategies:
-- `minimum`: Conservative fail-closed minimum across all active dimensions.
-- `weighted`: User-defined normalized weight vector across dimensions.
-- `mean`: Arithmetic mean for non-critical informational reporting.
-
----
-
-## 6. Provider Independence & Upstream Topology (`independence.py`)
-
-A common vulnerability in resilience planning is **false redundancy**—declaring two redundant communications or logistics providers that secretly share an unmodeled single point of failure upstream.
+$$\text{Readiness Rating} = f(\text{Continuity Score}, \text{Assured Replenishment Days}, \text{Chokepoint Closure State}, \text{Critical SPOFs})$$
 
 ```mermaid
-flowchart TD
-    subgraph ApparentRedundancy ["Declared Independent Providers"]
-        P1[Provider A: Commercial SATCOM]
-        P2[Provider B: Polar Relay LEO]
-    end
-
-    subgraph HiddenDependencies ["Discovered Upstream Dependencies"]
-        GS[Shared Downlink Gateway: Tromsø Earth Station]
-        FIB[Shared Terrestrial Backhaul Fiber]
-        PWR[Regional Electrical Grid Substation]
-    end
-
-    P1 --> GS
-    P2 --> GS
-    GS --> FIB
-    FIB --> PWR
-
-    style GS fill:#fbb,stroke:#333,stroke-width:2px
-    style FIB fill:#fbb,stroke:#333,stroke-width:2px
-    style PWR fill:#fbb,stroke:#333,stroke-width:2px
+stateDiagram-v2
+    [*] --> C1: Nominal Operations (Continuity >= 95%, Reserves >= 30d, 0 SPOFs)
+    C1 --> C2: Minor Degradation (Continuity 80-94%, Reserves 20-29d)
+    C2 --> C3: Marginal Capability (Continuity 65-79%, Reserves 10-19d)
+    C3 --> C4: Critical Interdiction (Continuity < 65%, Reserves < 10d, Primary Route Closed)
+    C4 --> C5: Reconstruction (Kinetic/Cyber Rebuilding Underway)
+    C5 --> C3: Physical Route Reopened (T1 reached, backlog active)
+    C3 --> C2: Port Backlog Cleared (T3 reached, shipments arriving)
+    C2 --> C1: Full Replenishment Restored (T5 reached, resilience compliant)
 ```
 
-`ProviderIndependenceAnalyzer` traverses upstream dependency DAGs to detect:
-- Shared ground teleports and satellite downlinks.
-- Shared cloud regions or transit providers.
-- Shared sovereign jurisdictions subject to common regulatory interdiction.
-- Shared fuel bunkering terminals and physical transit bottlenecks.
-
-If declared independent providers share $\ge 1$ upstream nodes, the analyzer flags `valid: false` and downgrades effective provider redundancy.
+### Mission Limiting Factors (MLFs)
+When capability degrades below C-1, the engine outputs structured Mission Limiting Factors:
+- `MLF-CORR-01`: Primary maritime corridor functionally closed due to war-risk insurance withdrawal.
+- `MLF-COMM-02`: SATCOM link severed; fallback to narrowband UHF relay limits telemetry bandwidth.
+- `MLF-INVEN-03`: Assured replenishment delay of 45 days exceeds critical fuel buffer of 22 days.
 
 ---
 
-## 7. Strategic Inventory & Assured Replenishment (`inventory.py`)
+## 5. Electronic Warfare & Cyber-Physical Threat Anomaly Engine (`threat.py`)
 
-Traditional inventory models calculate static reserve days:
-$$\text{Reserve Days} = \frac{\text{Current Stock}}{\text{Average Daily Burn}}$$
+The threat engine operates continuously over raw sensor streams to detect nation-state cyber-physical interdiction:
 
-In real-world crises, this metric is dangerously misleading because burn rates surge while replenishment routes are disrupted. ContinuityOS computes **Assured Replenishment Days**:
-$$\text{Assured Replenishment Days} = \max(\text{Transit Days}, \text{Lead Time}) + \text{Disruption Recovery Lag}$$
+### 5.1 GNSS / PNT Electronic Warfare Detection
+Evaluates four orthogonal physical signals from multi-frequency receiver telemetry:
+- **Carrier-to-Noise Attenuation ($\Delta C/N_0$)**: Measures anomalous signal power drops ($\Delta C/N_0 \ge 12.0\text{ dB}$) indicating jamming emitters.
+- **Pseudorange Residual Variance ($\sigma^2_{\rho}$)**: Detects dispersion in geometric pseudorange solutions ($\sigma^2_{\rho} \ge 25.0\text{ m}^2$) characteristic of asynchronous spoofers.
+- **Receiver Clock Drift ($\dot{\delta}_t$)**: Tracks oscillator frequency offsets ($|\dot{\delta}_t| \ge 2.5\text{ ppm}$) caused by synthetic signal pull-off attacks.
+- **Geometric Dilution of Precision (GDOP)**: Anomalous satellite geometry collapse.
+
+### 5.2 Port SCADA / OT Anomaly Detection
+Monitors Modbus/TCP, DNP3, and IEC 60870-5-104 telemetry across container cranes and automated lock systems:
+- Detects unauthorized setpoint changes, rapid command flooding ($>50\text{ commands/sec}$), and unauthorized firmware write cycles.
+
+### 5.3 Maritime AIS Kinematic Physics Violation Detector
+Applies physical motion constraints to vessel AIS reports:
+- Computes geodetic distance between consecutive position reports:
+  $$v_{\text{observed}} = \frac{d(\text{lat}_1, \text{lon}_1, \text{lat}_2, \text{lon}_2)}{\Delta t}$$
+- Flags kinematic physics violations ($v_{\text{observed}} > 40\text{ kts}$ on cargo vessels) indicating dark-fleet GPS transponder spoofing.
+
+---
+
+## 6. Post-Quantum Cryptographic Architecture (`crypto.py`)
+
+To protect sovereign decision records and intelligence data against future cryptanalytic attacks by quantum computers, ContinuityOS implements a defense-grade post-quantum cryptographic architecture:
 
 ```mermaid
-gantt
-    title Critical Inventory Burn & Replenishment Timeline
-    dateFormat X
-    axisFormat Day %d
-    section Stock Level
-    Normal Stock (100%)       :done, 0, 13
-    Warning Buffer (50%)      :active, 13, 22
-    Critical Reserve (20%)    :crit, 22, 29
-    Stock Exhausted (0%)      :crit, 29, 43
-    section Replenishment
-    Corridor Severed          :crit, 0, 15
-    Contingency Route Dispatched :active, 15, 43
-    First Shipment Arrives    :milestone, 43, 43
-    Reserve Restored          :done, 43, 62
+flowchart LR
+    PAYLOAD[Raw Decision Packet / Evidence] --> HASH[SHA3-512 Cryptographic Digest]
+    PAYLOAD --> ED[Classical Ed25519 Private Key]
+    ED --> ED_SIG[Classical Signature 64 Bytes]
+    
+    HASH --> BIND[Cryptographic Hybrid Binder]
+    ED_SIG --> BIND
+    BIND --> PQC[NIST FIPS 204 ML-DSA-65 Envelope]
+    
+    PQC --> SEAL[(Post-Quantum Sealed Evidence Record)]
+    SEAL --> MERKLE[Zero-Knowledge Merkle Tree Root]
 ```
 
-The engine tracks day-by-day depletion under three dynamic consumption regimes:
-- `normal_burn`: Baseline standard operational consumption.
-- `degraded_burn`: Demand-throttled consumption under conservation policies.
-- `emergency_burn`: Surge consumption under crisis or extreme weather operations.
+### Standards Conformance
+- **NIST FIPS 204 (ML-DSA)**: Lattice-based digital signatures derived from the Module Learning with Errors (M-LWE) problem.
+- **NIST FIPS 203 (ML-KEM)**: Module-LWE based key encapsulation mechanism for confidential inter-SCIF payload transport.
+- **Classical Fallback**: Bound in tandem with classical Ed25519 (`ed25519_ph`) for dual-algorithm assurance.
 
 ---
 
-## 8. Recovery Lag Lifecycle ($T0 \to T5$) (`recovery.py`)
+## 7. Disconnected, Degraded, Intermittent, Limited (DDIL) Edge Consensus (`cluster.py`)
 
-ContinuityOS enforces Invariant 8: *Recovery is separate from reopening.* The timeline models five discrete milestones:
-
-```text
-T0 (Incident): Sudden disruption event occurs (e.g., canal blockage, cyber outage).
- │
- ├── Physical Reopening Lag (e.g., salvage, dredging, ice clearing)
- ↓
-T1 (Physical Reopening): Asset is physically passable, but commercially unusable.
- │
- ├── Underwriter Review & Risk Re-evaluation Lag
- ↓
-T2 (Commercial Participation): War-risk insurance normalized, charter contracts restored.
- │
- ├── Port Clearance & Container Vessel Repositioning Lag
- ↓
-T3 (Capacity Normalized): Vessel transit volumes return to baseline throughput.
- │
- ├── Supply Chain In-Transit Transit & Delivery Lag
- ↓
-T4 (Inventory Replenished): Regional depots rebuild baseline critical reserves.
- │
- ├── Resilience Margin Rebuilding & Contingency Restocking
- ↓
-T5 (Resilience Objective Restored): Network returns to full policy compliance.
-```
+In expeditionary logistics and forward-deployed command nodes, continuous cloud or wide-area connectivity is impossible. ContinuityOS implements an air-gapped **Raft State Synchronizer**:
+- Forward-deployed nodes maintain local append-only state logs.
+- When tactical radio or satellite links become intermittently available, nodes perform peer-to-peer differential log exchange.
+- Monotonically increasing term numbers and cryptographic hash verification prevent replay attacks, split-brain states, and unauthorized state rollbacks.
 
 ---
 
-## 9. Multi-Constraint Route Substitution (`substitution.py`)
+## 8. Multi-Constraint Route Substitution Engine (`substitution.py`)
 
-Finding a valid alternative route is not a shortest-path graph problem. An alternative route is only viable if it simultaneously satisfies nine operational constraints:
+Route substitution compiles actionable supply rerouting under 9 strict physical, commercial, and temporal constraints:
 
-1. **Geographic Feasibility**: Waterway depth, air draft, and lock dimensions.
-2. **Ice / Environmental Class**: Fleet ice-class certification matching route ice severity.
-3. **Origin Dispatch Capacity**: Origin terminal throughput for diversion volumes.
-4. **Transit Route Capacity**: Chokepoint volume limits along the alternate corridor.
-5. **Port Handling Capacity**: Receiving port crane and berth capacity.
-6. **Inland Intermodal Capacity**: Downstream rail, barge, or trucking capacity.
-7. **Commercial Insurance**: Marine underwriters actively writing coverage.
-8. **Fuel Bunkering**: Intermediate bunker fuel availability.
-9. **Critical Arrival Deadline**: $\text{Transit Days} \le \text{Days to Inventory Exhaustion}$.
+$$\text{Viable}(R_{\text{alt}}) \iff \bigwedge_{i=1}^9 C_i = \text{True}$$
 
-If any constraint fails, the compiler rejects the candidate and generates specific deficiency codes (e.g., `CAPACITY_PORT_HANDLING_INSUFFICIENT`, `ARRIVAL_AFTER_DEADLINE`).
-
----
-
-## 10. Bounded Deterministic Mitigation Compiler (`compiler.py`)
-
-Mitigation planning uses an exact-solver approach for bounded action sets ($N \le 24$ actions by default, with OR-Tools adapters available for enterprise fleets). Given:
-- A set of detected policy violations $\mathcal{V}$.
-- A candidate mitigation action pool $\mathcal{A}$, where each action $a \in \mathcal{A}$ has cost $c(a)$, restored continuity $\Delta r(a)$, prerequisite actions $\mathcal{P}(a)$, and mutually exclusive incompatibilities $\mathcal{I}(a)$.
-- An overall resource budget constraint $B$.
-
-The compiler finds the optimal action subset $S^* \subseteq \mathcal{A}$ that maximizes aggregate continuity restoration:
-$$\max_{S \subseteq \mathcal{A}} \sum_{a \in S} \Delta r(a) \quad \text{subject to} \quad \sum_{a \in S} c(a) \le B, \quad \mathcal{P}(a) \subseteq S, \quad S \cap \mathcal{I}(a) = \emptyset$$
-
-Because the search is deterministic, repeated runs on identical inputs yield bit-for-bit identical plans.
+1. **Geographic Clearance**: Draft, beam, and lock limits satisfy vessel dimensions.
+2. **Hull Classification**: Polar code / Ice-Class rating matches prevailing sea-ice thickness.
+3. **Origin Terminal Dispatch**: Origin port handling capacity $\ge \text{required daily volume}$.
+4. **Corridor Chokepoint Capacity**: Maximum daily transit tonnage $\ge \text{required daily volume}$.
+5. **Receiving Port Handling**: Receiving port crane and berth throughput $\ge \text{required daily volume}$.
+6. **Inland Intermodal Capacity**: Downstream rail, pipeline, or road throughput $\ge \text{required daily volume}$.
+7. **Commercial Insurance**: Active war-risk underwriting syndicate coverage in place.
+8. **Bunker Fuel Availability**: Marine gasoil / polar fuel availability along transit route.
+9. **Critical Arrival Margin**: $\text{Transit Days} \le \text{Days to Strategic Inventory Exhaustion}$.
 
 ---
 
-## 11. Signed Evidence Ledger (`evidence.py`)
+## 9. Mathematical Formulation: Bounded Exact Mitigation Solver (`compiler.py`)
 
-Auditability is cryptographically enforced. Every ingested observation, policy reconciliation, and compiled mitigation plan is recorded as an immutable record in an append-only hash chain:
+Mitigation planning uses an exact branch-and-bound combinatorial optimization solver. Given:
+- Policy violation set $\mathcal{V}$.
+- Candidate mitigation actions $\mathcal{A}$, where each action $a \in \mathcal{A}$ has cost $c(a)$, restored continuity $\Delta r(a)$, prerequisites $\mathcal{P}(a) \subseteq \mathcal{A}$, and mutual exclusions $\mathcal{I}(a) \subseteq \mathcal{A}$.
+- Total resource budget $B$.
 
-$$H_i = \text{SHA-256}(H_{i-1} \parallel \text{RecordType} \parallel \text{SubjectID} \parallel \text{Timestamp} \parallel \text{CanonicalJSON(Payload)})$$
+The compiler computes the optimal action subset $S^* \subseteq \mathcal{A}$:
+$$\max_{S \subseteq \mathcal{A}} \sum_{a \in S} \Delta r(a) \quad \text{subject to} \quad \sum_{a \in S} c(a) \le B, \quad \forall a \in S: \mathcal{P}(a) \subseteq S, \quad \forall a \in S: S \cap \mathcal{I}(a) = \emptyset$$
 
-When cryptographic keys are provisioned, each record is signed using Ed25519 (`ed25519_ph`). The verification engine validates:
-- Bit-for-bit SHA-256 hash-chain integrity from root genesis to head.
-- Ed25519 digital signatures against authorized public keys.
-- Monotonic sequence timestamps and nonces preventing replay attacks.
+Because the search algorithm uses deterministic branch ordering, identical input states always generate bit-for-bit identical mitigation plans, satisfying **Invariant 4**.
