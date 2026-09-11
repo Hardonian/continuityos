@@ -15,21 +15,24 @@ ContinuityOS adheres strictly to [Semantic Versioning 2.0.0](https://semver.org/
 
 ## 2. Release-Candidate Verification Gate
 
-Before any release tag is created, the candidate commit must satisfy all 11 gates:
+Before any release tag is created, the candidate commit must satisfy all 14 gates:
 
 | Gate | Verification Command | Required Outcome |
 | :--- | :--- | :--- |
 | **1. Linting** | `uv run ruff check .` | 0 errors |
 | **2. Formatting** | `uv run ruff format --check .` | All files already formatted |
-| **3. Type Safety** | `uv run mypy src` | Success: no issues found |
-| **4. Unit Tests** | `uv run pytest` | 476 passed, 0 failed |
-| **5. Code Coverage** | `uv run pytest --cov=continuityos --cov-fail-under=85` | $\ge 85\%$ (Current: **93.83%**) |
+| **3. Type Safety** | `uv run mypy src` | Success: no issues found (62 modules) |
+| **4. Unit Tests** | `uv run pytest` | 486 passed, 0 failed |
+| **5. Code Coverage** | `uv run pytest --cov=continuityos --cov-fail-under=85` | $\ge 85\%$ (Current: **94.09%**) |
 | **6. Core Invariants** | `uv run pytest tests/test_v1_core_invariants.py` | 10/10 passed |
 | **7. Golden Scenarios** | `uv run pytest tests/test_golden_scenarios.py` | 10/10 passed |
 | **8. Benchmarks** | `uv run pytest tests/test_benchmark_v1.py` | Sub-second execution (<0.5s) |
 | **9. Threat Scan** | `uv run python scripts/threat_stress_harness.py` | 0 vulnerabilities detected |
 | **10. Air-Gap Audit** | `uv run continuity sovereign-audit` | Cryptographic integrity verified |
-| **11. Release Build** | `uv build && uv run python scripts/generate_release_artifacts.py` | Distributions, SBOM & SHA256SUMS generated |
+| **11. Sovereign Compliance** | `uv run continuity verify-compliance --profile all` | All profiles (ITSG-33, PBMM, SCIF) SATISFIED |
+| **12. Standalone Web Console** | `cd ui && npm run build` | 24/24 static pages prerendered cleanly |
+| **13. Master 100 Roadmap** | `ROADMAP-100.md` | 100/100 items verified and executed |
+| **14. Release Build** | `uv build && uv run python scripts/generate_release_artifacts.py` | Distributions, SBOM & SHA256SUMS generated |
 
 ---
 

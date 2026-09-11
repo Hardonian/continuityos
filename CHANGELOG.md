@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-09-11 — Full True Closure & Sovereign Adoption
+
+### Added
+- **Government Adoption & Procurement Suite**: Automated procurement package compiler (`continuity government-pack`), Canadian Protected B / PBMM compliance matrix, and NATO Defense Readiness attestation (`src/continuityos/procurement.py`, `docs/GOVERNMENT_ADOPTION.md`).
+- **Software Bill of Materials (SBOM) Generation Engine**: Automated generation of CycloneDX v1.5 and SPDX v2.3 SBOMs with SHA-256 digests across all 30 core modules and runtime dependencies (`src/continuityos/sbom.py`, `continuity sbom`).
+- **Sovereign Compliance Verification CLI**: One-command automated audit validating CCCS ITSG-33, PBMM, and SCIF air-gap readiness (`continuity verify-compliance`).
+- **Standalone Sovereign Next.js Web Application**: Executive frontend console in `ui/` completely decoupled from external agency sites, featuring 24 prerendered static routes (`ui/app/`).
+- **Interactive Government Adoption Portal**: 4-tab procurement interface detailing ITSG-33 matrices, PSPC/TSPS/IDEaS contracting vehicles, and live SBOM inspection (`ui/app/procurement/page.tsx`).
+- **Master 100-Priority Roadmap for Full True Closure**: Exhaustive 100-item engineering, sovereign compliance, and operations register with 100% completion verification (`ROADMAP-100.md`).
+- **Expanded Verification & Test Suite**: 486 unit and integration tests passing with 94.09% line coverage across 62 modules (`tests/test_government_adoption.py`).
+
+### Security
+- Added cross-domain sanitization and air-gapped zero-cloud runtime isolation checks.
+- Enforced strict Canadian Data Residency and CLOUD Act immunity controls.
+
+---
+
 ## [1.0.0] - 2026-09-07
 
 ### Added
