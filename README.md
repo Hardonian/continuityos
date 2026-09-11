@@ -406,6 +406,7 @@ spec:
 | **Simulation & Lag** | `simulate`, `inventory`, `recovery`, `wargame-sim` | Correlated cascade simulation, depletion modeling, and wargaming. |
 | **National Security** | `readiness`, `export-cop`, `threat-scan`, `dark-fleet-detect` | DRRS readiness ratings, MIL-STD-2525D COP export, and EW spoofing detection. |
 | **Sovereign Controls** | `sovereign-audit`, `cross-domain-filter`, `rbac-check`, `scif-attest` | Air-gap verification, cross-domain diode filtering, and TPM hardware quotes. |
+| **Government & Adoption** | `government-pack`, `sbom`, `verify-compliance` | CCCS ITSG-33 / PBMM tenders, CycloneDX/SPDX SBOMs, and compliance audits. |
 | **Evidence & Cryptography**| `evidence`, `merkle-proof`, `verify-ledger` | Append-only hash chains, Post-Quantum ML-DSA signatures, and Merkle proofs. |
 | **Edge & Cluster** | `cluster-status`, `cluster-sync`, `edge-package` | DDIL cluster consensus and microcontroller C header packaging (TinyMoE). |
 | **Strategic Corridors**| `canadian-corridor`, `critical-minerals-audit`, `permafrost-audit` | Arctic NORAD corridors, 31 critical minerals, and permafrost thaw modeling. |
@@ -424,12 +425,15 @@ uv run mypy src
 uv run pytest --cov=continuityos --cov-fail-under=85
 uv run python scripts/threat_stress_harness.py
 uv run continuity sovereign-audit
+uv run continuity verify-compliance --profile all
 ```
 
-- **Test Suite**: **476 unit and integration tests passing** (0 failures).
-- **Test Coverage**: **93.84%** across all source packages.
-- **Type Safety**: **100% strict `mypy` compliance** across 60 modules.
+- **Test Suite**: **486 unit and integration tests passing** (0 failures).
+- **Test Coverage**: **94.09%** across all source packages (requirement: $\ge 85\%$).
+- **Type Safety**: **100% strict `mypy` compliance** across 62 modules.
 - **Performance Benchmarks**: **10,000 nodes / 50,000 edges cascade propagation in 38 milliseconds**.
+- **Roadmap & Closure**: Full 100-priority true closure specification tracked in [`ROADMAP-100.md`](ROADMAP-100.md).
+- **Government Adoption**: Turn-key PSPC, DND/CAF, and NATO procurement guidelines in [`docs/GOVERNMENT_ADOPTION.md`](docs/GOVERNMENT_ADOPTION.md).
 
 ---
 

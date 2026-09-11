@@ -22,4 +22,4 @@ CONTINUITYOS_API_KEY=... scripts/smoke_live.sh http://127.0.0.1:8082
 systemctl --user list-timers continuityos-caddy-route.timer continuityos-backup.timer --no-pager
 ```
 
-The detailed item-by-item register is `ROADMAP-50.md`. Any item requiring an external account, customer data, legal decision, hardware, or irreversible billing/security action remains explicitly marked HUMAN rather than being called done.
+The detailed item-by-item register is `ROADMAP-50.md`. For the comprehensive 100-item priority master register across all mathematical invariants, sovereign defense profiles, tactical corridors, and enterprise control planes, see `ROADMAP-100.md`. Any item requiring an external account, customer data, legal decision, hardware, or irreversible billing/security action remains explicitly marked HUMAN rather than being called done.
