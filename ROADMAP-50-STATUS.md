@@ -18,7 +18,7 @@ Evidence commands:
 ```bash
 scripts/status.sh
 make verify
-CONTINUITYOS_API_KEY=... scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos
+CONTINUITYOS_API_KEY=... scripts/smoke_live.sh http://127.0.0.1:8082
 systemctl --user list-timers continuityos-caddy-route.timer continuityos-backup.timer --no-pager
 ```
 

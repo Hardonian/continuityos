@@ -3,7 +3,7 @@
 This reference deployment runs on the EPYC host behind the existing Caddy/Cloudflare ingress.
 
 - Local bind: `127.0.0.1:8082`
-- Public path: `https://aiautomatedsystems.ca/continuityos/`
+- Standalone path: `http://127.0.0.1:8082/` (or sovereign host `https://app.continuityos.com/`)
 - Service: `continuityos.service` (systemd user service)
 - Route repair: `continuityos-caddy-route.timer` (systemd user timer)
 - Backup: `continuityos-backup.timer` (daily, 14-day local retention)
@@ -64,8 +64,7 @@ PY
 systemctl --user status continuityos.service --no-pager
 systemctl --user status continuityos-caddy-route.timer continuityos-backup.timer --no-pager
 curl -fsS http://127.0.0.1:8082/healthz
-curl -fsS https://aiautomatedsystems.ca/continuityos/healthz
-bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos
+bash scripts/smoke_live.sh http://127.0.0.1:8082
 make doctor
 ```
 

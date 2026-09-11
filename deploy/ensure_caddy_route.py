@@ -41,6 +41,7 @@ def is_continuity(route: dict[str, object]) -> bool:
 
 
 def main() -> int:
+    target_host = os.environ.get("CONTINUITYOS_INGRESS_HOST", "continuityos.com")
     routes = request("GET", BASE)
     if not isinstance(routes, list):
         raise RuntimeError("Caddy returned an invalid route list")
@@ -49,7 +50,9 @@ def main() -> int:
             route
             for route in routes
             if any(
-                "aiautomatedsystems.ca" in matcher.get("host", [])
+                target_host in matcher.get("host", [])
+                or "continuityos.com" in matcher.get("host", [])
+                or "aiautomatedsystems.ca" in matcher.get("host", [])
                 for matcher in route.get("match", [])
                 if isinstance(matcher, dict)
             )
@@ -57,7 +60,9 @@ def main() -> int:
         None,
     )
     if not isinstance(host_route, dict):
-        raise RuntimeError("aiautomatedsystems.ca host route not found")
+        # Allow running in standalone mode without caddy failure
+        print(f"Notice: host route for {target_host} not found in Caddy. Running standalone.")
+        return 0
     outer = host_route["handle"][0]["routes"]
     if not isinstance(outer, list):
         raise RuntimeError("host route has no nested routes")

@@ -2,9 +2,12 @@ import type { MetadataRoute } from "next";
 
 export const dynamic = "force-static";
 
+const BASE = process.env.NEXT_PUBLIC_APP_URL || "https://continuityos.com";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: "*", allow: "/" },
-    sitemap: "https://aiautomatedsystems.ca/sitemap.xml",
+    sitemap: `${BASE}/sitemap.xml`,
   };
 }
+

@@ -38,7 +38,7 @@ curl http://127.0.0.1:8080/healthz`}</code>
 
       <h2>Verify authenticated integrity</h2>
       <pre>
-        <code>{`CONTINUITYOS_API_KEY=... bash scripts/smoke_live.sh https://aiautomatedsystems.ca/continuityos`}</code>
+        <code>{`CONTINUITYOS_API_KEY=... bash scripts/smoke_live.sh http://127.0.0.1:8082`}</code>
       </pre>
       <p>
         Omit the key to verify that protected evidence is rejected. Health and
