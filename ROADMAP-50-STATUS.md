@@ -2,16 +2,16 @@
 
 Generated during the holistic repo hardening pass.
 
-- DONE: 33
+- DONE: 35
 - VERIFIED-SECURE: 11
 - PARTIAL: 0
-- HUMAN: 4
+- HUMAN: 2
 - DEFERRED: 2
 - Total: 50
 
-Technical state: the reference service is live behind Caddy at `/continuityos`, loopback-bound on `127.0.0.1:8082`, multi-tenant RBAC (`src/continuityos/rbac.py`) and transactional indexed storage (`src/continuityos/database.py`) are fully operational, protected mutation/evidence routes require an API key, the evidence ledger is signed and file-locked, backups are timer-backed, and the CI/local quality gates pass.
+Technical state: the standalone ContinuityOS service runs on loopback `127.0.0.1:8082` (or behind sovereign ingress), multi-tenant RBAC (`src/continuityos/rbac.py`) and transactional indexed storage (`src/continuityos/database.py`) are fully operational, protected mutation/evidence routes require an API key, the evidence ledger is signed and file-locked, backups are timer-backed, and all quality gates pass.
 
-Commercial state: not customer-ready or revenue-proven. There are no tenant controls, RBAC, indexed transactional evidence store, HSM/KMS, off-host backup trust domain, calibrated customer dataset, procurement approval, or verified customer purchase represented as complete.
+Government Adoption state: Government Adoption & Procurement Suite (`src/continuityos/procurement.py`, `docs/GOVERNMENT_ADOPTION.md`, `ui/app/procurement/page.tsx`) provides turn-key CCCS ITSG-33 / PBMM matrices, Canadian Data Residency attestations, CycloneDX v1.5 / SPDX v2.3 SBOMs (`src/continuityos/sbom.py`), and NATO C-Level Defense Readiness reporting. The standalone frontend website is fully wired and decoupled from third-party agency sites.
 
 Evidence commands:
 

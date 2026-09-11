@@ -146,6 +146,9 @@ The `continuity` (or `continuityos`) CLI provides 26 subcommands:
 | `ai-forecast --graph ...` | Bayesian cascade failure probability forecasting across supply graph |
 | `xai-explain <file>` | Explain corridor risk breakdown using Shapley factor attribution (Explainable AI) |
 | `merkle-proof <ledger>` | Generate and verify zero-knowledge Merkle inclusion proofs for ledger records |
+| `government-pack` | Compile and cryptographically seal turn-key government procurement package (ITSG-33, PBMM, NATO) |
+| `sbom` | Generate machine-readable Software Bill of Materials in CycloneDX v1.5 or SPDX v2.3 format |
+| `verify-compliance` | Audit local deployment against sovereign compliance profiles (ITSG-33, PBMM, SCIF, air-gap) |
 
 ---
 

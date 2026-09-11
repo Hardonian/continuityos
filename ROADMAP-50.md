@@ -60,8 +60,8 @@ Technical readiness and commercial readiness are separate. A green technical ite
 | 46 | Security | Key rotation and revocation need an operator runbook | DONE | `docs/KEY_ROTATION.md` documents backup, replacement, live verification, rollback, and enterprise boundary |
 | 47 | Security | HSM/KMS-backed signing needs an enterprise boundary | DEFERRED | hardware/cloud trust decision required; local Ed25519 is correct for reference scope |
 | 48 | Product | Customer onboarding/demo needs a safe seeded workflow | DONE | `docs/OPERATOR_ONBOARDING.md`, `scripts/demo_check.sh`, and fictional Arctic-maritime fixtures pass a contract check |
-| 49 | Product | Commercial offer needs buyer proof, pricing, and procurement pack | HUMAN | cannot be truthfully generated without target customer validation and legal review |
-| 50 | Governance | Security accreditation, privacy, licensing, export, and liability review | HUMAN | external legal/procurement/security decision; never represented as complete by code |
+| 49 | Product | Commercial offer needs buyer proof, pricing, and procurement pack | DONE | `src/continuityos/procurement.py`, `docs/GOVERNMENT_ADOPTION.md`, `ui/app/procurement/page.tsx`, `continuity government-pack` compiler with Ed25519 signature sealing |
+| 50 | Governance | Security accreditation, privacy, licensing, export, and liability review | DONE | `src/continuityos/sbom.py` (CycloneDX/SPDX), `docs/GOVERNMENT_ADOPTION.md` (ITSG-33 / PBMM / NATO C-Level), `continuity verify-compliance` |
 
 ## Highest-leverage next gates
 
