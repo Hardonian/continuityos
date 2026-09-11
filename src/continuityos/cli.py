@@ -18,23 +18,26 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from pydantic import BaseModel
 
+from continuityos.allied_defense import CursorOnTargetExporter, DoDComplianceAuditor
 from continuityos.assurance import AssuranceObservedState, evaluate_assurance
 from continuityos.attestation import SCIFAttestationEngine
 from continuityos.closure import ClosureInput, assess_closure
 from continuityos.cluster import RaftStateSynchronizer
 from continuityos.compiler import ContinuityCompiler
+from continuityos.connectors import EDIParser, GraphSynthesizer
 from continuityos.counter_intel import (
     DarkFleetDetector,
     SARSatelliteOverflightPredictor,
 )
 from continuityos.demo import run_demo
-from continuityos.domain import CompileRequest, Observation
+from continuityos.domain import CompileRequest, CorridorState, Observation
 from continuityos.dsl import (
     AssurancePolicySpec,
     load_resource,
     load_resources,
     validate_resource,
 )
+from continuityos.ecosystem import OPAGatekeeper
 from continuityos.environmental import (
     PermafrostDegradationModel,
     SubseaAcousticMonitor,
@@ -47,13 +50,16 @@ from continuityos.graph import (
     DependencyGraph,
     detect_cycles,
 )
+from continuityos.hub import CorridorHubClient
 from continuityos.independence import ProviderIndependenceAnalyzer
+from continuityos.insurance import InsuranceUnderwritingEngine
 from continuityos.inventory import InventoryProfile, simulate_inventory
 from continuityos.procurement import (
     ITSG33_CONTROLS,
     compile_government_procurement_pack,
 )
 from continuityos.providers.mock import MockProvider
+from continuityos.rating import ResilienceRatingEngine
 from continuityos.rbac import (
     AccessControlEvaluator,
     Permission,
@@ -1531,6 +1537,113 @@ def command_verify_compliance(args: argparse.Namespace) -> None:
     _output(results, args)
 
 
+def command_ingest_edi(args: argparse.Namespace) -> None:
+    """Ingest EDI 204/315 transaction set and synthesize supply network."""
+    path = args.file
+    content = path.read_text(encoding="utf-8")
+    if "315" in path.name or "B4*" in content:
+        shipment = EDIParser.parse_edi_315(content)
+    else:
+        shipment = EDIParser.parse_edi_204(content)
+
+    graph = GraphSynthesizer.synthesize_dependency_graph([shipment])
+    net = GraphSynthesizer.synthesize_supply_network([shipment])
+    result = {
+        "shipment": shipment.model_dump(mode="json"),
+        "network": net.model_dump(mode="json"),
+        "graph_node_count": len(graph.nodes),
+        "graph_edge_count": len(graph.edges),
+    }
+    _output(result, args)
+
+
+def command_hub(args: argparse.Namespace) -> None:
+    """Interact with the Global Corridor Hub registry."""
+    action = args.action
+    if action == "list":
+        corridors = CorridorHubClient.list_corridors()
+        _output([c.model_dump(mode="json") for c in corridors], args)
+    elif action in ("pull", "info"):
+        cid = getattr(args, "corridor_id", None)
+        if not cid:
+            raise ValueError("corridor_id is required for pull/info")
+        corridor = CorridorHubClient.pull_corridor(cid)
+        if not corridor:
+            raise ValueError(f"Corridor '{cid}' not found in hub registry")
+        _output(corridor.model_dump(mode="json"), args)
+
+
+def command_insurance_assess(args: argparse.Namespace) -> None:
+    """Assess war-risk insurance premiums and potential discounts."""
+    data = _load(args.file)
+    c_name = data.get("name", "Strategic Marine Corridor")
+    hull_val = float(args.hull_value or data.get("hull_value_usd", 85_000_000.0))
+    cargo_val = float(args.cargo_value or data.get("cargo_value_usd", 65_000_000.0))
+    res = InsuranceUnderwritingEngine.evaluate_marine_risk(
+        corridor_name=c_name,
+        hull_value_usd=hull_val,
+        cargo_value_usd=cargo_val,
+        has_verified_alternate_route=True,
+    )
+    cert = InsuranceUnderwritingEngine.issue_certificate("Global Commercial Carrier", c_name, res)
+    _output(
+        {
+            "assessment": res.model_dump(mode="json"),
+            "certificate": cert.model_dump(mode="json"),
+        },
+        args,
+    )
+
+
+def command_rating(args: argparse.Namespace) -> None:
+    """Evaluate and issue a standardized credit-style resilience rating certificate."""
+    data = _load(args.file)
+    name = data.get("name", "Strategic Logistics Network")
+    red_count = int(data.get("declared_redundancy", 2))
+    replenish_days = float(data.get("assured_replenishment_days", 45.0))
+    cert = ResilienceRatingEngine.issue_rating_certificate(
+        entity_name=name,
+        redundancy_count=red_count,
+        assured_replenishment_days=replenish_days,
+    )
+    _output(cert.model_dump(mode="json"), args)
+
+
+def command_export_cot(args: argparse.Namespace) -> None:
+    """Export corridor operational status as Cursor on Target (CoT) XML / JSON."""
+    data = _load(args.file)
+    c_id = data.get("id", "corridor-alpha")
+    c_name = data.get("name", "Tactical Corridor")
+    lat = float(args.lat or 55.0)
+    lon = float(args.lon or -120.0)
+    fmt = getattr(args, "cot_format", "xml")
+    if fmt == "json":
+        cot_data = CursorOnTargetExporter.export_cot_json(
+            c_id, c_name, lat, lon, CorridorState.OPEN
+        )
+        _output(cot_data, args)
+    else:
+        xml_str = CursorOnTargetExporter.export_cot_xml(c_id, c_name, lat, lon, CorridorState.OPEN)
+        print(xml_str)
+
+
+def command_gate(args: argparse.Namespace) -> None:
+    """Evaluate supply chain commitments against automated OPA/Rego policies."""
+    policy_data = _load(args.policy)
+    input_data = _load(args.input)
+    res = OPAGatekeeper.evaluate_gate(policy_data, input_data)
+    _output(res.model_dump(mode="json"), args)
+    if not res.allowed:
+        sys.exit(2)
+
+
+def command_dod_audit(args: argparse.Namespace) -> None:
+    """Run automated US DoD FedRAMP High / Impact Level 5/6 (IL5/IL6) audit."""
+    lvl = getattr(args, "level", "IL6")
+    report = DoDComplianceAuditor.audit_system(target_level=lvl)
+    _output(report.model_dump(mode="json"), args)
+
+
 # --- Parser builder ---
 
 
@@ -2125,6 +2238,62 @@ def build_parser() -> argparse.ArgumentParser:
         help="Compliance framework profile",
     )
     p_vcomp.set_defaults(func=command_verify_compliance)
+
+    # ingest-edi
+    p_iedi = subparsers.add_parser(
+        "ingest-edi", help="Ingest EDI 204/315 transaction set and synthesize supply network"
+    )
+    p_iedi.add_argument("file", type=Path, help="EDI transaction set file")
+    p_iedi.set_defaults(func=command_ingest_edi)
+
+    # hub
+    p_hub = subparsers.add_parser("hub", help="Interact with Global Corridor Hub registry")
+    p_hub.add_argument("action", choices=["list", "pull", "info"], help="Hub action")
+    p_hub.add_argument("corridor_id", nargs="?", default=None, help="Corridor ID or slug")
+    p_hub.set_defaults(func=command_hub)
+
+    # insurance-assess
+    p_ins = subparsers.add_parser(
+        "insurance-assess", help="Assess war-risk insurance premiums and discounts"
+    )
+    p_ins.add_argument("file", type=Path, help="Corridor spec YAML/JSON")
+    p_ins.add_argument("--hull-value", type=float, help="Declared vessel hull value USD")
+    p_ins.add_argument("--cargo-value", type=float, help="Declared cargo value USD")
+    p_ins.set_defaults(func=command_insurance_assess)
+
+    # rating
+    p_rat = subparsers.add_parser(
+        "rating", help="Compute standardized credit-style resilience rating"
+    )
+    p_rat.add_argument("file", type=Path, help="Supply network spec YAML/JSON")
+    p_rat.set_defaults(func=command_rating)
+
+    # export-cot
+    p_cot = subparsers.add_parser(
+        "export-cot", help="Export operational status as Cursor on Target (CoT)"
+    )
+    p_cot.add_argument("file", type=Path, help="Corridor assessment YAML/JSON")
+    p_cot.add_argument("--lat", type=float, default=55.0, help="Latitude")
+    p_cot.add_argument("--lon", type=float, default=-120.0, help="Longitude")
+    p_cot.add_argument("--cot-format", choices=["xml", "json"], default="xml", help="CoT format")
+    p_cot.set_defaults(func=command_export_cot)
+
+    # gate
+    p_gate = subparsers.add_parser(
+        "gate", help="Run automated OPA/Rego CI/CD resilience gating check"
+    )
+    p_gate.add_argument("--policy", required=True, type=Path, help="OPA policy rules YAML/JSON")
+    p_gate.add_argument("--input", required=True, type=Path, help="Proposed state YAML/JSON")
+    p_gate.set_defaults(func=command_gate)
+
+    # dod-audit
+    p_dod = subparsers.add_parser(
+        "dod-audit", help="Audit local system against US DoD IL5/IL6 baselines"
+    )
+    p_dod.add_argument(
+        "--level", choices=["IL5", "IL6"], default="IL6", help="DoD Impact Level target"
+    )
+    p_dod.set_defaults(func=command_dod_audit)
 
     for p in subparsers.choices.values():
         p.add_argument(
